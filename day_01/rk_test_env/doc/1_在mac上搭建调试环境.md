@@ -70,7 +70,10 @@ inet 192.168.1.63/24 brd 192.168.1.255 scope global wlan0     ← 板子的 IP
 ```
 
 > 💡 **建议**：在路由器里给板子**绑定固定 IP**（按 MAC 地址做 DHCP 静态分配），这样 CLion 里的配置就不用反复改。
-> IP 变了以后，要改两个地方：**SSH Credentials 的 Host**，以及 **'target remote' args**。
+> IP 变了以后，要改两个地方：**SSH Credentials 的 Host**，以及 **'target remote' args**。（一键运行脚本会自动获取 IP，不用改）
+
+**用脚本查（2026-10-01 新增）**：`./run_get_board_ip.sh`，或者公共脚本 `../../common_shell/get_board_ip.sh`（只输出 IP）。脚本会自动去 `~/Documents/Android_Env/sdk/platform-tools/adb` 找 adb，Mac 上不用把 adb 加进 PATH。
+> ⏳ 这两个脚本是在 Ubuntu 上写和测试的，用的是 POSIX sh 语法，Mac 上理论上能直接用，**还没在 Mac 上实测**
 
 ### 配置 SSH 免密登录（只需要做一次）
 通过 adb 把 Mac 的公钥放到板子上：
@@ -244,7 +247,7 @@ C++ standard: 201703
 MPP: H.264 hardware encoder created OK
 ```
 
-> 板子 IP 变了：改 `../run_on_board_with_mac.sh` 里的 `BOARD_IP=` 这一行。
+> 板子 IP：脚本默认通过 adb **自动获取**（调用 `../../common_shell/get_board_ip.sh`，OTG 线要插在 Mac 上），IP 变了不用改；也可以手动指定：`BOARD_IP=192.168.1.xx ./run_on_board_with_mac.sh`。⏳ 自动获取 IP 在 Mac 上还没实测。
 > 两个运行配置的分工：**`rk_test_env@板子` 用来调试（🐞）**，**`rk_test_env@板子(运行)` 用来运行（▶）**。
 
 ---
@@ -259,7 +262,7 @@ MPP: H.264 hardware encoder created OK
 | `rk_mpi.h` 跳转不了，`#ifdef RK_TARGET` 里的代码是灰色的 | CLion 在用 Mac 的 `Debug` 配置分析代码 | 删掉 `Debug` 配置；或者在编辑器右下角把分析配置切换成 `RK3588-Debug` |
 | Test Connection 报 `No route to host` | macOS 15 本地网络权限 | 系统设置 → 隐私与安全性 → 本地网络 → 打开 CLion → 重启 CLion |
 | `rk_test_env@板子` 的 ▶ Run 是灰色的 | Remote GDB Server 配置只支持 Debug | 用 🐞 Debug；或者用"八（补充）"的一键运行配置 |
-| 突然连不上板子了 | 板子重启后 **IP 变了** | 用 `adb shell ip -4 addr` 查新 IP，改 Credentials 的 Host 和 target remote |
+| 突然连不上板子了 | 板子重启后 **IP 变了** | 用 `./run_get_board_ip.sh`（或 `adb shell ip -4 addr`）查新 IP，改 Credentials 的 Host 和 target remote；一键运行会自动获取，不用改 |
 | CLion 提示 `Included header memory is not used` | 用了 Mac 的配置来分析代码，误报 | 同"跳转不了"的处理方法 |
 | 编译特别慢，或者报 `orb` 相关的错误 | OrbStack 没有运行 | 打开 OrbStack；文件共享出问题时执行 `orb stop && orb start` |
 | Mac 上 `~/OrbStack/` 目录变空了 | OrbStack 的文件共享服务掉线了 | `orb stop && orb start` |
