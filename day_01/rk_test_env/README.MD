@@ -16,3 +16,8 @@ Hello from ATK-DLRK3588 (aarch64, kernel 5.10.160)
 C++ standard: 201703
 MPP: H.264 hardware encoder created OK
 ```
+
+
+```shell
+adb shell poweroff
+```
