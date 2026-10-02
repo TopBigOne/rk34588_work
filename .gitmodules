@@ -1,0 +1,3 @@
+[submodule "rk_code/external/mpp"]
+	path = rk_code/external/mpp
+	url = git@github.com:TopBigOne/my_mmp.git
