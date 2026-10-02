@@ -19,13 +19,22 @@ int main() {
     RK_S32 fps = 30;
     RK_S32 bps = 4 * 1000 * 1000;
     RK_S32 gop = fps * 2;
+    const char *out_path = "/userdata/av/out.h264"; // M2
+    // 因为是nv12，所以才：3 / 2
+    const size_t frameSize = ALIGN(hor_stride, 64) * ALIGN(ver_stride, 64) * 3 / 2; // M2
 
+    // ----变量
     MppCtx ctx = nullptr;
     MppApi *mpi = nullptr;
     MppEncCfg cfg = nullptr;
     MppPollType timeout = MPP_POLL_BLOCK;
     // vps/sps/pps on each IDR frame
     MppEncHeaderMode header_mode = MPP_ENC_HEADER_MODE_EACH_IDR;
+    FILE *fpOut = nullptr; // M2:输出文件
+    MppBufferGroup bufGrp = nullptr; // M2:DRM  内存池
+    MppBuffer frmBuf = nullptr; // M2: 装一帧原始的图像
+    MppBuffer pktBuf = nullptr; // M2: 装码流的缓冲区
+    MppPacket packet = nullptr; // M2: 装码包
     int ret_code = -1;
 
     // 1. create and init：创建实例，拿到 ctx（句柄）和 mpi（函数表）
@@ -76,15 +85,60 @@ int main() {
     printf("|M1 result:\n");
     printf("|            encoder ready: %dx%d stride %dx%d\n", width, height, hor_stride, ver_stride);
     printf("| --------------------------------------------------------------------------------\n");
+
+    // ---------------------M1：编码器初始化------------------------end
+
+    // ---------------------M2：获取pps,sps------------------------start
+    // M2-3: open the out file
+    fpOut = fopen(out_path, "wb");
+    if (!fpOut) {
+        printf("open %s failed\n", out_path);
+        goto CLEANUP;
+    }
+    // M2-4: request the memory which can access the hardware(申请内存)
+    // the hardware can direct access the memory ,cpu invoke read() and write() operation via cache are very fast ,
+    // but it need invoke sync_end() while operation is in end.
+    CHECK(mpp_buffer_group_get_internal(&bufGrp,MPP_BUFFER_TYPE_DRM|MPP_BUFFER_FLAGS_CACHABLE));
+    CHECK(mpp_buffer_get(bufGrp,&frmBuf,frameSize)); // M3:输入图像，不能用malloc
+    CHECK(mpp_buffer_get(bufGrp,&pktBuf,frameSize));
+    // M2-5: get SPS/PPS(获取sps，pps)
+    CHECK(mpp_packet_init_with_buffer(&packet,pktBuf));
+    mpp_packet_set_length(packet, 0);
+    CHECK(mpi->control(ctx,MPP_ENC_GET_HDR_SYNC,packet));
+    fwrite(mpp_packet_get_pos(packet),
+           1, mpp_packet_get_length(packet),
+           fpOut);
+    printf("|M2 result:\n");
+    printf("|            header : %zu bytes\n", mpp_packet_get_length(packet));
+    printf("| --------------------------------------------------------------------------------\n");
+    mpp_packet_deinit(&packet);
+
+    // ---------------------M2：获取pps,sps------------------------end
     ret_code = 0;
 
-
 CLEANUP:
+    if (packet) {
+        mpp_packet_deinit(&packet);
+    }
     if (cfg) {
         mpp_enc_cfg_deinit(cfg);
     }
     if (ctx) {
         mpp_destroy(ctx);
+    }
+    if (frmBuf) {
+        mpp_buffer_put(frmBuf);
+    }
+    if (pktBuf) {
+        mpp_buffer_put(pktBuf);
+    }
+
+    if (bufGrp) {
+        mpp_buffer_group_put(bufGrp);
+    }
+
+    if (fpOut) {
+        fclose(fpOut);
     }
 
     return ret_code;
