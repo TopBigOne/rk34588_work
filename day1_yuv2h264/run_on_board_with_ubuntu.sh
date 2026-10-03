@@ -19,6 +19,9 @@ USE_USB=${USE_USB:-1}
 BIN_NAME=day1_yuv2h264
 BUILD_DIR=cmake-build-rk3588-debug
 REMOTE_DIR=/tmp/CLion/run
+# 板子 /usr/lib 里出厂的 librockchip_mpp 太旧（缺 mpp_buffer_sync_begin_f 等函数），
+# 运行时优先加载自己编译的 MPP 库（rk_code/external/mpp 编出来、放在板子上的那份）
+BOARD_MPP_LIB=/userdata/mpp_build/lib
 
 cd "$(dirname "$0")" || exit 1
 LOCAL_BIN="$BUILD_DIR/$BIN_NAME"
@@ -68,12 +71,12 @@ if [ "$USE_USB" = "1" ]; then
     $ADB shell "mkdir -p $REMOTE_DIR" || exit 1
     $ADB push "$LOCAL_BIN" "$REMOTE_DIR/" >/dev/null || exit 1
     $ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" || exit 1
-    echo "=== 通过 USB 在板子上运行 $REMOTE_DIR/$BIN_NAME $* ==="
-    exec $ADB shell "$REMOTE_DIR/$BIN_NAME $*"
+    echo "=== 通过 USB 在板子上运行 $REMOTE_DIR/$BIN_NAME $*（MPP 库：$BOARD_MPP_LIB） ==="
+    exec $ADB shell "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*"
 else
     # ---------- scp ----------
     ssh root@"$BOARD_IP" "mkdir -p $REMOTE_DIR" || exit 1
     scp -q "$LOCAL_BIN" root@"$BOARD_IP":"$REMOTE_DIR/" || exit 1
-    echo "=== 在 $BOARD_IP 上运行 $REMOTE_DIR/$BIN_NAME ==="
-    exec ssh root@"$BOARD_IP" "$REMOTE_DIR/$BIN_NAME $*"
+    echo "=== 在 $BOARD_IP 上运行 $REMOTE_DIR/$BIN_NAME（MPP 库：$BOARD_MPP_LIB） ==="
+    exec ssh root@"$BOARD_IP" "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*"
 fi
