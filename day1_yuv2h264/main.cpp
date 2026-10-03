@@ -191,7 +191,12 @@ int main() {
     if (packet) {
         len = mpp_packet_get_length(packet);
         fwrite(mpp_packet_get_pos(packet), 1, len, fpOut);
-        printf("frame 0 size %zu bytes\n", len);
+
+        printf("|M3 result:\n");
+        printf("|            frame 0 size %zu bytes\n", len);
+        printf("| --------------------------------------------------------------------------------\n");
+
+
         mpp_packet_deinit(&packet);
     }
 
