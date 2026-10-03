@@ -13,6 +13,10 @@
         }                                                                      \
     } while (0)
 
+// 设置一个编码参数。key 是字符串，拼错时 mpp_enc_cfg_set_s32 返回 MPP_NOK，
+// 用 CHECK 包起来就能立刻看到是哪一行出错（依赖外面有一个叫 cfg 的变量）
+#define CFG_SET(key, val) CHECK(mpp_enc_cfg_set_s32(cfg, key, val))
+
 // M5: 命令行参数，带默认值
 struct Args {
     const char* inPath  = "/userdata/av/in_1080p_60f.nv12";
@@ -179,36 +183,36 @@ int main(int argc, char** argv) {
     CHECK(mpp_enc_cfg_init(&cfg));
     CHECK(mpi->control(ctx, MPP_ENC_GET_CFG, cfg));
     // 输入图像的描述，（必须和内存的排布一致）
-    mpp_enc_cfg_set_s32(cfg, "prep:width", a.width);
-    mpp_enc_cfg_set_s32(cfg, "prep:height", a.height);
-    mpp_enc_cfg_set_s32(cfg, "prep:hor_stride", hor_stride);
-    mpp_enc_cfg_set_s32(cfg, "prep:ver_stride", ver_stride);
-    mpp_enc_cfg_set_s32(cfg, "prep:format", MPP_FMT_YUV420SP); // nv12
+    CFG_SET("prep:width", a.width);
+    CFG_SET("prep:height", a.height);
+    CFG_SET("prep:hor_stride", hor_stride);
+    CFG_SET("prep:ver_stride", ver_stride);
+    CFG_SET("prep:format", MPP_FMT_YUV420SP); // nv12
     // 码率控制
-    mpp_enc_cfg_set_s32(cfg, "rc:mode", a.rcMode);
+    CFG_SET("rc:mode", a.rcMode);
 
     // 帧率：输入 30/1,输出 30/1 (flex = 0 ，表示固定帧率)
-    mpp_enc_cfg_set_s32(cfg, "rc:fps_in_flex", 0);
-    mpp_enc_cfg_set_s32(cfg, "rc:fps_in_num", a.fps);
-    mpp_enc_cfg_set_s32(cfg, "rc:fps_in_denom", 1);
+    CFG_SET("rc:fps_in_flex", 0);
+    CFG_SET("rc:fps_in_num", a.fps);
+    CFG_SET("rc:fps_in_denom", 1);
 
-    mpp_enc_cfg_set_s32(cfg, "rc:fps_out_flex", 0);
-    mpp_enc_cfg_set_s32(cfg, "rc:fps_out_num", a.fps);
-    mpp_enc_cfg_set_s32(cfg, "rc:fps_out_denom", 1);
+    CFG_SET("rc:fps_out_flex", 0);
+    CFG_SET("rc:fps_out_num", a.fps);
+    CFG_SET("rc:fps_out_denom", 1);
     // 码率控制的上下 限窄（±1/16）
-    CHECK(mpp_enc_cfg_set_s32(cfg, "rc:bps_target", a.bps));
-    mpp_enc_cfg_set_s32(cfg, "rc:bps_max", a.bps * 17 / 16);
-    mpp_enc_cfg_set_s32(cfg, "rc:bps_min", bpsMin);
+    CFG_SET("rc:bps_target", a.bps);
+    CFG_SET("rc:bps_max", a.bps * 17 / 16);
+    CFG_SET("rc:bps_min", bpsMin);
 
     // GOP
-    mpp_enc_cfg_set_s32(cfg, "rc:gop", a.gop);
-    mpp_enc_cfg_set_s32(cfg, "codec:type", a.type);
+    CFG_SET("rc:gop", a.gop);
+    CFG_SET("codec:type", a.type);
     // h264 专属参数
     if (a.type == MPP_VIDEO_CodingAVC) {
-        mpp_enc_cfg_set_s32(cfg, "h264:profile", 100); // High Profile
-        mpp_enc_cfg_set_s32(cfg, "h264:level", 40); // Level 4.0 ,够1080p@30fps
-        mpp_enc_cfg_set_s32(cfg, "h264:cabac_en", 1); // 开启cabac ,profile 是Main以上才能使用
-        mpp_enc_cfg_set_s32(cfg, "h264:cabac_idc", 0); // CABAC 初始化表编号，取值 0～2
+        CFG_SET("h264:profile", 100); // High Profile
+        CFG_SET("h264:level", 40); // Level 4.0 ,够1080p@30fps
+        CFG_SET("h264:cabac_en", 1); // 开启cabac ,profile 是Main以上才能使用
+        CFG_SET("h264:cabac_idc", 0); // CABAC 初始化表编号，取值 0～2
     }
 
     // 3. 参数真正生效
