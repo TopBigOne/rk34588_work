@@ -54,8 +54,8 @@ int main() {
     RK_S32 fps = 30;
     RK_S32 bps = 4 * 1000 * 1000;
     RK_S32 gop = fps * 2;
-    const char *outPath = "/userdata/av/out.h264"; // M2
     const char *inPath = "/userdata/av/in_1080p_60f.nv12";
+    const char *outPath = "/userdata/av/out.h264"; // M2
 
     // 因为是nv12，所以才：3 / 2
     const size_t frameSize = ALIGN(hor_stride, 64) * ALIGN(ver_stride, 64) * 3 / 2; // M2
@@ -76,7 +76,10 @@ int main() {
     MppPacket packet = nullptr; // M2: 装码包
     uint8_t *dst = nullptr; // M3 frmBuf 的cpu地址
     size_t len = 0;
-
+    bool frmEos = false; // M4: 输入读完了（我们告诉编码器："没有图像了"）
+    bool pktEos = false; // M4: 输出取完了（编码器告诉我们："码流全给你了"）
+    RK_S32 frameCount = 0; // M4:
+    size_t streamSize = 0; // M4: 码流总字节数
     int ret_code = -1;
 
     // 1. create and init：创建实例，拿到 ctx（句柄）和 mpi（函数表）
@@ -158,7 +161,8 @@ int main() {
     // ---------------------M2：获取pps,sps------------------------end
 
 
-    // ---------------------M3：编码 1 帧------------------------start
+    // ---------------------M3：准备输入------------------------start
+    // M3 单独编 1 帧的代码已经删掉：M4 的循环会从第 0 帧开始编完所有帧
     // M3-3 open the input file（输出文件、内存、SPS/PPS 在 M2 里已经准备好了）
     fpIn = fopen(inPath, "rb");
     if (!fpIn) {
@@ -166,39 +170,55 @@ int main() {
         goto CLEANUP;
     }
 
-    // M3-6 读一帧到硬件缓冲区
-    dst = static_cast<uint8_t *>(mpp_buffer_get_ptr(frmBuf)); // 硬件缓冲区的cpu地址
-    mpp_buffer_sync_begin(frmBuf); // cpu开始写
-    if (!read_nv12_frame(fpIn, dst, width, height, hor_stride, ver_stride)) {
-        printf("read frame failed, 输入文件太小？\n");
-        goto CLEANUP;
+    // M3-6 硬件缓冲区的 CPU 地址，循环里每一帧都往这里写
+    dst = static_cast<uint8_t *>(mpp_buffer_get_ptr(frmBuf));
+    // ---------------------M3：准备输入------------------------end
+    //
+    // ---------------------M4-6编码循环，直到编码器告诉我们"最后一个包"------------------------start
+    while (!pktEos) {
+        // M4-6-1: 读一帧，读不到就标记frmEos;
+        if (!frmEos) {
+            mpp_buffer_sync_begin(frmBuf);
+            frmEos = !read_nv12_frame(fpIn, dst, width, height, hor_stride, ver_stride);
+            mpp_buffer_sync_end(frmBuf);
+            if (frmEos) {
+                printf("              input end, send EOS\n");
+            }
+        }
+        // M4-6-2: 包装成MppFrame
+        CHECK(mpp_frame_init(&frame));
+        mpp_frame_set_width(frame, width);
+        mpp_frame_set_height(frame, height);
+        mpp_frame_set_hor_stride(frame, hor_stride);
+        mpp_frame_set_ver_stride(frame, ver_stride);
+        mpp_frame_set_fmt(frame, MPP_FMT_YUV420SP);
+        mpp_frame_set_eos(frame, frmEos);
+        // 最后一次，送一个空帧，没有图像，只带eos标志
+        mpp_frame_set_buffer(frame, frmEos ? nullptr : frmBuf);
+        // M4-6-3: 送进去
+        CHECK(mpi->encode_put_frame(ctx,frame));
+        mpp_frame_deinit(&frame);
+        // M4-6-4: 取出来
+        CHECK(mpi->encode_get_packet(ctx,&packet));
+        if (packet) {
+            len = mpp_packet_get_length(packet);
+            // 编码器说：这是最后一个，循环就结束
+            pktEos = mpp_packet_get_eos(packet);
+            if (len > 0) {
+                fwrite(mpp_packet_get_pos(packet), 1, len, fpOut);
+                streamSize += len;
+                printf("              frame %-3d size %zu bytes\n", frameCount, len);
+                frameCount++;
+            }
+
+            mpp_packet_deinit(&packet);
+        }
     }
-    mpp_buffer_sync_end(frmBuf); // CPU 写完，刷缓存，硬件才能看到
+    printf("|M4 result:\n");
+    printf("|            done: %d frames, %zu bytes -> %s\n", frameCount, streamSize, outPath);
+    printf("| --------------------------------------------------------------------------------\n");
+    // ---------------------M4： 编码循环，直到编码器告诉我们"最后一个包"------------------------end
 
-    // M3-7 包装成MppFrame
-    CHECK(mpp_frame_init(&frame));
-    mpp_frame_set_width(frame, width);
-    mpp_frame_set_height(frame, height);
-    mpp_frame_set_hor_stride(frame, hor_stride);
-    mpp_frame_set_ver_stride(frame, ver_stride);
-    mpp_frame_set_fmt(frame, MPP_FMT_YUV420SP);
-    mpp_frame_set_eos(frame, 0); // 不是最后一帧
-    mpp_frame_set_buffer(frame, frmBuf);
-    // M3-8 送进去，取出来
-    CHECK(mpi->encode_put_frame(ctx,frame)); // 阻塞，等硬件读完
-    mpp_frame_deinit(&frame); // frame 用完就释放，frmBuf 还在
-    CHECK(mpi->encode_get_packet(ctx,&packet)); // 阻塞，等编码完成
-    if (packet) {
-        len = mpp_packet_get_length(packet);
-        fwrite(mpp_packet_get_pos(packet), 1, len, fpOut);
-
-        printf("|M3 result:\n");
-        printf("|            frame 0 size %zu bytes\n", len);
-        printf("| --------------------------------------------------------------------------------\n");
-
-
-        mpp_packet_deinit(&packet);
-    }
 
     ret_code = 0;
 
