@@ -1,8 +1,10 @@
 # main.cpp 中 MPP 函数分类速查
 
+> 📘 本文用到的 MppCtx、MppApi、MpiCmd、MppParam、MppEncCfg、MppBuffer、MppFrame、MppPacket、MppMeta 等类型是什么，见补充说明 [07_MPP核心数据类型.md](07_MPP核心数据类型.md)。
+
 > `main.cpp` 一共用到了 **34 个** MPP 函数 / 接口，按"它在管什么"分成 7 类。
 > 行号对应提交 `9d4841f` 的 `main.cpp`；函数原型来自 `rk_code/external/mpp/inc/` 下的头文件。
-> 相关文档：[MppPacket和MppFrame的用法和区别.md](MppPacket和MppFrame的用法和区别.md)、[nv12中yuv分布效果图和读取方式.md](nv12中yuv分布效果图和读取方式.md)
+> 相关文档：[MppPacket和MppFrame的用法和区别.md](../MppPacket和MppFrame的用法和区别.md)、[nv12中yuv分布效果图和读取方式.md](../nv12中yuv分布效果图和读取方式.md)
 
 ---
 

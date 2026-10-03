@@ -1,5 +1,7 @@
 # mpi_enc_test.c 中 MPP 函数分类速查
 
+> 📘 文中用到的 MppCtx、MppApi、MpiCmd、MppParam、MppEncCfg、MppBuffer、MppFrame、MppPacket、MppMeta 等类型是什么，见补充说明 [guide/07_MPP核心数据类型.md](guide/07_MPP核心数据类型.md)。
+
 > 照着 [guide/06_本项目中用的mpp_函数.md](guide/06_本项目中用的mpp_函数.md) 的思路，把官方示例 `mpi_enc_test.c` 里用到的函数也分门别类整理一遍。
 > 源码：`rk_code/external/mpp/test/mpi_enc_test.c`（1095 行，`demo_code_mmp/test/mpi_enc_test.c` 是同一份）。行号以当前这份为准。
 > 标记：✅ = 我们的 `main.cpp` 也用了；➕ = `main.cpp` 没用，是官方示例多出来的。
