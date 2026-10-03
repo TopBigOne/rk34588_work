@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
     mpp_enc_cfg_set_s32(cfg, "rc:fps_out_num", a.fps);
     mpp_enc_cfg_set_s32(cfg, "rc:fps_out_denom", 1);
     // 码率控制的上下 限窄（±1/16）
-    mpp_enc_cfg_set_s32(cfg, "rc:bps_target", a.bps);
+    CHECK(mpp_enc_cfg_set_s32(cfg, "rc:bps_target", a.bps));
     mpp_enc_cfg_set_s32(cfg, "rc:bps_max", a.bps * 17 / 16);
     mpp_enc_cfg_set_s32(cfg, "rc:bps_min", bpsMin);
 
