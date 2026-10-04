@@ -170,12 +170,13 @@ CLion 顶部，运行配置下拉框（`debug_rk_usb`）的**左边**，就是 D
 
 | 想看什么 | 断点位置 | 看哪些变量 |
 |---|---|---|
-| 参数解析对不对 | `parse_args` 返回之后（`main` 里 `Args a;` 下面） | `a.width`、`a.type`、`a.rcMode`、`a.gop` |
-| stride 和缓冲区大小 | 变量声明区之后 | `horStride`、`verStride`、`mppFrameBufSize` |
-| 一帧有没有读进来 | `read_nv12_frame` 里 | `row`、`readSize`、`dst` |
-| 每一帧送进编码器前 | `encode_put_frame` 那一行 | `encodedFrameCount`、`inputEos` |
-| 每个码流包 | `encode_get_packet` 的下一行 | `packetLength`、`outputEos`、`isIntra` |
-| 出错退出时 | `CLEANUP:` 下面第一行 | 哪些资源已经申请了（非 `nullptr`） |
+| 参数解析对不对 | `src/app/args.cpp`：`parse_args` 最后的 `return true;`，或 `main` 里 `Args a;` 下面的 `if` 之后 | `a.width`、`a.type`、`a.rcMode`、`a.gop` |
+| stride 和缓冲区大小 | `src/source/read_yuv.cpp`：`ReadYUV::prepare` 里 `mppFrameBufSize` 算完之后 | `horStride`、`verStride`、`mppFrameBufSize` |
+| 编码参数设得对不对 | `src/encoder/mpp_encoder.cpp`：`init()` 里 `MPP_ENC_SET_CFG` 那一行 | `cfg.bps`、`cfg.gop`、`horStride_`、`verStride_` |
+| 一帧有没有读进来 | `src/source/read_yuv.cpp`：`ReadYUV::read_nv12_rows` 里 | `row`、`readSize`、`dst`、`width_`、`height_` |
+| 每一帧送进编码器前 | `src/encoder/mpp_encoder.cpp`：`encode()` 里 `encode_put_frame` 那一行 | `inputEos`、`frameBuffer`；`bt` 看是第几帧（`up` 到 `EncodePipeline::encode_all_frames` 看 `stats_.encodedFrameCount_`） |
+| 每个码流包 | `src/pipeline/encode_pipeline.cpp`：`encode_all_frames` 里 `outputEos = packet.eos;` 那一行 | `packet.data.size()`、`packet.isKeyFrame`、`packet.eos` |
+| 出错退出时 | 打印 `[FAIL]` 的那个 `return` | 断点停住后 `bt` 看是哪一步失败；`return` 之后 RAII 对象会依次析构，可以 `step` 进析构函数看释放顺序 |
 
 ---
 
@@ -194,10 +195,10 @@ cd /Users/dev/Documents/AV/rk_work/day1_yuv2h264
   -ex "file cmake-build-rk3588-debug/day1_yuv2h264" \
   -ex "target remote localhost:1234"
 
-(gdb) break main.cpp:393        # 打断点（行号以当前 main.cpp 为准）
+(gdb) break mpp_encoder.cpp:154  # 打断点：encode_put_frame 那一行（行号以当前代码为准）
 (gdb) continue                  # 运行到断点
-(gdb) print horStride           # 看变量
-(gdb) print a.streamOutputPath
+(gdb) print cfg_.type           # 看变量（在成员函数里，成员变量直接写名字）
+(gdb) print horStride_
 (gdb) next                      # 单步（不进入函数）
 (gdb) step                      # 单步（进入函数）
 (gdb) bt                        # 看调用栈
@@ -207,10 +208,15 @@ cd /Users/dev/Documents/AV/rk_work/day1_yuv2h264
 
 实测输出（2026-10-04）：
 ```
-Thread 1 "day1_yuv2h264" hit Breakpoint 1, main (argc=5, ...) at .../day1_yuv2h264/main.cpp:393
-393	        CHECK(encoderApi->encode_put_frame(encoderCtx, inputFrame));
+Thread 1 "day1_yuv2h264" hit Breakpoint 1, MppEncoder::encode (this=0x7ffffff528, frameBuffer=0x5555585fe8, inputEos=false, packet=...) at .../src/encoder/mpp_encoder.cpp:154
+154	    CHECK(encoderApi_->encode_put_frame(encoderCtx_, inputFrame.get()));
 $1 = MPP_VIDEO_CodingHEVC
-$2 = 0x7ffffffa62 "/userdata/av/dbg.h265"
+$2 = 1920
+(gdb) bt
+#0  MppEncoder::encode (...) at .../src/encoder/mpp_encoder.cpp:154
+#1  EncodePipeline::encode_all_frames (this=...) at .../src/pipeline/encode_pipeline.cpp:54
+#2  EncodePipeline::run (this=...) at .../src/pipeline/encode_pipeline.cpp:18
+#3  main (argc=5, argv=...) at .../src/main.cpp:77
 [Inferior 1 (process 2333) exited normally]
 ```
 

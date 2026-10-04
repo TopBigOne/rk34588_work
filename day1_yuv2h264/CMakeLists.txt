@@ -27,10 +27,28 @@ project(day1_yuv2h264)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 生成一个可执行文件：目标名 day1_yuv2h264，源文件 main.cpp
+# 生成一个可执行文件：目标名 day1_yuv2h264，源文件都在 src/ 下，按功能分目录：
+#   src/main.cpp     只负责"组装"
+#   src/app/         解析命令行参数
+#   src/encoder/     MppEncoder：MPP 硬件编码器
+#   src/source/      输入：FrameSource 接口 + ReadYUV（NV12 文件）；Day 3 的摄像头输入也放这里
+#   src/sink/        输出：StreamSink 接口 + WriteStream（码流文件）；以后的推流也放这里
+#   src/pipeline/    EncodePipeline（流程骨架）+ EncodeStats（统计）
+#   src/common/      公共工具：ALIGN、MPP_CHECK、RAII 句柄（只有头文件）
 # 编译结果：cmake-build-rk3588-debug/day1_yuv2h264
-# 以后整理成 MppEncoder 类时，在这里加上 src/mpp_encoder.cpp
-add_executable(day1_yuv2h264 main.cpp)
+add_executable(day1_yuv2h264
+    src/main.cpp
+    src/app/args.cpp
+    src/encoder/mpp_encoder.cpp
+    src/source/read_yuv.cpp
+    src/sink/write_stream.cpp
+    src/pipeline/encode_pipeline.cpp
+    src/pipeline/encode_stats.cpp)
+
+# 头文件搜索目录加上 src/：所有 #include 都写成相对 src/ 的路径，比如 #include "encoder/mpp_encoder.h"，
+# 一眼就能看出头文件在哪个目录，不同目录里有同名文件也不会冲突
+# PRIVATE：只有这个目标自己用
+target_include_directories(day1_yuv2h264 PRIVATE src)
 
 
 # 交叉编译到 RK3588 时（用了 rk3588-toolchain.cmake），链接 MPP 硬件编解码库

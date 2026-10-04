@@ -4,6 +4,12 @@
 
 > `main.cpp` 一共用到了 **34 个** MPP 函数 / 接口，按"它在管什么"分成 7 类。
 > 行号对应提交 `9d4841f` 的 `main.cpp`；函数原型来自 `rk_code/external/mpp/inc/` 下的头文件。
+>
+> ⚠️ 之后代码整理成了 `MppEncoder` 类 + RAII，函数还是这些，只是搬了家（下表的行号仍以 `9d4841f` 为准）：
+> - 第 1～3、7 类（实例、control、编码参数、送帧取包）和 MppFrame / MppPacket / MppMeta → `src/encoder/mpp_encoder.cpp`
+> - 第 4 类（内存池、缓冲区、sync）→ `src/source/read_yuv.cpp`（`ReadYUV::prepare` / `read_frame`）
+> - 取 SPS/PPS 的容器从 `mpp_packet_init_with_buffer`（DRM 缓冲区）改成了 `mpp_packet_init`（普通内存），所以只申请 1 块 DRM 缓冲区
+> - 释放从 `CLEANUP` 改成了 RAII，见第 8 节
 > 相关文档：[MppPacket和MppFrame的用法和区别.md](../MppPacket和MppFrame的用法和区别.md)、[nv12中yuv分布效果图和读取方式.md](../nv12中yuv分布效果图和读取方式.md)
 
 ---
@@ -205,16 +211,19 @@ mpp_packet_deinit(&packet);
 
 ## 8. 申请和释放一一对应
 
-每个"申请"都要有一个对应的"释放"，`CLEANUP` 里倒着来：
+每个"申请"都要有一个对应的"释放"。现在的代码用 RAII 自动配对：申请到的句柄马上交给一个对象，对象析构时调用对应的释放函数。
 
-| 申请 | 释放 | CLEANUP 行号 |
-|---|---|:---:|
-| `mpp_frame_init` | `mpp_frame_deinit` | 310 |
-| `mpp_packet_init_with_buffer` / `encode_get_packet` 拿到的 | `mpp_packet_deinit` | 313 |
-| `mpp_enc_cfg_init` | `mpp_enc_cfg_deinit` | 316 |
-| `mpp_create` | `mpp_destroy` | 319 |
-| `mpp_buffer_get` | `mpp_buffer_put` | 322、325 |
-| `mpp_buffer_group_get_internal` | `mpp_buffer_group_put` | 329 |
+| 申请 | 释放 | 谁负责释放 |
+|---|---|---|
+| `mpp_frame_init` | `mpp_frame_deinit` | `MppFramePtr`（`src/common/mpp_utils.h`），`encode()` 返回时 |
+| `mpp_packet_init` / `encode_get_packet` 拿到的 | `mpp_packet_deinit` | `MppPacketPtr`，`get_header()` / `encode()` 返回时 |
+| `mpp_enc_cfg_init` | `mpp_enc_cfg_deinit` | `MppEncoder` 析构函数 |
+| `mpp_create` | `mpp_destroy` | `MppEncoder` 析构函数 |
+| `mpp_buffer_get` | `mpp_buffer_put` | `MppBufferPtr`（`ReadYUV` 的成员），`ReadYUV` 析构时 |
+| `mpp_buffer_group_get_internal` | `mpp_buffer_group_put` | `MppBufferGroupPtr`（`ReadYUV` 的成员），`ReadYUV` 析构时 |
+| `fopen` | `fclose` | `FilePtr`（`ReadYUV` / `WriteStream` 的成员），析构时 |
+
+顺序靠 C++ 的规则保证：**变量按声明的相反顺序析构**（局部变量、类的成员变量都一样）。`main` 里按"输入 → 输出 → 编码器"声明，析构时编码器最先销毁；`ReadYUV` 的成员按"文件 → 内存池 → 缓冲区"声明，析构时缓冲区一定在内存池之前 put。
 
 **命名规律**：`init` ↔ `deinit`，`create` ↔ `destroy`，`get` ↔ `put`。看到左边的，就要想到右边的。
 
@@ -235,14 +244,14 @@ mpp_packet_deinit(&packet);
  mpp_buffer_get_ptr
 
 【每一帧】 while (!pktEos)
- sync_begin ─→ read_nv12_frame ─→ sync_end                                  ④ 内存
+ sync_begin ─→ ReadYUV::read_frame ─→ sync_end                              ④ 内存
  mpp_frame_init ─→ set_width/height/stride/fmt/eos/buffer                   ⑤ 图像
  encode_put_frame ─→ mpp_frame_deinit                                       ⑦ 送
  encode_get_packet ─→ get_length / get_eos / meta ─→ fwrite ─→ packet_deinit ⑦⑥ 取
 
-【收尾】 CLEANUP
- frame_deinit ─→ packet_deinit ─→ enc_cfg_deinit ─→ mpp_destroy
-   ─→ buffer_put × 2 ─→ buffer_group_put ─→ fclose × 2
+【收尾】 RAII 自动释放（main 返回时，按声明的相反顺序）
+ enc_cfg_deinit ─→ mpp_destroy（MppEncoder 析构）
+   ─→ fclose 输出（WriteStream 析构）─→ buffer_put ─→ buffer_group_put ─→ fclose 输入（ReadYUV 析构）
 ```
 
 ---
@@ -253,5 +262,5 @@ mpp_packet_deinit(&packet);
 - `MPP_OK`（0）：成功
 - 负数：失败，比如 `MPP_NOK`（-1）、`MPP_ERR_NULL_PTR`、`MPP_ERR_VALUE`
 
-main.cpp 用 `CHECK(...)` 包起来：不等于 `MPP_OK` 就打印出错的那一句和返回值，然后 `goto CLEANUP`。
+代码里用 `CHECK(...)`（基于 `src/common/mpp_utils.h` 的 `MPP_CHECK`）包起来：不等于 `MPP_OK` 就打印出错的那一句和返回值，然后直接 `return`（`MppEncoder` 里 `return false`，`main` 里 `return -1`）。已经申请的资源都在 RAII 对象里，`return` 时自动释放。
 **不返回 `MPP_RET` 的**（返回 `void` 或数值）：`mpp_frame_set_*`、`mpp_packet_set_length`、`mpp_packet_get_*`、`mpp_buffer_get_ptr`，这些不需要 `CHECK`。

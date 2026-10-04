@@ -41,9 +41,9 @@
 | ① | **开一台编码机** | 找一家印刷厂 | `mpp_create` → `mpp_init` | M1 |
 | ② | **告诉它要什么效果** | 填订单：尺寸、码率、格式 | `mpp_enc_cfg_set_s32` × N → `MPP_ENC_SET_CFG` | M1 |
 | ③ | **要一份"说明书"写在文件开头** | 先拿解码说明 | `MPP_ENC_GET_HDR_SYNC` → `fwrite`（SPS/PPS，40 字节） | M2 |
-| ④ | **把照片放进机器能拿到的地方** | 放进专用托盘 | `mpp_buffer_get` → `read_nv12_frame`（逐行）→ `sync_end` | M2 / M3 |
+| ④ | **把照片放进机器能拿到的地方** | 放进专用托盘 | `mpp_buffer_get` → `ReadYUV::read_frame`（逐行）→ `sync_end` | M2 / M3 |
 | ⑤ | **送进去，拿出来** | 交给机器，取回成品 | `mpp_frame_init` → `encode_put_frame` → `encode_get_packet` → `fwrite` | M3 / M4 |
-| ⑥ | **收拾干净** | 关机、还托盘 | `CLEANUP`：deinit / destroy / put / fclose | 每一步 |
+| ⑥ | **收拾干净** | 关机、还托盘 | RAII：`MppEncoder` 析构 + `src/common/mpp_utils.h` 的 `XxxPtr` 句柄，离开作用域自动 deinit / destroy / put / fclose | 每一步 |
 
 M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码器"没有了"。
 
@@ -53,9 +53,9 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 |---|---|
 | `hor_stride` / `ver_stride` | 硬件按 16 对齐：1080 要补成 1088 |
 | `mpp_buffer_get`（不用 `malloc`） | 硬件通过 DMA 读内存，只能读 DRM 内存 |
-| `read_nv12_frame` 逐行读 | 文件里紧密排列，缓冲区里每行、每个平面都有填充，要一行一行摆到对的位置 |
+| `ReadYUV::read_frame` 逐行读 | 文件里紧密排列，缓冲区里每行、每个平面都有填充，要一行一行摆到对的位置 |
 | `sync_begin` / `sync_end` | CPU 写的数据可能还在缓存里，刷下去硬件才看得到 |
-| `CHECK` + `goto CLEANUP` | 任何一步失败，直接跳到最后统一释放 |
+| RAII（`MppEncoder`、`FilePtr`、`MppBufferPtr` ……） | 任何一步失败直接 `return`，已经申请的资源自动释放，不会漏、不会重复 |
 
 ---
 
@@ -66,10 +66,10 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 | M1 | 编码器初始化 | ✅ |
 | M2 | 取 SPS/PPS 写入文件 | ✅ |
 | M3 | 编码 1 帧 | ✅ |
-| M4 | 编完 60 帧，处理 EOS | ⬜ |
-| M5 | 命令行参数（`-t h265` 等） | ⬜ |
-| M6 | 统计汇总 | ⬜ |
-| — | 整理成 `MppEncoder` 类 | ⬜ |
+| M4 | 编完 60 帧，处理 EOS | ✅ |
+| M5 | 命令行参数（`-t h265` 等） | ✅ |
+| M6 | 统计汇总 | ✅ |
+| — | 整理成 `MppEncoder` 类（`src/encoder/mpp_encoder.*`，RAII） | ✅ |
 | — | 实验 | ⬜ |
 
 ---

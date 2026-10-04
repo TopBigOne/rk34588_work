@@ -1,6 +1,6 @@
 # fread 和 fwrite 的详细用法
 
-> 结合 day1_yuv2h264 里用到的地方来讲：`read_nv12_frame()` 读 NV12，`fwrite` 写 SPS/PPS 和码流。
+> 结合 day1_yuv2h264 里用到的地方来讲：`read_nv12_frame()` 读 NV12（现在封装成了 `src/source/read_yuv.cpp` 的 `ReadYUV::read_frame()`，读法一样），`fwrite` 写 SPS/PPS 和码流。
 
 ---
 
