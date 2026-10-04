@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="610" viewBox="0 0 1060 610">
+<title>NV12 硬件缓冲区布局（6×4，stride 8×6）</title>
+<defs>
+  <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="6" height="6" fill="#F1F1F1"/><line x1="0" y1="0" x2="0" y2="6" stroke="#C4C4C4" stroke-width="2.2"/>
+  </pattern>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="1060" height="610" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >硬件缓冲区 frmBuf 里的 NV12（6×4，假设 hor_stride = 8、ver_stride = 6；▨ = 填充）</text>
+<path d="M270,92 L270,98 L606,98 L606,92" stroke="#333" stroke-width="1.2" fill="none"/>
+<text x="438.0" y="88" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >width = 6</text>
+<path d="M270,64 L270,70 L718,70 L718,64" stroke="#B23" stroke-width="1.2" fill="none"/>
+<text x="494.0" y="60" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#B23" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >hor_stride = 8 字节（每一行占的字节数）</text>
+<text x="256" y="128.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >Y 第 0 行</text>
+<rect x="270" y="110" width="56" height="36" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="298.0" y="129.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y00</text>
+<rect x="326" y="110" width="56" height="36" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="354.0" y="129.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y01</text>
+<rect x="382" y="110" width="56" height="36" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="410.0" y="129.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y02</text>
+<rect x="438" y="110" width="56" height="36" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="466.0" y="129.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y03</text>
+<rect x="494" y="110" width="56" height="36" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="522.0" y="129.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y04</text>
+<rect x="550" y="110" width="56" height="36" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="578.0" y="129.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y05</text>
+<rect x="606" y="110" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="110" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="128.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 0</text>
+<text x="256" y="164.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >Y 第 1 行</text>
+<rect x="270" y="146" width="56" height="36" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="298.0" y="165.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y10</text>
+<rect x="326" y="146" width="56" height="36" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="354.0" y="165.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y11</text>
+<rect x="382" y="146" width="56" height="36" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="410.0" y="165.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y12</text>
+<rect x="438" y="146" width="56" height="36" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="466.0" y="165.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y13</text>
+<rect x="494" y="146" width="56" height="36" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="522.0" y="165.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y14</text>
+<rect x="550" y="146" width="56" height="36" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="578.0" y="165.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y15</text>
+<rect x="606" y="146" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="146" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="164.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 8</text>
+<text x="256" y="200.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >Y 第 2 行</text>
+<rect x="270" y="182" width="56" height="36" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="298.0" y="201.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y20</text>
+<rect x="326" y="182" width="56" height="36" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="354.0" y="201.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y21</text>
+<rect x="382" y="182" width="56" height="36" rx="0" fill="#F9DDE6" stroke="#666" stroke-width="1" />
+<text x="410.0" y="201.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y22</text>
+<rect x="438" y="182" width="56" height="36" rx="0" fill="#F9DDE6" stroke="#666" stroke-width="1" />
+<text x="466.0" y="201.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y23</text>
+<rect x="494" y="182" width="56" height="36" rx="0" fill="#E4EDD3" stroke="#666" stroke-width="1" />
+<text x="522.0" y="201.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y24</text>
+<rect x="550" y="182" width="56" height="36" rx="0" fill="#E4EDD3" stroke="#666" stroke-width="1" />
+<text x="578.0" y="201.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y25</text>
+<rect x="606" y="182" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="182" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="200.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 16</text>
+<text x="256" y="236.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >Y 第 3 行</text>
+<rect x="270" y="218" width="56" height="36" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="298.0" y="237.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y30</text>
+<rect x="326" y="218" width="56" height="36" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="354.0" y="237.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y31</text>
+<rect x="382" y="218" width="56" height="36" rx="0" fill="#F9DDE6" stroke="#666" stroke-width="1" />
+<text x="410.0" y="237.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y32</text>
+<rect x="438" y="218" width="56" height="36" rx="0" fill="#F9DDE6" stroke="#666" stroke-width="1" />
+<text x="466.0" y="237.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y33</text>
+<rect x="494" y="218" width="56" height="36" rx="0" fill="#E4EDD3" stroke="#666" stroke-width="1" />
+<text x="522.0" y="237.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y34</text>
+<rect x="550" y="218" width="56" height="36" rx="0" fill="#E4EDD3" stroke="#666" stroke-width="1" />
+<text x="578.0" y="237.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y35</text>
+<rect x="606" y="218" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="218" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="236.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 24</text>
+<text x="256" y="272.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >第 4 行（填充）</text>
+<rect x="270" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="326" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="382" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="438" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="494" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="550" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="606" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="254" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="272.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 32</text>
+<text x="256" y="308.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >第 5 行（填充）</text>
+<rect x="270" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="326" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="382" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="438" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="494" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="550" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="606" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="290" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="308.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 40</text>
+<path d="M812,110 L818,110 L818,254 L812,254" stroke="#2F5D9A" stroke-width="1.2" fill="none"/>
+<text x="826" y="182.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="start" font-weight="normal" dominant-baseline="middle" >height = 4 行有效</text>
+<path d="M812,254 L818,254 L818,326 L812,326" stroke="#8A8A8A" stroke-width="1.2" fill="none"/>
+<text x="826" y="290.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="start" font-weight="normal" dominant-baseline="middle" >ver_stride − height = 2 行填充</text>
+<path d="M151,110 L145,110 L145,326 L151,326" stroke="#B23" stroke-width="1.2" fill="none"/>
+<text x="137" y="218.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#B23" text-anchor="end" font-weight="normal" dominant-baseline="middle" >ver_stride = 6 行</text>
+<text x="256" y="360.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2E7D32" text-anchor="end" font-weight="normal" dominant-baseline="middle" >UV 第 0 行</text>
+<rect x="270" y="342" width="56" height="36" rx="0" fill="#DCE9F7" stroke="#3E6FB0" stroke-width="1.5" />
+<text x="298.0" y="361.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U00</text>
+<rect x="326" y="342" width="56" height="36" rx="0" fill="#DCE9F7" stroke="#3E6FB0" stroke-width="1.5" />
+<text x="354.0" y="361.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V00</text>
+<rect x="382" y="342" width="56" height="36" rx="0" fill="#E9DFF7" stroke="#7A55B3" stroke-width="1.5" />
+<text x="410.0" y="361.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U01</text>
+<rect x="438" y="342" width="56" height="36" rx="0" fill="#E9DFF7" stroke="#7A55B3" stroke-width="1.5" />
+<text x="466.0" y="361.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V01</text>
+<rect x="494" y="342" width="56" height="36" rx="0" fill="#D6F0EC" stroke="#2A8C80" stroke-width="1.5" />
+<text x="522.0" y="361.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U02</text>
+<rect x="550" y="342" width="56" height="36" rx="0" fill="#D6F0EC" stroke="#2A8C80" stroke-width="1.5" />
+<text x="578.0" y="361.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V02</text>
+<rect x="606" y="342" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="342" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="360.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 48</text>
+<text x="256" y="396.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2E7D32" text-anchor="end" font-weight="normal" dominant-baseline="middle" >UV 第 1 行</text>
+<rect x="270" y="378" width="56" height="36" rx="0" fill="#FCEFD0" stroke="#B8860B" stroke-width="1.5" />
+<text x="298.0" y="397.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U10</text>
+<rect x="326" y="378" width="56" height="36" rx="0" fill="#FCEFD0" stroke="#B8860B" stroke-width="1.5" />
+<text x="354.0" y="397.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V10</text>
+<rect x="382" y="378" width="56" height="36" rx="0" fill="#F9DDE6" stroke="#B5476E" stroke-width="1.5" />
+<text x="410.0" y="397.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U11</text>
+<rect x="438" y="378" width="56" height="36" rx="0" fill="#F9DDE6" stroke="#B5476E" stroke-width="1.5" />
+<text x="466.0" y="397.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V11</text>
+<rect x="494" y="378" width="56" height="36" rx="0" fill="#E4EDD3" stroke="#6B8E23" stroke-width="1.5" />
+<text x="522.0" y="397.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U12</text>
+<rect x="550" y="378" width="56" height="36" rx="0" fill="#E4EDD3" stroke="#6B8E23" stroke-width="1.5" />
+<text x="578.0" y="397.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V12</text>
+<rect x="606" y="378" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="378" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="396.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 56</text>
+<text x="256" y="432.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="end" font-weight="normal" dominant-baseline="middle" >UV 第 2 行（填充）</text>
+<rect x="270" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="326" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="382" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="438" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="494" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="550" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="606" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<rect x="662" y="414" width="56" height="36" rx="0" fill="url(#hatch)" stroke="#B0B0B0" stroke-width="1" />
+<text x="732" y="432.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >偏移 64</text>
+<path d="M812,342 L818,342 L818,414 L812,414" stroke="#2E7D32" stroke-width="1.2" fill="none"/>
+<text x="826" y="378.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2E7D32" text-anchor="start" font-weight="normal" dominant-baseline="middle" >height/2 = 2 行有效</text>
+<path d="M812,414 L818,414 L818,450 L812,450" stroke="#8A8A8A" stroke-width="1.2" fill="none"/>
+<text x="826" y="432.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="start" font-weight="normal" dominant-baseline="middle" >填充（UV 也有 ver_stride/2 = 3 行）</text>
+<line x1="264" y1="342" x2="724" y2="342" stroke="#D32F2F" stroke-width="2" stroke-dasharray="6,3"/>
+<text x="494.0" y="478" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#D32F2F" text-anchor="middle" font-weight="bold" dominant-baseline="middle" >UV 起点 = hor_stride × ver_stride = 8 × 6 = 48（不是 width × height = 24）</text>
+<rect x="30" y="514" width="1000" height="76" rx="6" fill="#F7F7F7" stroke="#E0E0E0" stroke-width="1" />
+<text x="48" y="536" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >和文件相比有两处不一样：</text>
+<text x="48" y="558" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle" >① 每行末尾多了 hor_stride − width 个填充字节 → 第 row 行的起点是 row × hor_stride，不是 row × width</text>
+<text x="48" y="578" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle" >② Y 平面多了 ver_stride − height 行填充 → UV 平面的起点是 hor_stride × ver_stride，不是 width × height</text>
+</svg>

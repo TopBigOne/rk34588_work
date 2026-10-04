@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="430" viewBox="0 0 880 430">
+<title>YUV 4:2:0 采样</title>
+<defs>
+  <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="6" height="6" fill="#F1F1F1"/><line x1="0" y1="0" x2="0" y2="6" stroke="#C4C4C4" stroke-width="2.2"/>
+  </pattern>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="880" height="430" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >YUV 4:2:0：每个像素一个 Y，每 2×2 = 4 个像素共用一个 U 和一个 V</text>
+<text x="178" y="66" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >一张 4×4 的图（16 个像素）</text>
+<rect x="50" y="90" width="64" height="52" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="82.0" y="117.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y00</text>
+<rect x="114" y="90" width="64" height="52" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="146.0" y="117.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y01</text>
+<rect x="178" y="90" width="64" height="52" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="210.0" y="117.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y02</text>
+<rect x="242" y="90" width="64" height="52" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="274.0" y="117.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y03</text>
+<rect x="50" y="142" width="64" height="52" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="82.0" y="169.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y10</text>
+<rect x="114" y="142" width="64" height="52" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="146.0" y="169.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y11</text>
+<rect x="178" y="142" width="64" height="52" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="210.0" y="169.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y12</text>
+<rect x="242" y="142" width="64" height="52" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<text x="274.0" y="169.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y13</text>
+<rect x="50" y="194" width="64" height="52" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="82.0" y="221.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y20</text>
+<rect x="114" y="194" width="64" height="52" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="146.0" y="221.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y21</text>
+<rect x="178" y="194" width="64" height="52" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="210.0" y="221.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y22</text>
+<rect x="242" y="194" width="64" height="52" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="274.0" y="221.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y23</text>
+<rect x="50" y="246" width="64" height="52" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="82.0" y="273.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y30</text>
+<rect x="114" y="246" width="64" height="52" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<text x="146.0" y="273.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y31</text>
+<rect x="178" y="246" width="64" height="52" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="210.0" y="273.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y32</text>
+<rect x="242" y="246" width="64" height="52" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="274.0" y="273.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y33</text>
+<rect x="50" y="90" width="128" height="104" rx="0" fill="none" stroke="#3E6FB0" stroke-width="3" />
+<rect x="178" y="90" width="128" height="104" rx="0" fill="none" stroke="#7A55B3" stroke-width="3" />
+<rect x="50" y="194" width="128" height="104" rx="0" fill="none" stroke="#2A8C80" stroke-width="3" />
+<rect x="178" y="194" width="128" height="104" rx="0" fill="none" stroke="#B8860B" stroke-width="3" />
+<text x="178" y="322" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >同一种底色的 4 个像素 = 一组，共用一对 U、V</text>
+<line x1="326" y1="194" x2="386" y2="194" stroke="#777" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="416" y="66" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle" >要存的数据</text>
+<text x="416" y="104" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#2F5D9A" text-anchor="start" font-weight="bold" dominant-baseline="middle" >Y：16 个</text>
+<rect x="496" y="90" width="22" height="28" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<rect x="518" y="90" width="22" height="28" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<rect x="540" y="90" width="22" height="28" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<rect x="562" y="90" width="22" height="28" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<rect x="584" y="90" width="22" height="28" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<rect x="606" y="90" width="22" height="28" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<rect x="628" y="90" width="22" height="28" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<rect x="650" y="90" width="22" height="28" rx="0" fill="#E9DFF7" stroke="#666" stroke-width="1" />
+<rect x="672" y="90" width="22" height="28" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<rect x="694" y="90" width="22" height="28" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<rect x="716" y="90" width="22" height="28" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<rect x="738" y="90" width="22" height="28" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<rect x="760" y="90" width="22" height="28" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<rect x="782" y="90" width="22" height="28" rx="0" fill="#D6F0EC" stroke="#666" stroke-width="1" />
+<rect x="804" y="90" width="22" height="28" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<rect x="826" y="90" width="22" height="28" rx="0" fill="#FCEFD0" stroke="#666" stroke-width="1" />
+<text x="672" y="134" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#666" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >每个像素 1 个，共 4 × 4 = 16 字节</text>
+<text x="416" y="194" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#2E7D32" text-anchor="start" font-weight="bold" dominant-baseline="middle" >U：4 个</text>
+<rect x="496" y="180" width="64" height="28" rx="0" fill="#DCE9F7" stroke="#3E6FB0" stroke-width="2" />
+<text x="528.0" y="195.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U00</text>
+<rect x="566" y="180" width="64" height="28" rx="0" fill="#E9DFF7" stroke="#7A55B3" stroke-width="2" />
+<text x="598.0" y="195.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U01</text>
+<rect x="636" y="180" width="64" height="28" rx="0" fill="#D6F0EC" stroke="#2A8C80" stroke-width="2" />
+<text x="668.0" y="195.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U10</text>
+<rect x="706" y="180" width="64" height="28" rx="0" fill="#FCEFD0" stroke="#B8860B" stroke-width="2" />
+<text x="738.0" y="195.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U11</text>
+<text x="416" y="254" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#C25A12" text-anchor="start" font-weight="bold" dominant-baseline="middle" >V：4 个</text>
+<rect x="496" y="240" width="64" height="28" rx="0" fill="#DCE9F7" stroke="#3E6FB0" stroke-width="2" />
+<text x="528.0" y="255.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V00</text>
+<rect x="566" y="240" width="64" height="28" rx="0" fill="#E9DFF7" stroke="#7A55B3" stroke-width="2" />
+<text x="598.0" y="255.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V01</text>
+<rect x="636" y="240" width="64" height="28" rx="0" fill="#D6F0EC" stroke="#2A8C80" stroke-width="2" />
+<text x="668.0" y="255.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V10</text>
+<rect x="706" y="240" width="64" height="28" rx="0" fill="#FCEFD0" stroke="#B8860B" stroke-width="2" />
+<text x="738.0" y="255.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V11</text>
+<text x="636" y="290" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#666" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >每组 1 个 U、1 个 V，共 (4/2) × (4/2) = 4 组</text>
+<rect x="30" y="340" width="820" height="64" rx="6" fill="#F7F7F7" stroke="#E0E0E0" stroke-width="1" />
+<text x="50" y="360" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="14" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >合计：16 (Y) + 4 (U) + 4 (V) = 24 字节 = 16 × 3/2</text>
+<text x="50" y="386" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle" >1920×1080：Y = 2,073,600，U = V = 518,400，一帧共 1920 × 1080 × 3/2 = 3,110,400 字节（代码里 × 3 / 2 的来历）</text>
+</svg>

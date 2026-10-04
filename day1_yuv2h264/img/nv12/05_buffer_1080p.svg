@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="724.0" viewBox="0 0 980 724.0">
+<title>NV12 硬件缓冲区布局（1920×1080）</title>
+<defs>
+  <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="6" height="6" fill="#F1F1F1"/><line x1="0" y1="0" x2="0" y2="6" stroke="#C4C4C4" stroke-width="2.2"/>
+  </pattern>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="980" height="724.0" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >1920×1080 在硬件缓冲区里：hor_stride = 1920，ver_stride = 1088（填充行为了看清楚放大画了）</text>
+<path d="M300,64 L300,70 L600,70 L600,64" stroke="#444" stroke-width="1.2" fill="none"/>
+<text x="450.0" y="60" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >hor_stride = width = 1920（1920 是 16 的倍数，行尾没有填充）</text>
+<rect x="300" y="80" width="300" height="324.0" rx="0" fill="#DCE9F7" stroke="#2F5D9A" stroke-width="1.5" />
+<text x="450.0" y="230.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle" >Y 平面</text>
+<text x="450.0" y="254.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >第 0 ～ 1079 行（从文件读进来）</text>
+<rect x="300" y="404.0" width="300" height="26" fill="url(#hatch)" stroke="#999"/>
+<text x="450.0" y="417.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >第 1080 ～ 1087 行：填充（不读不写）</text>
+<rect x="300" y="430.0" width="300" height="162.0" rx="0" fill="#D8F0D2" stroke="#2E7D32" stroke-width="1.5" />
+<text x="450.0" y="499.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle" >UV 平面（UVUVUV…）</text>
+<text x="450.0" y="523.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >UV 第 0 ～ 539 行（从文件读进来）</text>
+<rect x="300" y="592.0" width="300" height="16" fill="url(#hatch)" stroke="#999"/>
+<text x="450.0" y="600.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >UV 填充 4 行</text>
+<line x1="290" y1="80" x2="300" y2="80" stroke="#333" stroke-width="1.2"/>
+<text x="286" y="80" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#333" text-anchor="end" font-weight="normal" dominant-baseline="middle" >偏移 0</text>
+<line x1="290" y1="404.0" x2="300" y2="404.0" stroke="#333" stroke-width="1.2"/>
+<text x="286" y="404.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#333" text-anchor="end" font-weight="normal" dominant-baseline="middle" >偏移 2,073,600</text>
+<line x1="290" y1="430.0" x2="300" y2="430.0" stroke="#D32F2F" stroke-width="1.2"/>
+<text x="286" y="430.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#D32F2F" text-anchor="end" font-weight="bold" dominant-baseline="middle" >偏移 2,088,960</text>
+<line x1="290" y1="592.0" x2="300" y2="592.0" stroke="#333" stroke-width="1.2"/>
+<text x="286" y="592.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#333" text-anchor="end" font-weight="normal" dominant-baseline="middle" >偏移 3,125,760</text>
+<line x1="290" y1="608.0" x2="300" y2="608.0" stroke="#333" stroke-width="1.2"/>
+<text x="286" y="608.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#333" text-anchor="end" font-weight="normal" dominant-baseline="middle" >偏移 3,133,440</text>
+<text x="286" y="446.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#D32F2F" text-anchor="end" font-weight="normal" dominant-baseline="middle" >= hor_stride × ver_stride（UV 起点）</text>
+<text x="286" y="624.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#777" text-anchor="end" font-weight="normal" dominant-baseline="middle" >= frameSize（1920 × 1088 × 3/2）</text>
+<path d="M608,80 L614,80 L614,404.0 L608,404.0" stroke="#2F5D9A" stroke-width="1.2" fill="none"/>
+<text x="622" y="242.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="start" font-weight="normal" dominant-baseline="middle" >height = 1080 行有效</text>
+<path d="M608,404.0 L614,404.0 L614,430.0 L608,430.0" stroke="#8A8A8A" stroke-width="1.2" fill="none"/>
+<text x="622" y="417.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="start" font-weight="normal" dominant-baseline="middle" >8 行填充 = 15,360 字节</text>
+<path d="M744,80 L750,80 L750,430.0 L744,430.0" stroke="#B23" stroke-width="1.2" fill="none"/>
+<text x="758" y="255.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#B23" text-anchor="start" font-weight="normal" dominant-baseline="middle" >ver_stride = 1088 行</text>
+<path d="M608,430.0 L614,430.0 L614,592.0 L608,592.0" stroke="#2E7D32" stroke-width="1.2" fill="none"/>
+<text x="622" y="511.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2E7D32" text-anchor="start" font-weight="normal" dominant-baseline="middle" >540 行有效</text>
+<path d="M608,592.0 L614,592.0 L614,608.0 L608,608.0" stroke="#8A8A8A" stroke-width="1.2" fill="none"/>
+<text x="622" y="600.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#8A8A8A" text-anchor="start" font-weight="normal" dominant-baseline="middle" >4 行填充（1088/2 − 1080/2）</text>
+<rect x="30" y="648.0" width="920" height="56" rx="6" fill="#FFF4F4" stroke="#F2C9C9" stroke-width="1" />
+<text x="48" y="666.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#D32F2F" text-anchor="start" font-weight="bold" dominant-baseline="middle" >最关键的一个数：UV 在文件里从 2,073,600 开始，在缓冲区里从 2,088,960 开始，差 15,360 字节（8 行）</text>
+<text x="48" y="688.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle" >所以不能把文件整块 fread 进来，必须按 stride 逐行搬（见下一张图）</text>
+</svg>

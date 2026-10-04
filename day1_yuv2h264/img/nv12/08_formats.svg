@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420">
+<title>NV12 / NV21 / I420 对比</title>
+<defs>
+  <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="6" height="6" fill="#F1F1F1"/><line x1="0" y1="0" x2="0" y2="6" stroke="#C4C4C4" stroke-width="2.2"/>
+  </pattern>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="1000" height="420" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >三种常见的 YUV 4:2:0 格式（4×4 的图，都是 24 字节，区别只在 U、V 怎么放）</text>
+<text x="30" y="87.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >NV12</text>
+<text x="30" y="107.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10" fill="#666" text-anchor="start" font-weight="normal" dominant-baseline="middle" >MPP_FMT_YUV420SP</text>
+<rect x="260" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="275.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="290" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="305.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="320" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="335.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="350" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="365.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="380" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="395.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="410" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="425.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="440" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="455.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="470" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="485.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="500" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="515.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="530" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="545.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="560" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="575.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="590" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="605.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="620" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="635.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="650" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="665.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="680" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="695.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="710" y="80" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="725.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="740" y="80" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="755.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="770" y="80" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="785.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="800" y="80" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="815.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="830" y="80" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="845.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="860" y="80" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="875.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="890" y="80" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="905.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="920" y="80" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="935.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="950" y="80" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="965.0" y="96.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<text x="260" y="128" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle" >Y 平面 + UV 交错平面（UVUV）</text>
+<line x1="740" y1="74" x2="740" y2="116" stroke="#D32F2F" stroke-width="2"/>
+<text x="30" y="183.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >NV21</text>
+<text x="30" y="203.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10" fill="#666" text-anchor="start" font-weight="normal" dominant-baseline="middle" >MPP_FMT_YUV420SP_VU</text>
+<rect x="260" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="275.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="290" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="305.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="320" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="335.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="350" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="365.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="380" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="395.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="410" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="425.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="440" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="455.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="470" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="485.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="500" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="515.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="530" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="545.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="560" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="575.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="590" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="605.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="620" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="635.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="650" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="665.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="680" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="695.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="710" y="176" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="725.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="740" y="176" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="755.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="770" y="176" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="785.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="800" y="176" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="815.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="830" y="176" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="845.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="860" y="176" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="875.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="890" y="176" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="905.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="920" y="176" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="935.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="950" y="176" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="965.0" y="192.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<text x="260" y="224" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle" >Y 平面 + VU 交错平面（VUVU）；Android 摄像头常用</text>
+<line x1="740" y1="170" x2="740" y2="212" stroke="#D32F2F" stroke-width="2"/>
+<text x="30" y="279.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle" >I420</text>
+<text x="30" y="299.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10" fill="#666" text-anchor="start" font-weight="normal" dominant-baseline="middle" >MPP_FMT_YUV420P</text>
+<rect x="260" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="275.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="290" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="305.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="320" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="335.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="350" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="365.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="380" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="395.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="410" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="425.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="440" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="455.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="470" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="485.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="500" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="515.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="530" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="545.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="560" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="575.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="590" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="605.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="620" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="635.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="650" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="665.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="680" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="695.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="710" y="272" width="30" height="30" rx="0" fill="#DCE9F7" stroke="#666" stroke-width="1" />
+<text x="725.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y</text>
+<rect x="740" y="272" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="755.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="770" y="272" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="785.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="800" y="272" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="815.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="830" y="272" width="30" height="30" rx="0" fill="#D8F0D2" stroke="#666" stroke-width="1" />
+<text x="845.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >U</text>
+<rect x="860" y="272" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="875.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="890" y="272" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="905.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="920" y="272" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="935.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<rect x="950" y="272" width="30" height="30" rx="0" fill="#FBE1CF" stroke="#666" stroke-width="1" />
+<text x="965.0" y="288.0" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#C25A12" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >V</text>
+<text x="260" y="320" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle" >Y 平面 + U 平面 + V 平面（三个分开）</text>
+<line x1="740" y1="266" x2="740" y2="308" stroke="#D32F2F" stroke-width="2"/>
+<line x1="860" y1="266" x2="860" y2="308" stroke="#D32F2F" stroke-width="2"/>
+<path d="M260,66 L260,72 L740,72 L740,66" stroke="#2F5D9A" stroke-width="1.2" fill="none"/>
+<text x="500.0" y="62" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle" >Y：16 字节（三种格式完全一样）</text>
+<text x="30" y="374" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >SP = Semi-Planar（半平面：Y 一个平面，UV 合在一个平面）；P = Planar（全平面：Y、U、V 三个平面）</text>
+<text x="30" y="396" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="start" font-weight="normal" dominant-baseline="middle" >NV12 和 NV21 读法完全一样，只是 U、V 顺序反了；I420 的 U、V 每行 W/2 字节，行距 hor_stride/2（utils.c 565～592 行）</text>
+</svg>
