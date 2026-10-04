@@ -84,7 +84,7 @@ CLion 2026.2 里，**用哪个调试器由 Debug Profile 决定，并且在主�
 **① 新建 GDB profile**
 **Settings（`Cmd + ,`）→ Build, Execution, Deployment → Debugger → Debug Profiles** → 点 `+` → 选 **GDB**
 
-![Debug Profiles：新建 RK3588-GDB](../img/debug_by_usb/新建_GDB_profile.png)
+<img src="../img/debug_by_usb/新建_GDB_profile.png" alt="Debug Profiles：新建 RK3588-GDB" width="1024">
 
 | 字段 | 填什么 |
 |---|---|
@@ -97,7 +97,7 @@ CLion 2026.2 里，**用哪个调试器由 Debug Profile 决定，并且在主�
 **② 在主工具栏选中这个 profile**
 CLion 顶部，运行配置下拉框（`debug_rk_usb`）的**左边**，就是 Debug Profile 的下拉框，切换成 **`RK3588-GDB`**：
 
-![主工具栏切换 Debug Profile](../img/debug_by_usb/配置debug_profile.png)
+<img src="../img/debug_by_usb/配置debug_profile.png" alt="主工具栏切换 Debug Profile" width="576">
 
 > 这个选择是全局的：之后调试 Mac 本机的程序，要记得切回 `Xcode.app`。
 
@@ -107,7 +107,7 @@ CLion 顶部，运行配置下拉框（`debug_rk_usb`）的**左边**，就是 D
 
 **Run → Edit Configurations… → 左上角 `+` → Shell Script**
 
-![Shell Script 配置 debug_gdbserver_usb](../img/debug_by_usb/debug_gdbserver_usb.png)
+<img src="../img/debug_by_usb/debug_gdbserver_usb.png" alt="Shell Script 配置 debug_gdbserver_usb" width="1024">
 
 | 字段 | 填什么 |
 |---|---|
@@ -126,7 +126,7 @@ CLion 顶部，运行配置下拉框（`debug_rk_usb`）的**左边**，就是 D
 
 **Run → Edit Configurations… → 左上角 `+` → Remote Debug**
 
-![Remote Debug 配置 debug_rk_usb](../img/debug_by_usb/debug_rk_usb.png)
+<img src="../img/debug_by_usb/debug_rk_usb.png" alt="Remote Debug 配置 debug_rk_usb" width="1024">
 
 | 字段 | 填什么 | 说明 |
 |---|---|---|
@@ -148,17 +148,17 @@ CLion 顶部，运行配置下拉框（`debug_rk_usb`）的**左边**，就是 D
 0. **确认主工具栏的 Debug Profile 是 `RK3588-GDB`**（见 4.1 第 ② 步，选一次以后会一直保持）。
 1. **打断点**：比如在 `main.cpp` 里 `CHECK(encoderApi->encode_put_frame(encoderCtx, inputFrame));` 那一行左边点一下，出现红点：
 
-   ![第 1 步：打断点](../img/debug_by_usb/step1_breakpoint.png)
+   <img src="../img/debug_by_usb/step1_breakpoint.png" alt="第 1 步：打断点" width="896">
 
 2. **启动 gdbserver**：右上角选 `debug_gdbserver_usb`，点 ▶。等终端窗口里出现 `Listening on port 1234`，**这个窗口不要关**：
 
-   ![第 2 步：gdbserver 在等 GDB 连上来](../img/debug_by_usb/step2_gdbserver_listening.png)
+   <img src="../img/debug_by_usb/step2_gdbserver_listening.png" alt="第 2 步：gdbserver 在等 GDB 连上来" width="896">
 
    > 这时断点还是普通红点，不会有变化。gdbserver 只是在等，GDB 还没连上去。
 
 3. **连上去调试**：右上角切换成 `debug_rk_usb`，点 🐞。gdbserver 窗口会多一行 `Remote debugging from host 127.0.0.1`，断点上出现 ✓，程序停在断点那一行：
 
-   ![第 3 步：停在断点上，看变量](../img/debug_by_usb/step3_hit_breakpoint.png)
+   <img src="../img/debug_by_usb/step3_hit_breakpoint.png" alt="第 3 步：停在断点上，看变量" width="1024">
 
 4. **看变量**：Debug 窗口的 **Threads & Variables** 里能看到 `horStride = 1920`、`verStride = 1088`、`mppFrameBufSize = 3133440`、`codecName = "h264"`……
    `F8` 单步、`F9` 继续到下一个断点（下一帧会再停一次）。
