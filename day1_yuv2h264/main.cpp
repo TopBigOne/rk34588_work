@@ -44,7 +44,6 @@
 // 用 CHECK 包起来就能立刻看到是哪一行出错（依赖外面有一个叫 cfg 的变量）
 #define CFG_SET(key, val) CHECK(mpp_enc_cfg_set_s32(cfg, key, val))
 
-// M5: 命令行参数，带默认值（不带参数运行就是 1080p30 H.264 CBR 4Mbps）
 struct Args {
     const char* inPath  = "/userdata/av/in_1080p_60f.nv12";
     const char* outPath = "/userdata/av/out.h264";
@@ -200,7 +199,6 @@ int main(int argc, char** argv) {
     const char* typeName = (a.type == MPP_VIDEO_CodingAVC) ? "h264" : "h265";
 
 
-    // ----变量（全部声明在第一个 CHECK 之前，满足 goto 规则）
     // 下面这些 MPP 类型，除了 MppApi 是结构体，其余都是 typedef void*（不透明句柄），所以不写 *
     // 详见 guide/07_MPP核心数据类型.md
     MppCtx ctx    = nullptr; // 一个编码器实例（句柄）。所有 mpi->xxx(ctx, ...) 都要把它传回去
@@ -234,15 +232,13 @@ int main(int argc, char** argv) {
 
     // ==================== ① 开一台编码机 ====================
     // 1. create and init：创建实例，拿到 ctx（句柄）和 mpi（函数表）
-    // mpp_create(MppCtx* ctx, MppApi** mpi)：两个参数都是"输出参数"，所以传 &ctx、&mpi，函数把结果写回来
-    CHECK(mpp_create(&ctx, &mpi));
+    CHECK(mpp_create(&ctx, &mpi));// mpp_create(MppCtx* ctx, MppApi** mpi)：两个参数都是"输出参数"，所以传 &ctx、&mpi，函数把结果写回来
     // get_packet 阻塞等结果
     // mpi->control(ctx, 命令, 参数)：类似 ioctl，第 2 个参数（MpiCmd）决定干什么，
     // 第 3 个参数（MppParam = void*）的类型由命令决定。这条命令要传 MppPollType 的地址。
     // 按官方示例的顺序，要在 mpp_init 之前设置
     CHECK(mpi->control(ctx, MPP_SET_OUTPUT_TIMEOUT, &timeout));
     // mpp_init：把实例初始化成编码器（MPP_CTX_ENC），并决定编 H.264 还是 H.265。
-    // ⚠️ 格式在这一步就定死了，后面再设 codec:type 也改不过来（M5 踩过的坑）
     CHECK(mpp_init(ctx, MPP_CTX_ENC, a.type));
 
     // ==================== ② 告诉它要什么效果 ====================
@@ -309,12 +305,12 @@ int main(int argc, char** argv) {
     // the hardware can direct access the memory ,cpu invoke read() and write() operation via cache are very fast ,
     // but it need invoke sync_end() while operation is in end.
     // 创建内存池：
-    //   MPP_BUFFER_TYPE_DRM        通过 DRM 分配，硬件编码器能通过 DMA 直接读写（malloc 的内存硬件访问不了）
-    //   MPP_BUFFER_FLAGS_CACHABLE  CPU 读写走缓存（快），代价是 CPU 写完要 mpp_buffer_sync_end 把缓存刷下去
+    //   MPP_BUFFER_TYPE_DRM        : 通过 DRM 分配，硬件编码器能通过 DMA 直接读写（malloc 的内存硬件访问不了）
+    //   MPP_BUFFER_FLAGS_CACHABLE  : CPU 读写走缓存（快），代价是 CPU 写完要 mpp_buffer_sync_end 把缓存刷下去
     // &bufGrp：输出参数，函数把新建的内存池写回来
     CHECK(mpp_buffer_group_get_internal(&bufGrp, MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE));
     // 从内存池里各拿一块 frameSize 大小的内存（&frmBuf / &pktBuf 也是输出参数）
-    CHECK(mpp_buffer_get(bufGrp, &frmBuf, frameSize)); // M3:输入图像，不能用malloc
+    CHECK(mpp_buffer_get(bufGrp, &frmBuf, frameSize));
     CHECK(mpp_buffer_get(bufGrp, &pktBuf, frameSize));
     // M2-5: get SPS/PPS(获取sps，pps)
     // 用 pktBuf 包一个 MppPacket，当成"空容器"交给编码器，让它把 SPS/PPS 写进去
