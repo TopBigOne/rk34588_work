@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -92,6 +93,15 @@ static bool parse_args(int argc, char** argv, Args& a) {
             return false;
         }
     }
+
+    if (a.width <= 0 || a.height <= 0 || a.width % 2 || a.height % 2) {
+        printf("-w / -h 必须是正的偶数（NV12 的 UV 按 2x2 采样），现在是 %dx%d\n", a.width, a.height);
+        return false;
+    }
+    if (a.fps <= 0 || a.bps <= 0 || a.gop < 0) {
+        printf("-fps、-bps 必须大于 0，-g 不能是负数\n");
+        return false;
+    }
     if (a.gop == 0) {
         a.gop = a.fps * 2;
     }
@@ -119,7 +129,7 @@ static bool read_nv12_frame(
         }
     }
     // case 2 :读取UV，从ver_stride（1088，不是1080） 行开始
-    //          只有height/2 但是每行哈市width字节（U，V交错，UVUVUVUV..）
+    //          只有height/2 行，但是每行还是width字节（U，V交错，UVUVUVUV..）
     uint8_t* dst_uv = dst + hor_stride * ver_stride;
     for (int row = 0; row < height / 2; row++) {
         if (const size_t readSize = fread(dst_uv + row * hor_stride, 1, width, fp);
@@ -142,7 +152,8 @@ int main(int argc, char** argv) {
     RK_S32 ver_stride = ALIGN(a.height, 16);
 
     // 因为是nv12，所以才：3 / 2
-    const size_t frameSize = ALIGN(hor_stride, 64) * ALIGN(ver_stride, 64) * 3 / 2; // M2
+    const size_t frameSize = ALIGN(hor_stride, 64) * ALIGN(ver_stride, 64) * 3 / 2; // 硬件缓冲区大小（带 stride）
+    const long fileFrameBytes = (long) a.width * a.height * 3 / 2; // 输入文件里一帧的大小（紧密排列，没有 stride）
 
     const int bpsMin     = (a.rcMode == MPP_ENC_RC_MODE_CBR) ? a.bps * 15 / 16 : a.bps / 16;
     const char* typeName = (a.type == MPP_VIDEO_CodingAVC) ? "h264" : "h265";
@@ -155,20 +166,21 @@ int main(int argc, char** argv) {
     MppPollType timeout = MPP_POLL_BLOCK;
     // vps/sps/pps on each IDR frame
     MppEncHeaderMode header_mode = MPP_ENC_HEADER_MODE_EACH_IDR;
-    FILE* fpIn                   = nullptr; // M3 input file
-    FILE* fpOut                  = nullptr; // M2:输出文件
-    MppBufferGroup bufGrp        = nullptr; // M2:DRM  内存池
-    MppBuffer frmBuf             = nullptr; // M2: 装一帧原始的图像
-    MppFrame frame               = nullptr; // M3: 描述一帧图像（width,height,stride ,format ,buffer）
-    MppBuffer pktBuf             = nullptr; // M2: 装码流的缓冲区
-    MppPacket packet             = nullptr; // M2: 装码包
-    uint8_t* dst                 = nullptr; // M3 frmBuf 的cpu地址
+    FILE* fpIn                   = nullptr; // 输入文件（NV12）
+    FILE* fpOut                  = nullptr; // 输出文件（H.264 / H.265 裸流）
+    MppBufferGroup bufGrp        = nullptr; // DRM 内存池
+    MppBuffer frmBuf             = nullptr; // 装一帧原始图像（NV12）
+    MppFrame frame               = nullptr; // 描述一帧图像（width, height, stride, format, buffer）
+    MppBuffer pktBuf             = nullptr; // 装 SPS/PPS 的缓冲区
+    MppPacket packet             = nullptr; // 码流包
+    uint8_t* dst                 = nullptr; // frmBuf 的 CPU 地址
     size_t len                   = 0;
     bool frmEos                  = false; // M4: 输入读完了（我们告诉编码器："没有图像了"）
     bool pktEos                  = false; // M4: 输出取完了（编码器告诉我们："码流全给你了"）
-    RK_S32 frameCount            = 0; // M4:
+    RK_S32 frameCount            = 0; // 编出了多少帧
     RK_S32 iCount                = 0; // I帧数量
-    size_t streamSize            = 0; // M4: 码流总字节数
+    size_t streamSize            = 0; // 码流总字节数（含开头的 SPS/PPS，和输出文件大小一致）
+    long fileSize                = 0; // 输入文件大小，用来检查 -w / -h 对不对
     std::chrono::steady_clock::time_point tStart;
     double elapsed = 0; // 编码用时
     double playSec = 0; // 视频时长
@@ -191,7 +203,7 @@ int main(int argc, char** argv) {
     // 码率控制
     CFG_SET("rc:mode", a.rcMode);
 
-    // 帧率：输入 30/1,输出 30/1 (flex = 0 ，表示固定帧率)
+    // 帧率：输入、输出都是 -fps 指定的值（flex = 0 表示固定帧率）
     CFG_SET("rc:fps_in_flex", 0);
     CFG_SET("rc:fps_in_num", a.fps);
     CFG_SET("rc:fps_in_denom", 1);
@@ -199,7 +211,7 @@ int main(int argc, char** argv) {
     CFG_SET("rc:fps_out_flex", 0);
     CFG_SET("rc:fps_out_num", a.fps);
     CFG_SET("rc:fps_out_denom", 1);
-    // 码率控制的上下 限窄（±1/16）
+    // 码率上下限：CBR 为目标的 ±1/16；VBR / AVBR 下限放宽到 1/16（bpsMin 在前面算好）
     CFG_SET("rc:bps_target", a.bps);
     CFG_SET("rc:bps_max", a.bps * 17 / 16);
     CFG_SET("rc:bps_min", bpsMin);
@@ -210,7 +222,11 @@ int main(int argc, char** argv) {
     // h264 专属参数
     if (a.type == MPP_VIDEO_CodingAVC) {
         CFG_SET("h264:profile", 100); // High Profile
-        CFG_SET("h264:level", 40); // Level 4.0 ,够1080p@30fps
+        // level：MPP 只会按分辨率自动调高 level，不看帧率（h264e_sps.c 139～159 行），
+        // 1080p 会停在 4.0。帧率超过 30 时要自己设：1080p60 → 4.2，720p60 → 3.2
+        if (a.fps > 30) {
+            CFG_SET("h264:level", a.height > 720 ? 42 : 32);
+        }
         CFG_SET("h264:cabac_en", 1); // 开启cabac ,profile 是Main以上才能使用
         CFG_SET("h264:cabac_idc", 0); // CABAC 初始化表编号，取值 0～2
     }
@@ -236,8 +252,13 @@ int main(int argc, char** argv) {
     CHECK(mpp_packet_init_with_buffer(&packet, pktBuf));
     mpp_packet_set_length(packet, 0);
     CHECK(mpi->control(ctx, MPP_ENC_GET_HDR_SYNC, packet));
-    fwrite(mpp_packet_get_pos(packet), 1, mpp_packet_get_length(packet), fpOut);
-    printf("|            header : %zu bytes\n", mpp_packet_get_length(packet));
+    len = mpp_packet_get_length(packet);
+    if (fwrite(mpp_packet_get_pos(packet), 1, len, fpOut) != len) {
+        perror("fwrite header"); // 比如板子磁盘满了
+        goto CLEANUP;
+    }
+    streamSize += len;
+    printf("|            header : %zu bytes\n", len);
     mpp_packet_deinit(&packet);
 
     // M3 单独编 1 帧的代码已经删掉：M4 的循环会从第 0 帧开始编完所有帧
@@ -246,6 +267,15 @@ int main(int argc, char** argv) {
     if (!fpIn) {
         printf("open %s failed\n", a.inPath);
         goto CLEANUP;
+    }
+    // NV12 文件里没有记录宽高，-w / -h 写错了程序也会照常跑完、结果却是错的。
+    // 检查一下文件大小是不是"一帧大小"的整数倍，不是就提醒
+    fseek(fpIn, 0, SEEK_END);
+    fileSize = ftell(fpIn);
+    rewind(fpIn);
+    if (fileSize % fileFrameBytes != 0) {
+        printf("warning: 输入文件 %ld 字节，不是一帧 %ld 字节（%dx%d NV12）的整数倍，-w / -h 写对了吗？\n",
+            fileSize, fileFrameBytes, a.width, a.height);
     }
 
     // M3-6 硬件缓冲区的 CPU 地址，循环里每一帧都往这里写
@@ -288,7 +318,10 @@ int main(int argc, char** argv) {
                 if (isIntra) {
                     iCount++;
                 }
-                fwrite(mpp_packet_get_pos(packet), 1, len, fpOut);
+                if (fwrite(mpp_packet_get_pos(packet), 1, len, fpOut) != len) {
+                    perror("fwrite frame"); // 比如板子磁盘满了
+                    goto CLEANUP;
+                }
                 streamSize += len;
                 printf("              frame %-3d size %zu bytes\n", frameCount, len);
                 frameCount++;
