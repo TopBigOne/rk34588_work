@@ -76,6 +76,8 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 
 ## 4. 文档导航
 
+> 🗺️ **先看这张总览**：[doc/技术点地图.md](doc/技术点地图.md) —— 这个项目涉及的所有技术点（视频基础、MPP、C/C++、设计、IO、工具链、调试），每个点链接到对应文档和代码，附 14 道自测题。
+
 ### 4.1 按学习顺序（`guide/`）
 
 | 顺序 | 文档 | 什么时候看 |
@@ -101,12 +103,20 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 | [nv12中yuv分布效果图和读取方式.md](nv12中yuv分布效果图和读取方式.md) | NV12 在文件和硬件缓冲区里的布局，为什么要逐行读 |
 | [fread和fwrite 的详细用法.md](doc/fread和fwrite%20的详细用法.md) | fread / fwrite / fseek / feof，以及项目里的用法 |
 | [MppPacket和MppFrame的用法和区别.md](MppPacket和MppFrame的用法和区别.md) | 两个核心对象：字段、创建释放、引用计数、编码/解码时的角色 |
+| [doc/void* 能转成任何对象指针.md](doc/%20void*%20能转成任何对象指针.md) | `void*` 为什么能转成 `uint8_t*`、指针运算、码流怎么拷出来 |
+| [doc/vector的assign() 的用法.md](<doc/vector的assign() 的用法.md>) | `assign(first, last)`、左闭右开区间、size 和 capacity、每帧复用内存 |
+| [doc/DRM缓冲区.md](doc/DRM缓冲区.md) | 硬件能 DMA 访问的内存、为什么不能 malloc、CACHABLE 和 sync、板子上实际走 DMA-HEAP（strace 实测）、零拷贝 |
+| [doc/fwrite和write的区别.md](doc/fwrite和write的区别.md) | C 标准库和系统调用、用户态缓冲、板子实测、短写、落盘 |
 
 ### 4.4 笔记
 
 | 文档 | 内容 |
 |---|---|
-| [doc/笔记_10_02.md](doc/笔记_10_02.md) | stride、SPS/PPS、GOP 学习笔记 |
+| [doc/笔记_10_02.md](doc/笔记_10_02.md) | Day 1 当天的笔记：进度、自测、下一步 |
+| [doc/stride.md](doc/stride.md) | stride 是什么、为什么对齐、16 和 64 两次对齐、代码里在哪用 |
+| [doc/sps_pps.md](doc/sps_pps.md) | SPS / PPS 是什么、文件头 40 字节逐字节拆解、NAL 类型、`GET_HDR_SYNC` |
+| [doc/h265_vps.md](doc/h265_vps.md) | H.265 多出来的 VPS |
+| [doc/gop.md](doc/gop.md) | GOP、I/P/B/IDR、实测没有 B 帧、GOP 大小怎么选 |
 | [doc/unique_ptr自定义删除器_RAII句柄.md](doc/unique_ptr自定义删除器_RAII句柄.md) | `mpp_utils.h` 里 `XxxDeleter` + `unique_ptr` 的写法：函数对象、自定义删除器、RAII |
 
 ### 4.5 外部资料
