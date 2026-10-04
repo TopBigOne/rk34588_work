@@ -1,6 +1,7 @@
 # fread 和 fwrite 的详细用法
 
-> 结合 day1_yuv2h264 里用到的地方来讲：`read_nv12_frame()` 读 NV12（现在封装成了 `src/source/read_yuv.cpp` 的 `ReadYUV::read_frame()`，读法一样），`fwrite` 写 SPS/PPS 和码流。
+> 结合 day1_yuv2h264 里用到的地方来讲：`ReadYUV`（[src/source/read_yuv.cpp](../src/source/read_yuv.cpp)）用 `fread` 逐行读 NV12、用 `fseek` / `ftell` 检查文件大小；`WriteStream`（[src/sink/write_stream.cpp](../src/sink/write_stream.cpp)）用 `fwrite` 写 SPS/PPS 和码流。
+> 和系统调用 `write` 的区别见 [fwrite和write的区别.md](fwrite和write的区别.md)。
 
 ---
 
@@ -88,7 +89,7 @@ fread(..., 1920, fp)  → 读 Y第1行，位置 = 3840
 读完 540 行 UV        → 位置 = 3,110,400，正好是下一帧的开头
 ```
 
-这就是 `read_nv12_frame()` **不需要 fseek** 的原因：文件是紧密排列的，顺序读下去，位置自然就对了。
+这就是 `ReadYUV::read_nv12_rows()` 读每一帧时**不需要 fseek** 的原因：文件是紧密排列的，顺序读下去，位置自然就对了。
 
 ### 手动移动位置：fseek / ftell / rewind
 
@@ -102,7 +103,7 @@ rewind(fp);                    // 回到开头，同时清除 EOF 和错误标�
 
 常见用法：
 ```c
-// 求文件大小
+// 求文件大小（ReadYUV::open 里就是这么检查 -w / -h 写没写对的，见 7.1）
 fseek(fp, 0, SEEK_END);
 long file_size = ftell(fp);
 rewind(fp);
@@ -136,7 +137,7 @@ if (n < want) {
 }
 ```
 
-`read_nv12_frame()` 里没有区分这两种，统一当作"没有下一帧了"返回 `false`，对练习程序来说够用。
+`ReadYUV::read_nv12_rows()` 里没有区分这两种，统一当作"没有下一帧了"返回 `false`，对练习程序来说够用。
 
 fwrite 返回值 < 想要的个数，一般就是出错了：**磁盘满了**、文件系统只读、没有权限等。
 ```c
@@ -178,16 +179,16 @@ fread(1920 字节)
    └─ 缓冲区空了    → 调一次 read() 系统调用，一次填满一整块缓冲区
 ```
 
-所以 `read_nv12_frame()` 虽然一帧调了 1620 次 fread（1080 + 540），但真正进内核的 `read()` 次数要少得多。读一帧 3MB 数据，主要的开销是内存拷贝，不是函数调用次数。
+所以 `ReadYUV::read_nv12_rows()` 虽然一帧调了 1620 次 fread（1080 + 540），但真正进内核的 `read()` 次数要少得多。读一帧 3MB 数据，主要的开销是内存拷贝，不是函数调用次数。
 
-fwrite 也一样：先写进缓冲区，**缓冲区满了、调用 `fflush(fp)`、或者 `fclose(fp)` 时**，才真正写到磁盘（准确说是交给内核）。
+fwrite 也一样：先写进缓冲区，**缓冲区满了、调用 `fflush(fp)`、或者 `fclose(fp)` 时**，才真正写到磁盘（准确说是交给内核）。板子实测：逐字节写 100 万次，`fwrite` 0.048 s，不带缓冲的 `write` 1.05 s（详见 [fwrite和write的区别.md](fwrite和write的区别.md) 第 4 节）。
 
 这带来一个坑：
 ```c
 fwrite(sps_pps, 1, 40, fp);
 // 程序在这里崩溃了 → 这 40 字节可能还在缓冲区里，out.h264 是 0 字节！
 ```
-- 正常结束一定要 `fclose(fp)`（项目里在 `CLEANUP` 里关）。
+- 正常结束一定要 `fclose(fp)`。本项目不手写 `fclose`：文件指针放在 `FilePtr`（`std::unique_ptr` + `fclose` 删除器，见 [src/common/mpp_utils.h](../src/common/mpp_utils.h)）里，`ReadYUV` / `WriteStream` 析构时自动关闭，中途 `return` 也不会漏。
 - 想马上落盘（比如边编码边让别人读文件），写完调用 `fflush(fp)`。
 
 ### 调整缓冲区大小：setvbuf（可选）
@@ -203,43 +204,82 @@ setvbuf(fp, big_buf, _IOFBF, sizeof(big_buf));      // 全缓冲
 
 ## 7. 在 day1_yuv2h264 里的用法
 
-### 7.1 fread：逐行读 NV12 到硬件缓冲区
+文件读写都封装在两个类里，`fopen` / `fclose` 由 RAII 管理：
 
-```c
-static bool read_nv12_frame(FILE* fp, uint8_t* dst,
-                            int width, int height, int hor_stride, int ver_stride) {
-    for (int row = 0; row < height; row++) {
-        //        目标：缓冲区第 row 行   1 字节一个  读 width 个
-        if (fread(dst + row * hor_stride, 1,        width, fp) != (size_t)width)
+| 类 | 文件 | 用到的函数 |
+|---|---|---|
+| `ReadYUV` | [src/source/read_yuv.cpp](../src/source/read_yuv.cpp) | `fopen("rb")`、`fseek` / `ftell` / `rewind`、`fread` |
+| `WriteStream` | [src/sink/write_stream.cpp](../src/sink/write_stream.cpp) | `fopen("wb")`、`fwrite` |
+
+两个类的成员都是 `FilePtr`（`std::unique_ptr<FILE, FileCloser>`），对象析构时自动 `fclose`。
+
+### 7.1 fopen + fseek / ftell：打开 NV12 并检查文件大小（`ReadYUV::open`）
+
+```cpp
+bool ReadYUV::open(const char* path, RK_S32 width, RK_S32 height) {
+    nv12InputFile_.reset(fopen(path, "rb"));         // 交给 FilePtr，析构时自动 fclose
+    if (!nv12InputFile_) {                            // 一定要检查：文件不存在时是 NULL
+        printf("open %s failed\n", path);
+        return false;
+    }
+    ...
+    const long nv12FileFrameSize = static_cast<long>(width) * height * 3 / 2;
+    fseek(nv12InputFile_.get(), 0, SEEK_END);         // 移到末尾
+    const long nv12FileSize = ftell(nv12InputFile_.get());   // 末尾的位置 = 文件大小
+    rewind(nv12InputFile_.get());                     // 回到开头，后面从第 0 帧开始读
+    if (nv12FileSize % nv12FileFrameSize != 0) {      // 不是整数帧，-w / -h 可能写错了
+        printf("warning: ...");
+    }
+    return true;
+}
+```
+- NV12 文件里没有记录宽高，`-w` / `-h` 写错了程序照样能跑完，结果却是错的。所以用第 4 节"求文件大小"的方法提醒一下。
+- `rewind` 一定不能忘：`fseek` 到末尾之后不回来，第一次 `fread` 就直接读到文件尾了。
+- `nv12InputFile_.get()`：`FilePtr` 是 `unique_ptr`，`.get()` 取出里面的 `FILE*` 交给 C 函数。
+
+### 7.2 fread：逐行读 NV12 到硬件缓冲区（`ReadYUV::read_nv12_rows`）
+
+```cpp
+bool ReadYUV::read_nv12_rows(uint8_t* dst) {
+    FILE* fp                = nv12InputFile_.get();
+    const RK_S32 hor_stride = horStride_;
+    const RK_S32 ver_stride = verStride_;
+    for (int row = 0; row < height_; row++) {
+        //                     目标：缓冲区第 row 行   1 字节一个  读 width 个
+        if (const size_t readSize = fread(dst + row * hor_stride, 1, width_, fp);
+            readSize != static_cast<size_t>(width_)) {
             return false;
+        }
     }
     uint8_t* dst_uv = dst + hor_stride * ver_stride;
-    for (int row = 0; row < height / 2; row++) {
-        if (fread(dst_uv + row * hor_stride, 1, width, fp) != (size_t)width)
+    for (int row = 0; row < height_ / 2; row++) {
+        if (const size_t readSize = fread(dst_uv + row * hor_stride, 1, width_, fp);
+            readSize != static_cast<size_t>(width_)) {
             return false;
+        }
     }
     return true;
 }
 ```
 - `size = 1`：按字节读，返回值就是读到的字节数，好判断。
-- `(size_t)width`：fread 返回 `size_t`（无符号），`width` 是 `int`（有符号）。直接比较编译器会给出有符号和无符号比较的警告，所以转一下。
-- **目标地址每行跳 `hor_stride`，但只读 `width` 个字节**：行尾的填充留空。详见 `nv12中yuv分布效果图和读取方式.md`。
+- `static_cast<size_t>(width_)`：fread 返回 `size_t`（无符号），`width_` 是 `RK_S32`（有符号）。直接比较编译器会给出有符号和无符号比较的警告，所以转一下。
+- `if (const size_t readSize = fread(...); readSize != ...)`：C++17 的"if 带初始化"写法，`readSize` 只在这个 if 里有效。
+- **目标地址每行跳 `hor_stride`，但只读 `width` 个字节**：行尾的填充留空。这里必须循环，因为目标内存不连续，详见 [nv12中yuv分布效果图和读取方式.md](../nv12中yuv分布效果图和读取方式.md)。
+- 外面的 `ReadYUV::read_frame` 用 `mpp_buffer_sync_begin` / `sync_end` 包住这次读取，把 CPU 缓存刷到内存，硬件才看得到。
 
-### 7.2 fwrite：把码流写到文件
+### 7.3 fwrite：把码流写到文件（`WriteStream::write`）
 
-```c
-fwrite(mpp_packet_get_pos(packet),      // 源：packet 里码流的起始地址
-       1,                               // 1 字节一个
-       mpp_packet_get_length(packet),   // 写多少字节
-       fpOut);
+码流在 `MppEncoder::encode` 里已经从 MppPacket 拷进了 `std::vector<uint8_t>`（见 [void* 能转成任何对象指针.md](%20void*%20能转成任何对象指针.md) 第 6 节），写文件只要一行：
+
+```cpp
+bool WriteStream::write(const std::vector<uint8_t>& data) {
+    //            源：第 0 个字节    1 字节一个  写多少个        写到哪
+    return fwrite(data.data(),    1,          data.size(),   streamOutputFile_.get()) == data.size();
+}
 ```
+- **不需要 for 循环**：fwrite 本来就是"从一个地址开始，连续写一大块内存"；`std::vector` 的元素是连续存放的，一次调用就把整帧写完。
+- **检查返回值**：返回写成功的元素个数，不等于 `data.size()` 说明出错了（比如板子 `/userdata` 满了）。调用方（`EncodePipeline`）据此 `perror("fwrite header")` / `perror("fwrite frame")`。
 - **H.264 文件就是把每个 packet 原样首尾相接**：先写 SPS/PPS，再一帧一帧写码流。不需要额外的文件头，这种格式叫 **Annex-B 裸流**（每个 NAL 前面是 `00 00 00 01` 起始码），所以 `.h264` 文件可以直接用 VLC / ffplay 播放。
-- 要更严谨，可以检查返回值：
-  ```c
-  size_t len = mpp_packet_get_length(packet);
-  if (fwrite(mpp_packet_get_pos(packet), 1, len, fpOut) != len)
-      perror("fwrite");    // 板子 /userdata 满了时会走到这里
-  ```
 
 ---
 
@@ -369,7 +409,7 @@ int main(int argc, char** argv) {
 | `while (!feof(fp))` | 最后一次重复处理 | 用 fread 返回值控制循环 |
 | `fread(buf, sizeof(buf), 1, fp)`，而 `buf` 是**指针** | `sizeof(指针)` = 8，只读 8 字节 | 用真实长度；`sizeof` 只对数组有效 |
 | 最后一次写 `sizeof(buf)` 而不是 `n` | 文件末尾多出垃圾数据 | 读到多少写多少 |
-| 忘了 `fclose` | 缓冲区里最后一段没写进文件；文件句柄泄漏 | 每个 `fopen` 对应一个 `fclose` |
+| 忘了 `fclose` | 缓冲区里最后一段没写进文件；文件句柄泄漏 | 每个 `fopen` 对应一个 `fclose`；C++ 里交给 RAII（本项目的 `FilePtr`）最省心 |
 | 读写模式（`r+b`）下读完直接写，或者写完直接读 | C 标准规定这是未定义行为，结果可能错乱 | 读写切换之间调用一次 `fseek` 或 `fflush` |
 | 二进制文件用 `"r"` / `"w"` 打开 | Windows 上数据被改坏 | 加 `b`：`"rb"` / `"wb"` |
 | 往 MPP 缓冲区整帧 fread | 画面错位、底部发绿 | 按 stride 逐行读 |
@@ -386,3 +426,5 @@ int main(int argc, char** argv) {
 | 适合 | 普通文件读写，小块多次读写 | 设备文件（`/dev/video0`、`/dev/mpp_service`）、需要 fd 的场合 |
 
 后面 Day 3 接摄像头时，`/dev/video0` 要用 `open` / `ioctl` / `mmap`，到时候用的就是右边这一套；摄像头缓冲区还会以 **DMA-BUF fd** 的形式直接交给 MPP，中间不用 fread 拷贝。
+
+更完整的对比（缓冲层次图、板子实测、短写、落盘、不能混用）见 [fwrite和write的区别.md](fwrite和write的区别.md)。

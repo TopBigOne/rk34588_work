@@ -99,7 +99,7 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 | 文档 | 内容 |
 |---|---|
 | [nv12中yuv分布效果图和读取方式.md](nv12中yuv分布效果图和读取方式.md) | NV12 在文件和硬件缓冲区里的布局，为什么要逐行读 |
-| [fread和fwrite 的详细用法.md](fread和fwrite%20的详细用法.md) | fread / fwrite / fseek / feof，以及项目里的用法 |
+| [fread和fwrite 的详细用法.md](doc/fread和fwrite%20的详细用法.md) | fread / fwrite / fseek / feof，以及项目里的用法 |
 | [MppPacket和MppFrame的用法和区别.md](MppPacket和MppFrame的用法和区别.md) | 两个核心对象：字段、创建释放、引用计数、编码/解码时的角色 |
 
 ### 4.4 笔记
@@ -107,6 +107,7 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 | 文档 | 内容 |
 |---|---|
 | [doc/笔记_10_02.md](doc/笔记_10_02.md) | stride、SPS/PPS、GOP 学习笔记 |
+| [doc/unique_ptr自定义删除器_RAII句柄.md](doc/unique_ptr自定义删除器_RAII句柄.md) | `mpp_utils.h` 里 `XxxDeleter` + `unique_ptr` 的写法：函数对象、自定义删除器、RAII |
 
 ### 4.5 外部资料
 
