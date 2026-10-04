@@ -25,11 +25,11 @@
 struct EncoderConfig {
     int width  = 1920;
     int height = 1080;
-    // MppCodingType：编码格式。MPP_VIDEO_CodingAVC = H.264，MPP_VIDEO_CodingHEVC = H.265
-    MppCodingType type = MPP_VIDEO_CodingAVC;
-    // MppEncRcMode：码率控制模式。CBR 恒定码率 / VBR 可变码率 / AVBR 自适应可变码率
-    MppEncRcMode rcMode = MPP_ENC_RC_MODE_CBR;
-    int bps             = 4 * 1000 * 1000; // 目标码率，单位 bit/s
+    // MppCodingType：编码格式。
+    MppCodingType type = MPP_VIDEO_CodingAVC; // MPP_VIDEO_CodingAVC = H.264，MPP_VIDEO_CodingHEVC = H.265
+    // MppEncRcMode：码率控制模式。
+    MppEncRcMode rcMode = MPP_ENC_RC_MODE_CBR; // CBR 恒定码率 / VBR 可变码率 / AVBR 自适应可变码率
+    int bps             = 4 * 1000 * 1000;     // 目标码率，单位 bit/s
     int fps             = 30;
     int gop             = 60; // 每隔多少帧插一个 I 帧
 };
@@ -37,8 +37,8 @@ struct EncoderConfig {
 // encode() 的输出：一段压缩好的码流
 struct EncodedPacket {
     std::vector<uint8_t> data; // 码流数据（从 MppPacket 的 pos + length 拷出来）。可能是空的，见 encode()
-    bool isKeyFrame = false; // 是不是 I 帧（来自 MppMeta 的 KEY_OUTPUT_INTRA）
-    bool eos        = false; // 编码器说"码流全给你了"，调用方据此结束循环
+    bool isKeyFrame = false;   // 是不是 I 帧（来自 MppMeta 的 KEY_OUTPUT_INTRA）
+    bool eos        = false;   // 编码器说"码流全给你了"，调用方据此结束循环
 };
 
 class MppEncoder {
@@ -53,14 +53,24 @@ public:
 
     /**
      * ① 开一台编码机 + ② 告诉它要什么效果
-     * mpp_create → SET_OUTPUT_TIMEOUT → mpp_init → mpp_enc_cfg_init → GET_CFG → CFG_SET × N → SET_CFG → SET_HEADER_MODE
+     * mpp_create → SET_OUTPUT_TIMEOUT
+     *            → mpp_init
+     *            → mpp_enc_cfg_init
+     *            → GET_CFG
+     *            → CFG_SET × N
+     *            → SET_CFG
+     *            → SET_HEADER_MODE
      * @return  成功返回 true；失败打印出错的那一句，返回 false（已申请的资源由析构函数释放）
      */
     bool init(const EncoderConfig& cfg);
 
     // 输入缓冲区的排布：调用方往 MppBuffer 里填数据时要按这个 stride 放（init 之后才有值）
-    RK_S32 hor_stride() const { return horStride_; }
-    RK_S32 ver_stride() const { return verStride_; }
+    RK_S32 hor_stride() const {
+        return horStride;
+    }
+    RK_S32 ver_stride() const {
+        return verStride;
+    }
 
     /**
      * ③ 取 SPS/PPS（H.265 还有 VPS）：MPP_ENC_GET_HDR_SYNC
@@ -73,16 +83,18 @@ public:
      * ⑤ 送一帧、取一包：encode_put_frame + encode_get_packet
      * @param frameBuffer  装着一帧 NV12 的硬件缓冲区（按 hor_stride / ver_stride 排布，CPU 写完要 sync_end）
      * @param inputEos     true = 输入读完了：这次不送图像，只送一个带 EOS 标志的空帧（frameBuffer 被忽略）
-     * @param packet       输出参数：这次取到的码流。data 可能为空（EOS 时的最后一个包可能是空的）
+     * @param encodedPacket       输出参数：这次取到的码流。data 可能为空（EOS 时的最后一个包可能是空的）
      * @return  成功返回 true；put_frame / get_packet 失败返回 false
      */
-    bool encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& packet);
+    bool encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& encodedPacket);
 
 private:
     MppCtx encoderCtx_    = nullptr; // 一个编码器实例（句柄）。所有 encoderApi_->xxx(encoderCtx_, ...) 都要把它传回去
     MppApi* encoderApi_   = nullptr; // 操作编码器的函数表：control / encode_put_frame / encode_get_packet ...
     MppEncCfg encoderCfg_ = nullptr; // 编码参数集合（一张"订单"）。留着它，以后运行中改码率时还能用
-    EncoderConfig cfg_; // init 时传进来的参数，encode 时要用宽高
-    RK_S32 horStride_ = 0;
-    RK_S32 verStride_ = 0;
+    EncoderConfig cfg_;              // init 时传进来的参数，encode 时要用宽高
+
+    // 输入缓冲区的排布，init 时按 16 对齐算出来（1920x1080 → 1920 / 1088）
+    RK_S32 horStride = 0; // 水平跨距：内存里一行占多少【字节】（含行尾填充），不是像素数
+    RK_S32 verStride = 0; // 垂直跨距：内存里 Y 平面占多少【行】（含底部填充），UV 平面从这一行开始
 };

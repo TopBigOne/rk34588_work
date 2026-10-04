@@ -32,8 +32,8 @@ bool MppEncoder::init(const EncoderConfig& cfg) {
     cfg_ = cfg;
 
     // stride：硬件编码器要求按 16 对齐。1920 → 1920（本来就是 16 的倍数），1080 → 1088
-    horStride_ = ALIGN(cfg.width, 16);
-    verStride_ = ALIGN(cfg.height, 16);
+    horStride = ALIGN(cfg.width, 16);
+    verStride = ALIGN(cfg.height, 16);
 
     // 码率下限：CBR 要求码率稳定，下限只比目标低 1/16；VBR / AVBR 允许码率随画面变化，下限放宽到目标的 1/16
     const int bpsMin = (cfg.rcMode == MPP_ENC_RC_MODE_CBR) ? cfg.bps * 15 / 16 : cfg.bps / 16;
@@ -61,8 +61,8 @@ bool MppEncoder::init(const EncoderConfig& cfg) {
     // prep: 开头的参数描述"送进来的图像长什么样"，必须和 encode() 里 MppFrame 上设置的 5 个值一致
     CFG_SET("prep:width", cfg.width);
     CFG_SET("prep:height", cfg.height);
-    CFG_SET("prep:hor_stride", horStride_);
-    CFG_SET("prep:ver_stride", verStride_);
+    CFG_SET("prep:hor_stride", horStride);
+    CFG_SET("prep:ver_stride", verStride);
     CFG_SET("prep:format", MPP_FMT_YUV420SP); // nv12（MPP_FMT_YUV420SP = NV12，SP = Semi-Planar）
     // rc: 开头的参数是码率控制（Rate Control）
     CFG_SET("rc:mode", cfg.rcMode);
@@ -92,7 +92,7 @@ bool MppEncoder::init(const EncoderConfig& cfg) {
         if (cfg.fps > 30) {
             CFG_SET("h264:level", cfg.height > 720 ? 42 : 32);
         }
-        CFG_SET("h264:cabac_en", 1); // 开启cabac ,profile 是Main以上才能使用（CABAC 比 CAVLC 压缩率更高）
+        CFG_SET("h264:cabac_en", 1);  // 开启cabac ,profile 是Main以上才能使用（CABAC 比 CAVLC 压缩率更高）
         CFG_SET("h264:cabac_idc", 0); // CABAC 初始化表编号，取值 0～2
     }
 
@@ -126,33 +126,36 @@ bool MppEncoder::get_header(std::vector<uint8_t>& header) {
 }
 
 // ==================== ⑤ 送一帧、取一包 ====================
-bool MppEncoder::encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& packet) {
-    packet.data.clear();
-    packet.isKeyFrame = false;
-    packet.eos        = false;
+bool MppEncoder::encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& encodedPacket) {
+    encodedPacket.data.clear();
+    encodedPacket.isKeyFrame = false;
+    encodedPacket.eos        = false;
 
     // 5.1 包装成 MppFrame
     // MppFrame 是贴在 frameBuffer 上的"标签"：告诉编码器这块内存里的图像多宽多高、stride 多少、什么格式
     MppFrame rawFrame = nullptr;
     CHECK(mpp_frame_init(&rawFrame));
-    MppFramePtr inputFrame(rawFrame); // 交给 RAII 句柄：函数返回时自动 mpp_frame_deinit
+    MppFramePtr inputFramePtr(rawFrame);       // 交给 RAII 句柄：函数返回时自动 mpp_frame_deinit
+    MppFrame inputFrame = inputFramePtr.get(); // 只在下面这几行用，reset 之前
+
     // 这 5 个值必须和 init() 里的 prep:* 参数一致
-    mpp_frame_set_width(inputFrame.get(), cfg_.width);
-    mpp_frame_set_height(inputFrame.get(), cfg_.height);
-    mpp_frame_set_hor_stride(inputFrame.get(), horStride_);
-    mpp_frame_set_ver_stride(inputFrame.get(), verStride_);
-    mpp_frame_set_fmt(inputFrame.get(), MPP_FMT_YUV420SP);
+    mpp_frame_set_width(inputFrame, cfg_.width);
+    mpp_frame_set_height(inputFrame, cfg_.height);
+    mpp_frame_set_hor_stride(inputFrame, horStride);
+    mpp_frame_set_ver_stride(inputFrame, verStride);
+    mpp_frame_set_fmt(inputFrame, MPP_FMT_YUV420SP);
     // eos = 1：告诉编码器"这是最后一次了，没有图像了"
-    mpp_frame_set_eos(inputFrame.get(), inputEos);
+    mpp_frame_set_eos(inputFrame, inputEos);
     // 最后一次，送一个空帧，没有图像，只带eos标志
     // set_buffer 会给 frameBuffer 的引用计数 +1，所以 inputFrame 释放时只是 -1，frameBuffer 本身不会被释放
-    mpp_frame_set_buffer(inputFrame.get(), inputEos ? nullptr : frameBuffer);
+    mpp_frame_set_buffer(inputFrame, inputEos ? nullptr : frameBuffer);
 
     // 5.2 送进去：硬件通过 DMA 读 frameBuffer，开始压缩。
     // 阻塞模式下，等编码器用完这一帧才返回（mpp.cpp 723～746 行），
     // 所以返回后可以马上释放 inputFrame、往 frameBuffer 里写下一帧
-    CHECK(encoderApi_->encode_put_frame(encoderCtx_, inputFrame.get()));
-    inputFrame.reset(); // 用完马上释放（不 reset 也行，函数返回时会自动释放）
+    CHECK(encoderApi_->encode_put_frame(encoderCtx_, inputFrame));
+    inputFramePtr.reset(); // 用完马上释放（不 reset 也行，函数返回时会自动释放）
+    inputFrame = nullptr;  // 别名也清掉，防止后面误用野指针
 
     // 5.3 取出来：拿到一个压缩好的 MppPacket（因为设了 MPP_POLL_BLOCK，会一直等到有结果）。
     // 我们没给编码器准备输出 packet，所以这个 packet 的内存是编码器自己分配的，用完要 deinit
@@ -161,24 +164,31 @@ bool MppEncoder::encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& pac
     if (!rawPacket) {
         return true; // 这次没取到（data 为空），调用方继续下一轮
     }
-    MppPacketPtr outputPacket(rawPacket); // 每个 packet 用完都要释放，否则内存一直涨：交给 RAII 句柄
+    MppPacketPtr outputPacketPtr(rawPacket); // 每个 packet 用完都要释放，否则内存一直涨：交给 RAII 句柄
+    MppPacket outputPacket = outputPacketPtr.get();
+
 
     // 编码器说：这是最后一个，调用方据此结束循环
-    packet.eos = mpp_packet_get_eos(outputPacket.get());
+    encodedPacket.eos = mpp_packet_get_eos(outputPacket);
     // EOS 对应的最后一个包可能是空的（length = 0），不算一帧，data 保持为空
-    const size_t packetLength = mpp_packet_get_length(outputPacket.get());
+    const size_t packetLength = mpp_packet_get_length(outputPacket);
     if (packetLength > 0) {
         // MppMeta 是挂在 packet 上的"附加信息口袋"，按 key 取值。
         // ⚠️ 是 KEY_OUTPUT_INTRA（整数，1 = I 帧），不是 KEY_OUTPUT_FRAME（存的是 frame 对象，用 get_s32 取会失败）
         RK_S32 isIntra = 0;
-        if (mpp_packet_has_meta(outputPacket.get())) {
-            mpp_meta_get_s32(mpp_packet_get_meta(outputPacket.get()), KEY_OUTPUT_INTRA, &isIntra);
+        if (mpp_packet_has_meta(outputPacket)) {
+            mpp_meta_get_s32(mpp_packet_get_meta(outputPacket), KEY_OUTPUT_INTRA, &isIntra);
         }
-        packet.isKeyFrame = isIntra != 0;
+        encodedPacket.isKeyFrame = isIntra != 0;
 
         // 把码流拷出来：outputPacket 函数返回时就释放了，调用方拿到的是一份独立的副本
-        const auto* pos = static_cast<const uint8_t*>(mpp_packet_get_pos(outputPacket.get()));
-        packet.data.assign(pos, pos + packetLength);
+        // 转为uint8_t* ，目的是为了便于指针加法运算：pos + packetLength)
+        const auto* pos = static_cast<const uint8_t*>(mpp_packet_get_pos(outputPacket));
+        // 取看看文档： void* 能转成任何对象指针.md
+        encodedPacket.data.assign(pos, pos + packetLength);
+        std::size_t packetSize = encodedPacket.data.size();
+        printf("    packetSize :  %lu\n",packetSize);
+
     }
     return true;
 }
