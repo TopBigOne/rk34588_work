@@ -41,14 +41,14 @@
     } while (0)
 
 // 设置一个编码参数。key 是字符串，拼错时 mpp_enc_cfg_set_s32 返回 MPP_NOK，
-// 用 CHECK 包起来就能立刻看到是哪一行出错（依赖外面有一个叫 cfg 的变量）
-#define CFG_SET(key, val) CHECK(mpp_enc_cfg_set_s32(cfg, key, val))
+// 用 CHECK 包起来就能立刻看到是哪一行出错（依赖外面有一个叫 encoderCfg 的变量）
+#define CFG_SET(key, val) CHECK(mpp_enc_cfg_set_s32(encoderCfg, key, val))
 
 struct Args {
-    const char* inPath  = "/userdata/av/in_1080p_60f.nv12";
-    const char* outPath = "/userdata/av/out.h264";
-    int width           = 1920;
-    int height          = 1080;
+    const char* nv12InputPath    = "/userdata/av/in_1080p_60f.nv12"; // -i：输入的 NV12 原始图像文件
+    const char* streamOutputPath = "/userdata/av/out.h264"; // -o：输出的 H.264 / H.265 码流文件（裸流）
+    int width                    = 1920;
+    int height                   = 1080;
     // MppCodingType：编码格式。MPP_VIDEO_CodingAVC = H.264，MPP_VIDEO_CodingHEVC = H.265
     MppCodingType type = MPP_VIDEO_CodingAVC;
     // MppEncRcMode：码率控制模式。CBR 恒定码率 / VBR 可变码率 / AVBR 自适应可变码率
@@ -82,9 +82,9 @@ static bool parse_args(int argc, char** argv, Args& a) {
         }
 
         if (!strcmp(opt, "-i")) {
-            a.inPath = val;
+            a.nv12InputPath = val;
         } else if (!strcmp(opt, "-o")) {
-            a.outPath = val;
+            a.streamOutputPath = val;
         } else if (!strcmp(opt, "-w")) {
             a.width = atoi(val); // atoi 遇到 "abc" 返回 0，交给下面的合法性检查拦住
         } else if (!strcmp(opt, "-h")) {
@@ -186,72 +186,72 @@ int main(int argc, char** argv) {
     }
 
     // stride：硬件编码器要求按 16 对齐。1920 → 1920（本来就是 16 的倍数），1080 → 1088
-    RK_S32 hor_stride = ALIGN(a.width, 16);
-    RK_S32 ver_stride = ALIGN(a.height, 16);
+    RK_S32 horStride = ALIGN(a.width, 16);
+    RK_S32 verStride = ALIGN(a.height, 16);
 
     // 因为是nv12，所以才：3 / 2（Y 占 1 份，UV 一共占 0.5 份）
     // 硬件缓冲区再按 64 对齐一次，和官方 mpi_enc_test.c 的 test_ctx_init 一样：1920 × 1088 × 3/2 = 3,133,440
-    const size_t frameSize    = ALIGN(hor_stride, 64) * ALIGN(ver_stride, 64) * 3 / 2; // 硬件缓冲区大小（带 stride）
-    const long fileFrameBytes = (long) a.width * a.height * 3 / 2; // 输入文件里一帧的大小（紧密排列，没有 stride）
+    const size_t mppFrameBufSize = ALIGN(horStride, 64) * ALIGN(verStride, 64) * 3 / 2; // 硬件缓冲区大小（带 stride）
+    const long nv12FileFrameSize =
+        static_cast<long>(a.width) * a.height * 3 / 2; // 输入文件里一帧的大小（紧密排列，没有 stride）
 
     // 码率下限：CBR 要求码率稳定，下限只比目标低 1/16；VBR / AVBR 允许码率随画面变化，下限放宽到目标的 1/16
-    const int bpsMin     = (a.rcMode == MPP_ENC_RC_MODE_CBR) ? a.bps * 15 / 16 : a.bps / 16;
-    const char* typeName = (a.type == MPP_VIDEO_CodingAVC) ? "h264" : "h265";
+    const int bpsMin      = (a.rcMode == MPP_ENC_RC_MODE_CBR) ? a.bps * 15 / 16 : a.bps / 16;
+    const char* codecName = (a.type == MPP_VIDEO_CodingAVC) ? "h264" : "h265";
 
-
-    // 下面这些 MPP 类型，除了 MppApi 是结构体，其余都是 typedef void*（不透明句柄），所以不写 *
-    // 详见 guide/07_MPP核心数据类型.md
-    MppCtx ctx    = nullptr; // 一个编码器实例（句柄）。所有 mpi->xxx(ctx, ...) 都要把它传回去
-    MppApi* mpi   = nullptr; // 操作编码器的函数表：control / encode_put_frame / encode_get_packet ...
-    MppEncCfg cfg = nullptr; // 编码参数集合（一张"订单"），用 CFG_SET 按字符串 key 填
+    MppCtx encoderCtx    = nullptr; // 一个编码器实例（句柄）。所有 encoderApi->xxx(encoderCtx, ...) 都要把它传回去
+    MppApi* encoderApi   = nullptr; // 操作编码器的函数表：control / encode_put_frame / encode_get_packet ...
+    MppEncCfg encoderCfg = nullptr; // 编码参数集合（一张"订单"），用 CFG_SET 按字符串 key 填
     // MppPollType：get_packet 拿不到结果时怎么办。
     // MPP_POLL_BLOCK = 一直等到有结果；MPP_POLL_NON_BLOCK = 立刻返回；正数 = 最多等多少毫秒
-    MppPollType timeout = MPP_POLL_BLOCK;
+    MppPollType outputTimeout = MPP_POLL_BLOCK;
     // vps/sps/pps on each IDR frame
     // MppEncHeaderMode：EACH_IDR = 每个 IDR 帧前面都自动带一份 SPS/PPS，播放器从中间开始播也能解码
-    MppEncHeaderMode header_mode = MPP_ENC_HEADER_MODE_EACH_IDR;
-    FILE* fpIn                   = nullptr; // 输入文件（NV12）
-    FILE* fpOut                  = nullptr; // 输出文件（H.264 / H.265 裸流）
-    MppBufferGroup bufGrp        = nullptr; // DRM 内存池：硬件能访问的内存都从这里申请
-    MppBuffer frmBuf             = nullptr; // 装一帧原始图像（NV12），整个循环反复使用这一块
-    MppFrame frame               = nullptr; // 描述一帧图像（width, height, stride, format, buffer）
-    MppBuffer pktBuf             = nullptr; // 装 SPS/PPS 的缓冲区
-    MppPacket packet             = nullptr; // 码流包：描述一段压缩后的码流（pos + length）
-    uint8_t* dst                 = nullptr; // frmBuf 的 CPU 地址
-    size_t len                   = 0;
-    bool frmEos                  = false; // M4: 输入读完了（我们告诉编码器："没有图像了"）
-    bool pktEos                  = false; // M4: 输出取完了（编码器告诉我们："码流全给你了"）
-    RK_S32 frameCount            = 0; // 编出了多少帧
-    RK_S32 iCount                = 0; // I帧数量
-    size_t streamSize            = 0; // 码流总字节数（含开头的 SPS/PPS，和输出文件大小一致）
-    long fileSize                = 0; // 输入文件大小，用来检查 -w / -h 对不对
-    std::chrono::steady_clock::time_point tStart;
-    double elapsed = 0; // 编码用时
-    double playSec = 0; // 视频时长
-    int ret_code   = -1; // 只有全部成功才在最后改成 0；中途 goto CLEANUP 时保持 -1
+    MppEncHeaderMode headerMode   = MPP_ENC_HEADER_MODE_EACH_IDR;
+    FILE* nv12InputFile           = nullptr; // 输入文件（NV12）
+    FILE* streamOutputFile        = nullptr; // 输出文件（H.264 / H.265 裸流）
+    MppBufferGroup drmBufferGroup = nullptr; // DRM 内存池：硬件能访问的内存都从这里申请
+    MppBuffer nv12FrameBuffer     = nullptr; // 装一帧原始图像（NV12），整个循环反复使用这一块
+    MppFrame inputFrame           = nullptr; // 描述一帧图像（width, height, stride, format, buffer）
+    MppBuffer headerPacketBuffer  = nullptr; // 装 SPS/PPS 的缓冲区
+    MppPacket outputPacket        = nullptr; // 码流包：描述一段压缩后的码流（pos + length）
+    uint8_t* nv12FrameCpuAddr     = nullptr; // nv12FrameBuffer 的 CPU 地址
+    size_t packetLength           = 0;
+    bool inputEos                 = false; // M4: 输入读完了（我们告诉编码器："没有图像了"）
+    bool outputEos                = false; // M4: 输出取完了（编码器告诉我们："码流全给你了"）
+    RK_S32 encodedFrameCount      = 0; // 编出了多少帧
+    RK_S32 keyFrameCount          = 0; // I帧数量
+    size_t streamTotalBytes       = 0; // 码流总字节数（含开头的 SPS/PPS，和输出文件大小一致）
+    long nv12FileSize             = 0; // 输入文件大小，用来检查 -w / -h 对不对
+    std::chrono::steady_clock::time_point encodeStartTime;
+    double encodeSeconds = 0; // 编码用时
+    double videoSeconds  = 0; // 视频时长
+    int exitCode         = -1; // 只有全部成功才在最后改成 0；中途 goto CLEANUP 时保持 -1
 
     // ==================== ① 开一台编码机 ====================
-    // 1. create and init：创建实例，拿到 ctx（句柄）和 mpi（函数表）
-    CHECK(mpp_create(&ctx, &mpi));// mpp_create(MppCtx* ctx, MppApi** mpi)：两个参数都是"输出参数"，所以传 &ctx、&mpi，函数把结果写回来
+    // 1. create and init：创建实例，拿到 encoderCtx（句柄）和 encoderApi（函数表）
+    // 原型 mpp_create(MppCtx* ctx, MppApi** mpi)：两个参数都是"输出参数"，
+    // 所以传 &encoderCtx、&encoderApi，函数把结果写回来
+    CHECK(mpp_create(&encoderCtx, &encoderApi));
     // get_packet 阻塞等结果
-    // mpi->control(ctx, 命令, 参数)：类似 ioctl，第 2 个参数（MpiCmd）决定干什么，
+    // encoderApi->control(encoderCtx, 命令, 参数)：类似 ioctl，第 2 个参数（MpiCmd）决定干什么，
     // 第 3 个参数（MppParam = void*）的类型由命令决定。这条命令要传 MppPollType 的地址。
     // 按官方示例的顺序，要在 mpp_init 之前设置
-    CHECK(mpi->control(ctx, MPP_SET_OUTPUT_TIMEOUT, &timeout));
+    CHECK(encoderApi->control(encoderCtx, MPP_SET_OUTPUT_TIMEOUT, &outputTimeout));
     // mpp_init：把实例初始化成编码器（MPP_CTX_ENC），并决定编 H.264 还是 H.265。
-    CHECK(mpp_init(ctx, MPP_CTX_ENC, a.type));
+    CHECK(mpp_init(encoderCtx, MPP_CTX_ENC, a.type));
 
     // ==================== ② 告诉它要什么效果 ====================
     // 2. 先拿默认配置，再改
     // mpp_enc_cfg_init：创建一个空的参数对象；MPP_ENC_GET_CFG：把编码器当前的默认参数读进来
-    CHECK(mpp_enc_cfg_init(&cfg));
-    CHECK(mpi->control(ctx, MPP_ENC_GET_CFG, cfg));
+    CHECK(mpp_enc_cfg_init(&encoderCfg));
+    CHECK(encoderApi->control(encoderCtx, MPP_ENC_GET_CFG, encoderCfg));
     // 输入图像的描述，（必须和内存的排布一致）
     // prep: 开头的参数描述"送进来的图像长什么样"，必须和后面 MppFrame 上设置的 5 个值一致
     CFG_SET("prep:width", a.width);
     CFG_SET("prep:height", a.height);
-    CFG_SET("prep:hor_stride", hor_stride);
-    CFG_SET("prep:ver_stride", ver_stride);
+    CFG_SET("prep:hor_stride", horStride);
+    CFG_SET("prep:ver_stride", verStride);
     CFG_SET("prep:format", MPP_FMT_YUV420SP); // nv12（MPP_FMT_YUV420SP = NV12，SP = Semi-Planar）
     // 码率控制
     // rc: 开头的参数是码率控制（Rate Control）
@@ -287,18 +287,18 @@ int main(int argc, char** argv) {
     }
 
     // 3. 参数真正生效
-    // MPP_ENC_SET_CFG：把 cfg 里的参数交给编码器。不调这一句，前面的 CFG_SET 全部白设
-    CHECK(mpi->control(ctx, MPP_ENC_SET_CFG, cfg));
+    // MPP_ENC_SET_CFG：把 encoderCfg 里的参数交给编码器。不调这一句，前面的 CFG_SET 全部白设
+    CHECK(encoderApi->control(encoderCtx, MPP_ENC_SET_CFG, encoderCfg));
     // 每个IDR帧前，都带SPS/PPS（这条命令要传 MppEncHeaderMode 的地址）
-    CHECK(mpi->control(ctx, MPP_ENC_SET_HEADER_MODE, &header_mode));
-    printf("|            encoder ready: %dx%d stride %dx%d\n", a.width, a.height, hor_stride, ver_stride);
+    CHECK(encoderApi->control(encoderCtx, MPP_ENC_SET_HEADER_MODE, &headerMode));
+    printf("|            encoder ready: %dx%d stride %dx%d\n", a.width, a.height, horStride, verStride);
 
     // ==================== ③ 写文件头 + ④ 准备硬件内存 ====================
     // M2-3: open the out file
     // "wb"：文件不存在就新建，存在就清空；b = 二进制模式。所在目录必须存在
-    fpOut = fopen(a.outPath, "wb");
-    if (!fpOut) {
-        printf("open %s failed\n", a.outPath);
+    streamOutputFile = fopen(a.streamOutputPath, "wb");
+    if (!streamOutputFile) {
+        printf("open %s failed\n", a.streamOutputPath);
         goto CLEANUP;
     }
     // M2-4: request the memory which can access the hardware(申请内存)
@@ -307,175 +307,177 @@ int main(int argc, char** argv) {
     // 创建内存池：
     //   MPP_BUFFER_TYPE_DRM        : 通过 DRM 分配，硬件编码器能通过 DMA 直接读写（malloc 的内存硬件访问不了）
     //   MPP_BUFFER_FLAGS_CACHABLE  : CPU 读写走缓存（快），代价是 CPU 写完要 mpp_buffer_sync_end 把缓存刷下去
-    // &bufGrp：输出参数，函数把新建的内存池写回来
-    CHECK(mpp_buffer_group_get_internal(&bufGrp, MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE));
-    // 从内存池里各拿一块 frameSize 大小的内存（&frmBuf / &pktBuf 也是输出参数）
-    CHECK(mpp_buffer_get(bufGrp, &frmBuf, frameSize));
-    CHECK(mpp_buffer_get(bufGrp, &pktBuf, frameSize));
+    // &drmBufferGroup：输出参数，函数把新建的内存池写回来
+    CHECK(mpp_buffer_group_get_internal(&drmBufferGroup, MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE));
+    // 从内存池里各拿一块 mppFrameBufSize 大小的内存（&nv12FrameBuffer / &headerPacketBuffer 也是输出参数）
+    CHECK(mpp_buffer_get(drmBufferGroup, &nv12FrameBuffer, mppFrameBufSize));
+    CHECK(mpp_buffer_get(drmBufferGroup, &headerPacketBuffer, mppFrameBufSize));
     // M2-5: get SPS/PPS(获取sps，pps)
-    // 用 pktBuf 包一个 MppPacket，当成"空容器"交给编码器，让它把 SPS/PPS 写进去
-    CHECK(mpp_packet_init_with_buffer(&packet, pktBuf));
+    // 用 headerPacketBuffer 包一个 MppPacket，当成"空容器"交给编码器，让它把 SPS/PPS 写进去
+    CHECK(mpp_packet_init_with_buffer(&outputPacket, headerPacketBuffer));
     // ⚠️ 一定要清零：init_with_buffer 会把 length 设成整个 buffer 的大小（mpp_packet.cpp 94 行），
     // 不清零编码器会以为容器已经装满了
-    mpp_packet_set_length(packet, 0);
-    // MPP_ENC_GET_HDR_SYNC：编码器把 SPS/PPS（H.265 还有 VPS）写进 packet。
+    mpp_packet_set_length(outputPacket, 0);
+    // MPP_ENC_GET_HDR_SYNC：编码器把 SPS/PPS（H.265 还有 VPS）写进 outputPacket。
     // 解码器必须先拿到它们才能解码，所以写在文件最开头
-    CHECK(mpi->control(ctx, MPP_ENC_GET_HDR_SYNC, packet));
+    CHECK(encoderApi->control(encoderCtx, MPP_ENC_GET_HDR_SYNC, outputPacket));
     // 读码流永远用 pos（有效数据从哪开始）+ length（有多长），不要用 data + size（那是整个容器）
-    len = mpp_packet_get_length(packet);
-    if (fwrite(mpp_packet_get_pos(packet), 1, len, fpOut) != len) {
+    packetLength = mpp_packet_get_length(outputPacket);
+    if (fwrite(mpp_packet_get_pos(outputPacket), 1, packetLength, streamOutputFile) != packetLength) {
         perror("fwrite header"); // 比如板子磁盘满了
         goto CLEANUP;
     }
-    streamSize += len;
-    printf("|            header : %zu bytes\n", len);
-    // 释放 packet（pktBuf 的引用计数 -1，pktBuf 本身还在），deinit 会顺手把 packet 置成 NULL
-    mpp_packet_deinit(&packet);
+    streamTotalBytes += packetLength;
+    printf("|            header : %zu bytes\n", packetLength);
+    // 释放 outputPacket（headerPacketBuffer 的引用计数 -1，headerPacketBuffer 本身还在），deinit 会顺手把 outputPacket
+    // 置成 NULL
+    mpp_packet_deinit(&outputPacket);
 
     // M3 单独编 1 帧的代码已经删掉：M4 的循环会从第 0 帧开始编完所有帧
     // M3-3 open the input file（输出文件、内存、SPS/PPS 在 M2 里已经准备好了）
-    fpIn = fopen(a.inPath, "rb");
-    if (!fpIn) {
-        printf("open %s failed\n", a.inPath);
+    nv12InputFile = fopen(a.nv12InputPath, "rb");
+    if (!nv12InputFile) {
+        printf("open %s failed\n", a.nv12InputPath);
         goto CLEANUP;
     }
     // NV12 文件里没有记录宽高，-w / -h 写错了程序也会照常跑完、结果却是错的。
     // 检查一下文件大小是不是"一帧大小"的整数倍，不是就提醒
     // （局限：恰好能整除时查不出来，比如 1280x720 去读 1080p 文件）
-    fseek(fpIn, 0, SEEK_END);
-    fileSize = ftell(fpIn);
-    rewind(fpIn); // 回到文件开头，后面从第 0 帧开始读
-    if (fileSize % fileFrameBytes != 0) {
-        printf("warning: 输入文件 %ld 字节，不是一帧 %ld 字节（%dx%d NV12）的整数倍，-w / -h 写对了吗？\n", fileSize,
-            fileFrameBytes, a.width, a.height);
+    fseek(nv12InputFile, 0, SEEK_END);
+    nv12FileSize = ftell(nv12InputFile);
+    rewind(nv12InputFile); // 回到文件开头，后面从第 0 帧开始读
+    if (nv12FileSize % nv12FileFrameSize != 0) {
+        printf("warning: 输入文件 %ld 字节，不是一帧 %ld 字节（%dx%d NV12）的整数倍，-w / -h 写对了吗？\n",
+            nv12FileSize, nv12FileFrameSize, a.width, a.height);
     }
 
     // M3-6 硬件缓冲区的 CPU 地址，循环里每一帧都往这里写
     // mpp_buffer_get_ptr 返回 void*，转成 uint8_t* 才能按字节加偏移
-    dst = static_cast<uint8_t*>(mpp_buffer_get_ptr(frmBuf));
+    nv12FrameCpuAddr = static_cast<uint8_t*>(mpp_buffer_get_ptr(nv12FrameBuffer));
 
     // ==================== ⑤ 循环每一帧 ====================
-    // 结束条件是 pktEos（编码器说码流全给完了），不是 frmEos（我们读完了）：
+    // 结束条件是 outputEos（编码器说码流全给完了），不是 inputEos（我们读完了）：
     // 我们读完之后，编码器手里可能还有没吐出来的码流，要等它主动说"结束"才能退出
-    tStart = std::chrono::steady_clock::now();
-    while (!pktEos) {
+    encodeStartTime = std::chrono::steady_clock::now();
+    while (!outputEos) {
         // 5.1 读一帧到硬件缓冲区。读完以后就不再读，后面每次循环只送 EOS
-        if (!frmEos) {
+        if (!inputEos) {
             // sync_begin / sync_end 包住 CPU 的写操作：
             // 缓冲区是 CACHABLE 的，CPU 写的数据可能还停在缓存里，sync_end 把它刷到内存，硬件才看得到。
             // 不调 sync_end：硬件读到旧数据，画面花屏、残影
-            mpp_buffer_sync_begin(frmBuf);
-            frmEos = !read_nv12_frame(fpIn, dst, a.width, a.height, hor_stride, ver_stride);
-            mpp_buffer_sync_end(frmBuf);
-            if (frmEos) {
+            mpp_buffer_sync_begin(nv12FrameBuffer);
+            inputEos = !read_nv12_frame(nv12InputFile, nv12FrameCpuAddr, a.width, a.height, horStride, verStride);
+            mpp_buffer_sync_end(nv12FrameBuffer);
+            if (inputEos) {
                 printf("              input end, send EOS\n");
             }
         }
         // M4-6-2: 包装成MppFrame
-        // MppFrame 是贴在 frmBuf 上的"标签"：告诉编码器这块内存里的图像多宽多高、stride 多少、什么格式
-        CHECK(mpp_frame_init(&frame));
+        // MppFrame 是贴在 nv12FrameBuffer 上的"标签"：告诉编码器这块内存里的图像多宽多高、stride 多少、什么格式
+        CHECK(mpp_frame_init(&inputFrame));
         // 这 5 个值必须和前面的 prep:* 参数一致
-        mpp_frame_set_width(frame, a.width);
-        mpp_frame_set_height(frame, a.height);
-        mpp_frame_set_hor_stride(frame, hor_stride);
-        mpp_frame_set_ver_stride(frame, ver_stride);
-        mpp_frame_set_fmt(frame, MPP_FMT_YUV420SP);
+        mpp_frame_set_width(inputFrame, a.width);
+        mpp_frame_set_height(inputFrame, a.height);
+        mpp_frame_set_hor_stride(inputFrame, horStride);
+        mpp_frame_set_ver_stride(inputFrame, verStride);
+        mpp_frame_set_fmt(inputFrame, MPP_FMT_YUV420SP);
         // eos = 1：告诉编码器"这是最后一次了，没有图像了"
-        mpp_frame_set_eos(frame, frmEos);
+        mpp_frame_set_eos(inputFrame, inputEos);
         // 最后一次，送一个空帧，没有图像，只带eos标志
-        // set_buffer 会给 frmBuf 的引用计数 +1，所以下面 frame_deinit 时只是 -1，frmBuf 本身不会被释放
-        mpp_frame_set_buffer(frame, frmEos ? nullptr : frmBuf);
-        // 5.2 送进去：硬件通过 DMA 读 frmBuf，开始压缩。
+        // set_buffer 会给 nv12FrameBuffer 的引用计数 +1，所以下面 frame_deinit 时只是 -1，nv12FrameBuffer
+        // 本身不会被释放
+        mpp_frame_set_buffer(inputFrame, inputEos ? nullptr : nv12FrameBuffer);
+        // 5.2 送进去：硬件通过 DMA 读 nv12FrameBuffer，开始压缩。
         // 阻塞模式下，等编码器用完这一帧才返回（mpp.cpp 723～746 行），
-        // 所以返回后可以马上释放 frame、往 frmBuf 里写下一帧
-        CHECK(mpi->encode_put_frame(ctx, frame));
-        mpp_frame_deinit(&frame); // 释放 frame，并把 frame 置成 NULL
+        // 所以返回后可以马上释放 inputFrame、往 nv12FrameBuffer 里写下一帧
+        CHECK(encoderApi->encode_put_frame(encoderCtx, inputFrame));
+        mpp_frame_deinit(&inputFrame); // 释放 inputFrame，并把 inputFrame 置成 NULL
 
         // 5.3 取出来：拿到一个压缩好的 MppPacket（因为设了 MPP_POLL_BLOCK，会一直等到有结果）。
-        // 我们没给编码器准备输出 packet，所以这个 packet 的内存是编码器自己分配的，用完由我们 deinit
-        CHECK(mpi->encode_get_packet(ctx, &packet));
-        if (packet) {
-            len = mpp_packet_get_length(packet);
+        // 我们没给编码器准备输出 packet，所以这个 outputPacket 的内存是编码器自己分配的，用完由我们 deinit
+        CHECK(encoderApi->encode_get_packet(encoderCtx, &outputPacket));
+        if (outputPacket) {
+            packetLength = mpp_packet_get_length(outputPacket);
             // 编码器说：这是最后一个，循环就结束
-            pktEos = mpp_packet_get_eos(packet);
+            outputEos = mpp_packet_get_eos(outputPacket);
             // EOS 对应的最后一个包可能是空的（length = 0），不算一帧
-            if (len > 0) {
+            if (packetLength > 0) {
                 // 从packe的meta里看看是不是I帧
-                // MppMeta 是挂在 packet 上的"附加信息口袋"，按 key 取值。
+                // MppMeta 是挂在 outputPacket 上的"附加信息口袋"，按 key 取值。
                 // ⚠️ 是 KEY_OUTPUT_INTRA（整数，1 = I 帧），不是 KEY_OUTPUT_FRAME（存的是 frame 对象，用 get_s32
                 // 取会失败）
                 RK_S32 isIntra = 0;
-                if (mpp_packet_has_meta(packet)) {
-                    mpp_meta_get_s32(mpp_packet_get_meta(packet), KEY_OUTPUT_INTRA, &isIntra);
+                if (mpp_packet_has_meta(outputPacket)) {
+                    mpp_meta_get_s32(mpp_packet_get_meta(outputPacket), KEY_OUTPUT_INTRA, &isIntra);
                 }
                 if (isIntra) {
-                    iCount++;
+                    keyFrameCount++;
                 }
-                // H.264 裸流（Annex-B）就是把每个 packet 原样首尾相接写进文件，不需要额外的文件头
-                if (fwrite(mpp_packet_get_pos(packet), 1, len, fpOut) != len) {
+                // H.264 裸流（Annex-B）就是把每个 outputPacket 原样首尾相接写进文件，不需要额外的文件头
+                if (fwrite(mpp_packet_get_pos(outputPacket), 1, packetLength, streamOutputFile) != packetLength) {
                     perror("fwrite frame"); // 比如板子磁盘满了
                     goto CLEANUP;
                 }
-                streamSize += len;
-                printf("              frame %-3d size %zu bytes\n", frameCount, len);
-                frameCount++;
+                streamTotalBytes += packetLength;
+                printf("              frame %-3d size %zu bytes\n", encodedFrameCount, packetLength);
+                encodedFrameCount++;
             }
 
-            // 每个 packet 用完都要释放，否则内存一直涨
-            mpp_packet_deinit(&packet);
+            // 每个 outputPacket 用完都要释放，否则内存一直涨
+            mpp_packet_deinit(&outputPacket);
         }
     }
     // 统计：编码用时包含读文件的时间，不是纯硬件编码时间；
     // 实际码率 = 总字节数 × 8 / 视频时长（帧数 / 帧率）
-    elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - tStart).count();
-    playSec = (double) frameCount / a.fps;
+    encodeSeconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - encodeStartTime).count();
+    videoSeconds  = (double) encodedFrameCount / a.fps;
     printf("\n===== summary =====\n");
-    printf("output    : %s (%s)\n", a.outPath, typeName);
-    printf("frames    : %d (I frames: %d)\n", frameCount, iCount);
-    printf("time      : %.2f s, %.1f fps\n", elapsed, elapsed > 0 ? frameCount / elapsed : 0.0);
-    printf("size      : %zu bytes\n", streamSize);
+    printf("output    : %s (%s)\n", a.streamOutputPath, codecName);
+    printf("frames    : %d (I frames: %d)\n", encodedFrameCount, keyFrameCount);
     printf(
-        "bitrate   : %.2f Mbps (target %.2f Mbps)\n", playSec > 0 ? streamSize * 8 / playSec / 1e6 : 0.0, a.bps / 1e6);
+        "time      : %.2f s, %.1f fps\n", encodeSeconds, encodeSeconds > 0 ? encodedFrameCount / encodeSeconds : 0.0);
+    printf("size      : %zu bytes\n", streamTotalBytes);
+    printf("bitrate   : %.2f Mbps (target %.2f Mbps)\n",
+        videoSeconds > 0 ? streamTotalBytes * 8 / videoSeconds / 1e6 : 0.0, a.bps / 1e6);
 
-    ret_code = 0; // 走到这里说明全部成功
+    exitCode = 0; // 走到这里说明全部成功
 
     // ==================== ⑥ 收拾干净 ====================
     // 不管是正常走到这里，还是中途 goto 过来，都在这里统一释放。
     // 每个资源用 if 判断：没申请过（还是 nullptr）就跳过；
-    // 顺序大致和申请时相反：先 frame / packet，再编码器，再内存，最后关文件。
+    // 顺序大致和申请时相反：先 inputFrame / outputPacket，再编码器，再内存，最后关文件。
     // 一一对应：init ↔ deinit，create ↔ destroy，get ↔ put，fopen ↔ fclose
 CLEANUP:
-    if (frame) {
-        mpp_frame_deinit(&frame);
+    if (inputFrame) {
+        mpp_frame_deinit(&inputFrame);
     }
-    if (packet) {
-        mpp_packet_deinit(&packet);
+    if (outputPacket) {
+        mpp_packet_deinit(&outputPacket);
     }
-    if (cfg) {
-        mpp_enc_cfg_deinit(cfg); // 参数对象不属于 ctx，要自己释放
+    if (encoderCfg) {
+        mpp_enc_cfg_deinit(encoderCfg); // 参数对象不属于 encoderCtx，要自己释放
     }
-    if (ctx) {
-        mpp_destroy(ctx); // 销毁编码器实例。mpi 指向全局函数表，不用释放
+    if (encoderCtx) {
+        mpp_destroy(encoderCtx); // 销毁编码器实例。encoderApi 指向全局函数表，不用释放
     }
     // mpp_buffer_put：引用计数 -1，减到 0 才真正还给内存池。
-    // 注意它不会帮你把 frmBuf 置空，所以每个 buffer 只能 put 一次
-    if (frmBuf) {
-        mpp_buffer_put(frmBuf);
+    // 注意它不会帮你把 nv12FrameBuffer 置空，所以每个 buffer 只能 put 一次
+    if (nv12FrameBuffer) {
+        mpp_buffer_put(nv12FrameBuffer);
     }
-    if (pktBuf) {
-        mpp_buffer_put(pktBuf);
-    }
-
-    if (bufGrp) {
-        mpp_buffer_group_put(bufGrp); // 最后销毁内存池
+    if (headerPacketBuffer) {
+        mpp_buffer_put(headerPacketBuffer);
     }
 
-    if (fpOut) {
-        fclose(fpOut); // fclose 会把缓冲区里还没写下去的数据写进文件
-    }
-    if (fpIn) {
-        fclose(fpIn);
+    if (drmBufferGroup) {
+        mpp_buffer_group_put(drmBufferGroup); // 最后销毁内存池
     }
 
-    return ret_code;
+    if (streamOutputFile) {
+        fclose(streamOutputFile); // fclose 会把缓冲区里还没写下去的数据写进文件
+    }
+    if (nv12InputFile) {
+        fclose(nv12InputFile);
+    }
+    return exitCode;
 }
