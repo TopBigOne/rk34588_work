@@ -57,7 +57,7 @@ CMAKE=/home/dev/Documents/IDE/clion-2026.1.2/bin/cmake/linux/x64/bin/cmake
 "$CMAKE" --build "$BUILD_DIR" --target "$BIN_NAME" || exit 1
 
 if [ ! -f "$LOCAL_BIN" ]; then
-    echo "找不到 $LOCAL_BIN，请先编译（Ctrl+F9）" >&2
+    echo "找不到 ${LOCAL_BIN}，请先编译（Ctrl+F9）" >&2
     exit 1
 fi
 
@@ -71,12 +71,12 @@ if [ "$USE_USB" = "1" ]; then
     $ADB shell "mkdir -p $REMOTE_DIR" || exit 1
     $ADB push "$LOCAL_BIN" "$REMOTE_DIR/" >/dev/null || exit 1
     $ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" || exit 1
-    echo "=== 通过 USB 在板子上运行 $REMOTE_DIR/$BIN_NAME $*（MPP 库：$BOARD_MPP_LIB） ==="
+    echo "=== 通过 USB 在板子上运行 $REMOTE_DIR/$BIN_NAME $*（MPP 库：${BOARD_MPP_LIB}） ==="
     exec $ADB shell "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*"
 else
     # ---------- scp ----------
     ssh root@"$BOARD_IP" "mkdir -p $REMOTE_DIR" || exit 1
     scp -q "$LOCAL_BIN" root@"$BOARD_IP":"$REMOTE_DIR/" || exit 1
-    echo "=== 在 $BOARD_IP 上运行 $REMOTE_DIR/$BIN_NAME（MPP 库：$BOARD_MPP_LIB） ==="
+    echo "=== 在 $BOARD_IP 上运行 $REMOTE_DIR/${BIN_NAME}（MPP 库：${BOARD_MPP_LIB}） ==="
     exec ssh root@"$BOARD_IP" "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*"
 fi

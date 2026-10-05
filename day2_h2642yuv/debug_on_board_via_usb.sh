@@ -1,8 +1,8 @@
 #!/bin/sh
-# 通过 USB（adb）在 RK3588 板子上调试 day1_yuv2h264，不需要板子 IP、不走网络。
+# 通过 USB（adb）在 RK3588 板子上调试 day2_h2642yuv，不需要板子 IP、不走网络。
 #
 # 原理：
-#   CLion 的 GDB ──连 localhost:1234──→ adb forward ──USB──→ 板子上的 gdbserver :1234 ──→ day1_yuv2h264
+#   CLion 的 GDB ──连 localhost:1234──→ adb forward ──USB──→ 板子上的 gdbserver :1234 ──→ day2_h2642yuv
 #
 # 用法（两步）：
 #   1. 运行本脚本（CLion 里的 Shell Script 配置，或者终端里 ./debug_on_board_via_usb.sh [程序参数...]）
@@ -11,15 +11,15 @@
 #   2. 在 CLion 里选 "Remote Debug" 配置（target remote: localhost:1234），点 🐞 调试
 #   调试结束（程序跑完或者在 CLion 里点停止）后，gdbserver 退出，本脚本也跟着结束
 #
-# 程序参数会原样传给 day1_yuv2h264，例如：
-#   ./debug_on_board_via_usb.sh -t h265 -o /userdata/av/out.h265
+# 程序参数会原样传给 day2_h2642yuv，例如：
+#   ./debug_on_board_via_usb.sh -i /userdata/av/aaa.264 -o /userdata/av/out.nv12 -n 10
 #
 # 可选环境变量：
-#   ADB=/path/to/adb    adb 不在 PATH 里时指定
+#   ADB=/path/to/adb    不用 PATH 里的 adb 时指定
 #   ADB_SERIAL=xxxx     同时连了多台 adb 设备时，指定板子的序列号（adb devices 第一列）
 #   GDB_PORT=1234       换一个端口
 
-BIN_NAME=day1_yuv2h264
+BIN_NAME=day2_h2642yuv
 BUILD_DIR=cmake-build-rk3588-debug
 REMOTE_DIR=/tmp/CLion/debug          # 和运行脚本的 /tmp/CLion/run 分开
 GDB_PORT=${GDB_PORT:-1234}
@@ -27,16 +27,11 @@ GDB_PORT=${GDB_PORT:-1234}
 cd "$(dirname "$0")" || exit 1
 LOCAL_BIN="$BUILD_DIR/$BIN_NAME"
 
-# 找 adb（和 run_on_board_with_mac.sh 一样）
-if [ -z "$ADB" ]; then
-    if command -v adb >/dev/null 2>&1; then
-        ADB=adb
-    elif [ -x "$HOME/Documents/Android_Env/sdk/platform-tools/adb" ]; then
-        ADB="$HOME/Documents/Android_Env/sdk/platform-tools/adb"
-    else
-        echo "找不到 adb（Ubuntu: sudo apt install adb；或设置 ADB=adb的路径）" >&2
-        exit 1
-    fi
+# adb 直接用 PATH 里的（Mac 上已经加进环境变量；Ubuntu：sudo apt install adb）
+ADB=${ADB:-adb}
+if ! command -v "$ADB" >/dev/null 2>&1; then
+    echo "找不到 adb：请把 adb 加到 PATH 里（Ubuntu: sudo apt install adb），或者设置 ADB=adb的路径" >&2
+    exit 1
 fi
 if [ -n "$ADB_SERIAL" ]; then
     ADB="$ADB -s $ADB_SERIAL"

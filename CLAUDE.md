@@ -5,7 +5,7 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 ## 板子连接：运行和调试都走 USB（adb），不走网络
 
 - 不要用 scp、ssh，也不要用板子 IP（IP 会变，之前从 .196 变成了 .197，导致 CLion 一直卡在 "Starting run configuration"）
-- adb 路径：`~/Documents/Android_Env/sdk/platform-tools/adb`（不在 PATH 里时用这个）
+- adb 已经加进 PATH（实际位置 `~/Documents/Android_Env/sdk/platform-tools/adb`），命令和脚本里直接写 `adb`，不要写绝对路径
 - 板子用 OTG 线连 TypeC0 口，先用 `adb devices` 确认能看到板子
 
 ### 运行
