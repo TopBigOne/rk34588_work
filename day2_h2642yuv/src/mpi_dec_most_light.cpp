@@ -2,6 +2,7 @@
 #include <iostream>
 #include <rockchip/rk_mpi.h>
 #include <unistd.h>
+#include <vector>
 #define FUNC_TAG "MPI_DEC_MOST_LIGHT"
 #define msleep(x) usleep((x) * 1000)
 #define CHECK(expr)                                                                                                    \
@@ -30,6 +31,16 @@ int main(int argc, char **argv) {
     MppCtx mpp_ctx = NULL;
     MppApi *mpp_api = NULL;
     MppDecCfg decCfg = NULL;
+    const char *inputPath = "/userdata/av/aaa.264";
+    const size_t chunkSize = 64 * 1024;
+    std::vector<uint8_t> chunk(chunkSize);
+    FILE *inputFile = NULL;
+    int gotInfoChange = 0;
+    MppBufferGroup bufferGroup = NULL;
+    MppPacket inputPacket = NULL;
+    MppFrame outFrame = NULL;
+    int exitCode = -1;
+    int readSize = 0;
     // step 1:
     ret = mpp_create(&mpp_ctx, &mpp_api);
     CHECK(ret);
@@ -42,14 +53,78 @@ int main(int argc, char **argv) {
     CHECK(ret);
     initDecoderConfig(mpp_api, mpp_ctx, decCfg);
     puts("decoder ready");
-    return 0;
+
+    inputFile = fopen(inputPath, "rb");
+    if (!inputFile) {
+        printf("open %s failed\n", inputPath);
+        goto CLEANUP;
+    }
+
+    while (!gotInfoChange) {
+        if (!inputPacket) {
+            readSize = fread(chunk.data(), 1, chunkSize, inputFile);
+            if (readSize == 0) {
+                printf("文件读完了还没等到 info change\n");
+                goto CLEANUP;
+            }
+            // 1:将数据包，封装为packet
+            CHECK(mpp_packet_init(&inputPacket, chunk.data(), readSize));
+        }
+        // 2: 送给解码器
+        MPP_RET ret = mpp_api->decode_put_packet(mpp_ctx, inputPacket);
+        if (ret == MPP_OK) {
+            mpp_packet_deinit(&inputPacket);
+        }
+        // 3: 得到解码的帧
+        ret = mpp_api->decode_get_frame(mpp_ctx, &outFrame);
+        CHECK(ret);
+        if (outFrame && mpp_frame_get_info_change(outFrame)) {
+            RK_U32 width = mpp_frame_get_width(outFrame);
+            RK_U32 height = mpp_frame_get_height(outFrame);
+            RK_U32 horStride = mpp_frame_get_hor_stride(outFrame);
+            RK_U32 verStride = mpp_frame_get_ver_stride(outFrame);
+            RK_U32 bufSize = mpp_frame_get_buf_size(outFrame);
+            printf("|            info change: %ux%u stride %ux%u buf_size %u\n", width, height, horStride, verStride,
+                   bufSize);
+            // 建内存池
+            ret = mpp_buffer_group_get_internal(&bufferGroup, MPP_BUFFER_TYPE_DRM);
+            CHECK(ret);
+            ret = mpp_buffer_group_limit_config(bufferGroup, bufSize, 24);
+            CHECK(ret);
+            mpp_api->control(mpp_ctx, MPP_DEC_SET_EXT_BUF_GROUP, bufferGroup);
+            mpp_api->control(mpp_ctx, MPP_DEC_SET_INFO_CHANGE_READY, nullptr);
+            gotInfoChange = true;
+        }
+        if (outFrame) {
+            mpp_frame_deinit(&outFrame);
+        }
+        if (!gotInfoChange) {
+            // 等1ms
+            usleep(1000);
+        }
+    }
+    exitCode = 0;
 
 CLEANUP:
+    if (outFrame) {
+        mpp_frame_deinit(&outFrame);
+    }
+    if (inputPacket) {
+        mpp_packet_deinit(&inputPacket);
+    }
     if (decCfg)
         mpp_dec_cfg_deinit(decCfg); // 先释放 cfg
-    if (mpp_ctx)
+    if (mpp_ctx) {
         mpp_destroy(mpp_ctx); // 再销毁解码器
-    return -1;
+    }
+    if (bufferGroup) {
+        mpp_buffer_group_put(bufferGroup);
+    }
+
+    if (inputFile) {
+        fclose(inputFile);
+    }
+    return exitCode;
 }
 
 MPP_RET initDecoderConfig(MppApi *mpp_api, MppCtx mpp_ctx, MppDecCfg dec_cfg) {
