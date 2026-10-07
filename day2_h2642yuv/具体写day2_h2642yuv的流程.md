@@ -239,6 +239,7 @@ int main() {
 
         // 3. 取一帧看看（非阻塞：没有就是 nullptr）
         CHECK(decoderApi->decode_get_frame(decoderCtx, &outputFrame));
+        
         if (outputFrame && mpp_frame_get_info_change(outputFrame)) {
             const RK_U32 width     = mpp_frame_get_width(outputFrame);
             const RK_U32 height    = mpp_frame_get_height(outputFrame);
@@ -298,11 +299,19 @@ CLEANUP:
 
 ```
 |            decoder ready
-|            info change: 1920x1080 stride 1920x1088 buf_size ???????
+|            info change: 1920x1080 stride 1920x1088 buf_size 4177920
 ```
 
 - `1920x1080 stride 1920x1088` 是验收标准之一。
-- `buf_size` 的实际值记下来，和 `1920 × 1088 × 3 / 2 = 3,133,440` 比一比，看大了多少（板子实测后补到这里）。
+- `buf_size` 板子实测是 **4,177,920**，正好是 `1920 × 1088 × 2`，比 NV12 像素本身 `1920 × 1088 × 3 / 2 = 3,133,440` 多了 1/3（1,044,480 字节）。多出来的这部分是解码器存放每帧额外信息（运动矢量等）用的。官方 `mpi_dec_utils.h` 里的注释也是这么算的：
+
+  | 用途 | 公式 | 字节 |
+  |---|---|---|
+  | NV12 像素 | `hor_stride × ver_stride × 3 / 2` | 3,133,440 |
+  | 额外信息 | `hor_stride × ver_stride / 2` | 1,044,480 |
+  | **合计 `buf_size`** | `hor_stride × ver_stride × 2` | **4,177,920** |
+
+  对比一下写进文件的一帧 `1920 × 1080 × 3 / 2 = 3,110,400`：文件里没有 stride 填充的 8 行（1088 − 1080），也没有额外信息。
 
 ### 易错点
 
