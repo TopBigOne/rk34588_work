@@ -5,14 +5,14 @@
 #   CLion 的 GDB ──连 localhost:1234──→ adb forward ──USB──→ 板子上的 gdbserver :1234 ──→ day2_h2642yuv
 #
 # 用法（两步）：
-#   1. 运行本脚本（CLion 里的 Shell Script 配置，或者终端里 ./debug_on_board_via_usb.sh [程序参数...]）
+#   1. 运行本脚本（CLion 里的 Shell Script 配置，或者终端里 ./run_debug_on_board_via_usb.sh [程序参数...]）
 #      看到 "Listening on port 1234" 就说明 gdbserver 在等 GDB 连上来了。脚本会一直停在这里，
 #      程序运行时打印的内容也会显示在这个窗口里
 #   2. 在 CLion 里选 "Remote Debug" 配置（target remote: localhost:1234），点 🐞 调试
 #   调试结束（程序跑完或者在 CLion 里点停止）后，gdbserver 退出，本脚本也跟着结束
 #
 # 程序参数会原样传给 day2_h2642yuv，例如：
-#   ./debug_on_board_via_usb.sh -i /userdata/av/aaa.264 -o /userdata/av/out.nv12 -n 10
+#   ./run_debug_on_board_via_usb.sh -i /userdata/av/aaa.264 -o /userdata/av/out.nv12 -n 10
 #
 # 可选环境变量：
 #   ADB=/path/to/adb    不用 PATH 里的 adb 时指定
