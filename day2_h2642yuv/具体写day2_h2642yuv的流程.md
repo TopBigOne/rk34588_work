@@ -8,7 +8,7 @@
 
 ## 0. 先放下心理负担
 
-`mpi_dec_test.c` 695 行，但我们要写的只有大约 **250 行**（含参数解析和统计），核心循环不到 80 行。比 Day 1 简单的地方：
+`src/mpi_dec_light.cpp` 695 行，但我们要写的只有大约 **250 行**（含参数解析和统计），核心循环不到 80 行。比 Day 1 简单的地方：
 
 - 解码几乎不用配参数（只有 `split_parse` 一个），宽高从码流里读
 - Day 1 的 CHECK 宏、goto CLEANUP、fread/fwrite、stride 全部会用
