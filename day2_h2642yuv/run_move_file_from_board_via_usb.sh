@@ -8,7 +8,7 @@
 #   ADB_SERIAL=xxxx     同时连了多台 adb 设备时，指定板子的序列号（adb devices 第一列）
 
 cd "$(dirname "$0")" || exit 1
-SRC=${1:-/userdata/av/bbb.yuv}
+SRC=${1:-/userdata/av/out.nv12}
 DST_DIR=${2:-result_from_board}
 DST="$DST_DIR/$(basename "$SRC")"
 
