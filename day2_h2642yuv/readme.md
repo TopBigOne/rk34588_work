@@ -96,6 +96,7 @@
 | 02 | [读源码](guide/02_读源码.md) | 写代码前：按顺序读 `src/mpi_dec_light.cpp`、`src/mpi_dec_utils.c`，答完 4 个问题 |
 | 03 | [具体写 day2_h2642yuv 的流程](具体写day2_h2642yuv的流程.md) | 写代码时：M1～M6 每一步的调用、完整代码、怎么验证、易错点 |
 | doc | [decode_get_frame 拿到的几种帧](doc/decode_get_frame拿到的几种帧.md) | 写 M2、M3 取帧循环时：info change / errinfo / discard / eos 怎么分，aaa.264 实测 1804 个 MppFrame |
+| doc | [mpp_buffer_group_limit_config](doc/mpp_buffer_group_limit_config.md) | 写 M2 建内存池时：limit_config 给池子设上限（不预分配），解决什么问题、size 和 count 怎么填、卡死等风险 |
 
 Day 1 里已经学过、这里直接复用的知识（不再重复）：
 
