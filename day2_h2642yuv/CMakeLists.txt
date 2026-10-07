@@ -17,8 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 先写成面条代码，全部在 main.cpp 里；跑通后再拆成 src/ 下的类（和 Day 1 一样）
 add_executable(day2_h2642yuv
-        src/mpi_dec_light.cpp
-        src/mpi_dec_utils.c
+        src/mpi_dec_most_light.cpp
 )
 
 target_compile_options(day2_h2642yuv PRIVATE -Wall -Wextra)
