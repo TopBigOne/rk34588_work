@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 680" width="1050" height="680" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1050" height="680" fill="#ffffff"/>
+  <text x="525" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">count 怎么用：解码器每解一帧前，先数一数"还有没有空位"</text>
+  <text x="525" y="58" text-anchor="middle" font-size="13.5" fill="#334155">空位 = limit_count − count_used（正在被用的块数）；空位 &lt; 1 → 这一帧先不解，等你还帧</text>
+  <text x="525" y="78" text-anchor="middle" font-size="12" fill="#64748b">源码：mpp_buffer.cpp 第 394–396 行（算空位），mpp_dec_normal.cpp 第 581–586 行（空位不够就等）</text>
+  <rect x="20" y="96" width="1010" height="110" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="34" y="118" font-size="15" font-weight="700" fill="#0f172a">A</text>
+  <text x="56" y="118" font-size="12.5" font-weight="700" fill="#0f172a">limit_config(bufSize, 24)</text>
+  <text x="56" y="138" font-size="12" fill="#475569">正常：每帧马上 deinit</text>
+  <rect x="230" y="110" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="263" y="110" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="296" y="110" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="329" y="110" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="362" y="110" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="395" y="110" width="28" height="34" rx="5" fill="#e2e8f0" stroke="#64748b"/>
+  <rect x="428" y="110" width="28" height="34" rx="5" fill="#e2e8f0" stroke="#64748b"/>
+  <rect x="461" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="494" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="527" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="560" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="593" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="626" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="659" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="692" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="725" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="758" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="791" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="824" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="857" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="890" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="923" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="956" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <rect x="989" y="110" width="28" height="34" rx="5" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <text x="230" y="166" font-size="12.5" fill="#334155">count_used = 5（示意）→ 空位 = 24 − 5 = 19 ≥ 1</text>
+  <text x="230" y="188" font-size="12.5" font-weight="700" fill="#15803d">✅ 一直不用等。实测：1803 帧全解完，最多只建了 7 块，926 fps</text>
+  <rect x="20" y="221" width="1010" height="110" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="34" y="243" font-size="15" font-weight="700" fill="#0f172a">B</text>
+  <text x="56" y="243" font-size="12.5" font-weight="700" fill="#0f172a">limit_config(bufSize, 24)</text>
+  <text x="56" y="263" font-size="12" fill="#475569">你攥着 20 帧不 deinit</text>
+  <rect x="230" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="263" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="296" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="329" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="362" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="395" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="428" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="461" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="494" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="527" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="560" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="593" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="626" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="659" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="692" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="725" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="758" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="791" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="824" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="857" y="235" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="890" y="235" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="923" y="235" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="956" y="235" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="989" y="235" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <text x="230" y="291" font-size="12.5" fill="#334155">count_used = 20 + 4 = 24 → 空位 = 24 − 24 = 0 &lt; 1</text>
+  <text x="230" y="313" font-size="12.5" font-weight="700" fill="#dc2626">❌ 解码器停下来等空位，等不到。实测：解出 24 帧后卡住，不报错</text>
+  <rect x="20" y="346" width="1010" height="110" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="34" y="368" font-size="15" font-weight="700" fill="#0f172a">C</text>
+  <text x="56" y="368" font-size="12.5" font-weight="700" fill="#0f172a">limit_config(bufSize, 4)</text>
+  <text x="56" y="388" font-size="12" fill="#475569">count 给小了</text>
+  <rect x="230" y="360" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="263" y="360" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="296" y="360" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="329" y="360" width="28" height="34" rx="5" fill="#bfdbfe" stroke="#2563eb"/>
+  <rect x="362" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="366" y1="364" x2="386" y2="390" stroke="#cbd5e1"/>
+  <rect x="395" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="399" y1="364" x2="419" y2="390" stroke="#cbd5e1"/>
+  <rect x="428" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="432" y1="364" x2="452" y2="390" stroke="#cbd5e1"/>
+  <rect x="461" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="465" y1="364" x2="485" y2="390" stroke="#cbd5e1"/>
+  <rect x="494" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="498" y1="364" x2="518" y2="390" stroke="#cbd5e1"/>
+  <rect x="527" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="531" y1="364" x2="551" y2="390" stroke="#cbd5e1"/>
+  <rect x="560" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="564" y1="364" x2="584" y2="390" stroke="#cbd5e1"/>
+  <rect x="593" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="597" y1="364" x2="617" y2="390" stroke="#cbd5e1"/>
+  <rect x="626" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="630" y1="364" x2="650" y2="390" stroke="#cbd5e1"/>
+  <rect x="659" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="663" y1="364" x2="683" y2="390" stroke="#cbd5e1"/>
+  <rect x="692" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="696" y1="364" x2="716" y2="390" stroke="#cbd5e1"/>
+  <rect x="725" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="729" y1="364" x2="749" y2="390" stroke="#cbd5e1"/>
+  <rect x="758" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="762" y1="364" x2="782" y2="390" stroke="#cbd5e1"/>
+  <rect x="791" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="795" y1="364" x2="815" y2="390" stroke="#cbd5e1"/>
+  <rect x="824" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="828" y1="364" x2="848" y2="390" stroke="#cbd5e1"/>
+  <rect x="857" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="861" y1="364" x2="881" y2="390" stroke="#cbd5e1"/>
+  <rect x="890" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="894" y1="364" x2="914" y2="390" stroke="#cbd5e1"/>
+  <rect x="923" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="927" y1="364" x2="947" y2="390" stroke="#cbd5e1"/>
+  <rect x="956" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="960" y1="364" x2="980" y2="390" stroke="#cbd5e1"/>
+  <rect x="989" y="360" width="28" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0"/><line x1="993" y1="364" x2="1013" y2="390" stroke="#cbd5e1"/>
+  <text x="230" y="416" font-size="12.5" fill="#334155">count_used = 4 → 空位 = 4 − 4 = 0 &lt; 1</text>
+  <text x="230" y="438" font-size="12.5" font-weight="700" fill="#dc2626">❌ 和 B 一模一样。实测：解出 4 帧后卡住，不报错</text>
+  <rect x="20" y="471" width="1010" height="110" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="34" y="493" font-size="15" font-weight="700" fill="#0f172a">D</text>
+  <text x="56" y="493" font-size="12.5" font-weight="700" fill="#0f172a">不调 limit_config</text>
+  <text x="56" y="513" font-size="12" fill="#475569">你攥着 30 帧不 deinit</text>
+  <rect x="230" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="263" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="296" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="329" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="362" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="395" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="428" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="461" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="494" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="527" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="560" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="593" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="626" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="659" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="692" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="725" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="758" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="791" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="824" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="857" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="890" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="923" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="956" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="989" y="485" width="28" height="34" rx="5" fill="#bbf7d0" stroke="#16a34a"/>
+  <text x="230" y="541" font-size="12.5" fill="#334155">limit_count = 0 → 空位永远按 3 算，永远 ≥ 1</text>
+  <text x="230" y="563" font-size="12.5" font-weight="700" fill="#b45309">⚠️ 解码器从不停，块数没有上限。实测：涨到 37 块、147 MB（图里只画得下 24 格）</text>
+  <g font-size="12" fill="#334155">
+    <rect x="230" y="612" width="22" height="18" rx="4" fill="#bfdbfe" stroke="#2563eb"/><text x="258" y="626">解码器在用（参考帧 / 正在写 / 排队）</text>
+    <rect x="490" y="612" width="22" height="18" rx="4" fill="#bbf7d0" stroke="#16a34a"/><text x="518" y="626">你攥着没还</text>
+    <rect x="620" y="612" width="22" height="18" rx="4" fill="#e2e8f0" stroke="#64748b"/><text x="648" y="626">空闲（不算 count_used）</text>
+    <rect x="820" y="612" width="22" height="18" rx="4" fill="none" stroke="#94a3b8" stroke-dasharray="3 3"/><text x="848" y="626">还没建</text>
+    <rect x="230" y="642" width="22" height="18" rx="4" fill="#f8fafc" stroke="#e2e8f0"/><line x1="234" y1="645" x2="248" y2="657" stroke="#cbd5e1"/><text x="258" y="656">count 之外：不允许建</text>
+  </g>
+</svg>

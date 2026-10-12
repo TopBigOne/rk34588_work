@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 560" width="1050" height="560" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#15803d"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1050" height="560" fill="#ffffff"/>
+
+  <text x="525" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">解码器的内存池（MppBufferGroup）：一个装 buffer 的"停车场"</text>
+
+  <!-- 解码器 -->
+  <rect x="20" y="150" width="150" height="150" rx="12" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="95" y="185" text-anchor="middle" font-size="17" font-weight="700" fill="#1e3a8a">解码器</text>
+  <text x="95" y="210" text-anchor="middle" font-size="13" fill="#1e3a8a">MPP + VPU 硬件</text>
+  <text x="95" y="240" text-anchor="middle" font-size="12" fill="#334155">每解一帧，</text>
+  <text x="95" y="258" text-anchor="middle" font-size="12" fill="#334155">要一块 buffer</text>
+  <text x="95" y="276" text-anchor="middle" font-size="12" fill="#334155">往里写像素</text>
+
+  <!-- 应用 -->
+  <rect x="880" y="150" width="150" height="150" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="955" y="185" text-anchor="middle" font-size="17" font-weight="700" fill="#14532d">你的代码</text>
+  <text x="955" y="210" text-anchor="middle" font-size="13" fill="#14532d">main 里的循环</text>
+  <text x="955" y="240" text-anchor="middle" font-size="12" fill="#334155">拿到帧 → 写文件</text>
+  <text x="955" y="258" text-anchor="middle" font-size="12" fill="#334155">→ mpp_frame_deinit</text>
+  <text x="955" y="276" text-anchor="middle" font-size="12" fill="#334155">把 buffer 还回去</text>
+
+  <!-- 池子（整体右移 45） -->
+  <g transform="translate(45,0)">
+    <rect x="245" y="70" width="470" height="330" rx="14" fill="#f8fafc" stroke="#334155" stroke-width="2"/>
+    <text x="480" y="98" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">内存池 bufferGroup</text>
+    <text x="480" y="120" text-anchor="middle" font-size="12.5" fill="#475569">limit_config(bufferGroup, 4177920, 24)：每块最大 4,177,920 字节，最多 24 块</text>
+    <g font-size="11" text-anchor="middle">
+      <rect x="275" y="140" width="62" height="44" rx="6" fill="#bfdbfe" stroke="#2563eb"/><text x="306" y="160" fill="#1e3a8a">解码器</text><text x="306" y="175" fill="#1e3a8a">参考帧</text>
+      <rect x="345" y="140" width="62" height="44" rx="6" fill="#bfdbfe" stroke="#2563eb"/><text x="376" y="160" fill="#1e3a8a">解码器</text><text x="376" y="175" fill="#1e3a8a">正在写</text>
+      <rect x="415" y="140" width="62" height="44" rx="6" fill="#fde68a" stroke="#d97706"/><text x="446" y="160" fill="#78350f">输出队列</text><text x="446" y="175" fill="#78350f">等你取</text>
+      <rect x="485" y="140" width="62" height="44" rx="6" fill="#fde68a" stroke="#d97706"/><text x="516" y="160" fill="#78350f">输出队列</text><text x="516" y="175" fill="#78350f">等你取</text>
+      <rect x="555" y="140" width="62" height="44" rx="6" fill="#bbf7d0" stroke="#16a34a"/><text x="586" y="160" fill="#14532d">你手里</text><text x="586" y="175" fill="#14532d">还没还</text>
+      <rect x="625" y="140" width="62" height="44" rx="6" fill="#e2e8f0" stroke="#64748b"/><text x="656" y="160" fill="#334155">空闲</text><text x="656" y="175" fill="#334155">等复用</text>
+      <rect x="275" y="192" width="62" height="44" rx="6" fill="#e2e8f0" stroke="#64748b"/><text x="306" y="212" fill="#334155">空闲</text><text x="306" y="227" fill="#334155">等复用</text>
+      <g fill="none" stroke="#94a3b8" stroke-dasharray="4 3">
+        <rect x="345" y="192" width="62" height="44" rx="6"/>
+        <rect x="415" y="192" width="62" height="44" rx="6"/>
+        <rect x="485" y="192" width="62" height="44" rx="6"/>
+        <rect x="555" y="192" width="62" height="44" rx="6"/>
+        <rect x="625" y="192" width="62" height="44" rx="6"/>
+        <rect x="275" y="244" width="62" height="44" rx="6"/>
+        <rect x="345" y="244" width="62" height="44" rx="6"/>
+        <rect x="415" y="244" width="62" height="44" rx="6"/>
+        <rect x="485" y="244" width="62" height="44" rx="6"/>
+        <rect x="555" y="244" width="62" height="44" rx="6"/>
+        <rect x="625" y="244" width="62" height="44" rx="6"/>
+        <rect x="275" y="296" width="62" height="44" rx="6"/>
+        <rect x="345" y="296" width="62" height="44" rx="6"/>
+        <rect x="415" y="296" width="62" height="44" rx="6"/>
+        <rect x="485" y="296" width="62" height="44" rx="6"/>
+        <rect x="555" y="296" width="62" height="44" rx="6"/>
+        <rect x="625" y="296" width="62" height="44" rx="6"/>
+      </g>
+    </g>
+    <text x="480" y="368" text-anchor="middle" font-size="12.5" fill="#475569">虚线格 = 还没建的 buffer（不占内存）。实测 aaa.264 最多只建了 7 块（27.9 MB）</text>
+    <text x="480" y="388" text-anchor="middle" font-size="12.5" fill="#475569">格子的颜色分配是示意，表示"一块 buffer 可能正被谁占着"</text>
+  </g>
+
+  <!-- ① 池子 → 解码器 -->
+  <path d="M290,215 L175,215" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <text x="232" y="168" text-anchor="middle" font-size="11" fill="#334155">① mpp_buffer_get</text>
+  <text x="232" y="185" text-anchor="middle" font-size="11" fill="#64748b">先找空闲的，</text>
+  <text x="232" y="200" text-anchor="middle" font-size="11" fill="#64748b">没有再新建</text>
+
+  <!-- ② 解码器 → 应用 -->
+  <path d="M95,300 L95,450 L955,450 L955,305" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <rect x="370" y="436" width="310" height="28" rx="6" fill="#ffffff"/>
+  <text x="525" y="455" text-anchor="middle" font-size="13" fill="#334155">② decode_get_frame：把装好像素的帧交给你</text>
+
+  <!-- ③ 应用 → 池子 -->
+  <path d="M880,215 L765,215" stroke="#15803d" stroke-width="2" fill="none" marker-end="url(#arrG)"/>
+  <text x="822" y="168" text-anchor="middle" font-size="11" fill="#15803d">③ mpp_frame_deinit</text>
+  <text x="822" y="185" text-anchor="middle" font-size="11" fill="#15803d">buffer 回到</text>
+  <text x="822" y="200" text-anchor="middle" font-size="11" fill="#15803d">空闲列表</text>
+
+  <!-- 底部：物理内存 -->
+  <rect x="290" y="490" width="470" height="50" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="525" y="512" text-anchor="middle" font-size="13.5" font-weight="700" fill="#7f1d1d">DMA 内存（MPP_BUFFER_TYPE_DRM，实际走 DMA-HEAP）</text>
+  <text x="525" y="530" text-anchor="middle" font-size="12" fill="#7f1d1d">新建一块 buffer 时才从这里真正申请 4 MB；池子销毁时一起还给系统</text>
+  <path d="M330,400 L330,488" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5 4" fill="none" marker-end="url(#arrR)"/>
+</svg>

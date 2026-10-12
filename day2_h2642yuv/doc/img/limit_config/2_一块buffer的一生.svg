@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 600" width="1050" height="600" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#15803d"/>
+    </marker>
+    <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1050" height="600" fill="#ffffff"/>
+  <text x="525" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">一块 buffer 的一生：新建 → 使用 → 归还 → 复用</text>
+
+  <!-- 不存在 -->
+  <rect x="30" y="85" width="150" height="80" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="105" y="118" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">还没建</text>
+  <text x="105" y="143" text-anchor="middle" font-size="12" fill="#64748b">不占任何内存</text>
+
+  <!-- 使用中 -->
+  <rect x="320" y="70" width="410" height="200" rx="14" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="525" y="100" text-anchor="middle" font-size="17" font-weight="700" fill="#1e3a8a">使用中（list_used，算进 count_used）</text>
+  <text x="525" y="126" text-anchor="middle" font-size="13" fill="#1e3a8a">ref_count = 现在有几方攥着它（≥ 1）</text>
+  <rect x="345" y="142" width="170" height="108" rx="10" fill="#dbeafe" stroke="#93c5fd"/>
+  <text x="430" y="166" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">解码器攥着</text>
+  <text x="430" y="188" text-anchor="middle" font-size="12" fill="#334155">正在往里写像素</text>
+  <text x="430" y="206" text-anchor="middle" font-size="12" fill="#334155">当参考帧（P 帧要用）</text>
+  <text x="430" y="224" text-anchor="middle" font-size="12" fill="#334155">在输出队列排队</text>
+  <rect x="535" y="142" width="170" height="108" rx="10" fill="#dcfce7" stroke="#86efac"/>
+  <text x="620" y="166" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">你攥着</text>
+  <text x="620" y="188" text-anchor="middle" font-size="12" fill="#334155">get_frame 拿到了</text>
+  <text x="620" y="206" text-anchor="middle" font-size="12" fill="#334155">还没 mpp_frame_deinit</text>
+  <text x="620" y="224" text-anchor="middle" font-size="12" fill="#334155">（正在写文件）</text>
+
+  <!-- 空闲 -->
+  <rect x="320" y="390" width="410" height="120" rx="14" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+  <text x="525" y="422" text-anchor="middle" font-size="17" font-weight="700" fill="#334155">空闲（list_unused，算进 count_unused）</text>
+  <text x="525" y="450" text-anchor="middle" font-size="13" fill="#334155">ref_count = 0，没人用，但内存还留着</text>
+  <text x="525" y="474" text-anchor="middle" font-size="13" fill="#334155">下一帧来了直接拿去用，不用重新向系统申请</text>
+  <text x="525" y="496" text-anchor="middle" font-size="12" fill="#64748b">（不算进 count_used，所以不占"空位"）</text>
+
+  <!-- 销毁 -->
+  <rect x="870" y="230" width="150" height="90" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="945" y="262" text-anchor="middle" font-size="16" font-weight="700" fill="#7f1d1d">销毁</text>
+  <text x="945" y="286" text-anchor="middle" font-size="12" fill="#7f1d1d">4 MB 还给系统</text>
+  <text x="945" y="304" text-anchor="middle" font-size="12" fill="#7f1d1d">（DMA 内存）</text>
+
+  <!-- ① 新建 -->
+  <path d="M180,125 L316,125" stroke="#2563eb" stroke-width="2.2" fill="none" marker-end="url(#aB)"/>
+  <text x="248" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">① 新建</text>
+  <rect x="30" y="182" width="270" height="92" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+  <text x="42" y="203" font-size="13" font-weight="700" fill="#1e3a8a">① mpp_buffer_create</text>
+  <text x="42" y="223" font-size="11.5" fill="#334155">只在"没有空闲块"的时候才新建，</text>
+  <text x="42" y="241" font-size="11.5" fill="#334155">建之前查 limit_config 的两条上限：</text>
+  <text x="42" y="261" font-size="11.5" fill="#dc2626">块数已满 / 要的比 size 大 → 拒绝新建</text>
+
+  <!-- ② 归还：使用中 → 空闲 -->
+  <path d="M620,272 L620,386" stroke="#15803d" stroke-width="2.4" fill="none" marker-end="url(#aG)"/>
+  <rect x="632" y="296" width="230" height="70" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+  <text x="642" y="316" font-size="13" font-weight="700" fill="#15803d">② 每一方用完都 put 一次</text>
+  <text x="642" y="336" font-size="11.5" fill="#334155">你：mpp_frame_deinit → ref_count−1</text>
+  <text x="642" y="354" font-size="11.5" fill="#334155">减到 0 才挂回空闲列表</text>
+
+  <!-- ③ 复用：空闲 → 使用中 -->
+  <path d="M430,386 L430,272" stroke="#475569" stroke-width="2.4" fill="none" marker-end="url(#a)"/>
+  <rect x="175" y="300" width="240" height="70" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="187" y="320" font-size="13" font-weight="700" fill="#334155">③ 复用 mpp_buffer_get</text>
+  <text x="187" y="340" font-size="11.5" fill="#334155">解码器要 buffer 时先从这里拿</text>
+  <text x="187" y="358" font-size="11.5" fill="#334155">（够大就用；count_used+1）</text>
+
+  <!-- ④ 销毁 -->
+  <path d="M732,450 C820,450 850,360 900,324" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#aR)"/>
+  <text x="760" y="540" font-size="12.5" font-weight="700" fill="#7f1d1d">④ mpp_buffer_group_put / clear</text>
+  <text x="760" y="560" font-size="11.5" fill="#7f1d1d">释放整个池子时，所有块一起销毁</text>
+
+  <text x="30" y="560" font-size="12.5" fill="#475569">正常解码时，buffer 就在 ② ③ 之间来回转：</text>
+  <text x="30" y="580" font-size="12.5" fill="#475569">aaa.264 实测 1803 帧只建了 7 块，每块被复用了约 250 次。</text>
+</svg>
