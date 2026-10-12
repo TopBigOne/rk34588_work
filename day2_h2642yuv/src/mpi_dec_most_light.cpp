@@ -28,13 +28,13 @@ static bool write_nv12_frame(FILE *fp, MppFrame frame) {
     }
     // 便于进行指针运算
     const auto *base = static_cast<const uint8_t *>(mpp_buffer_get_ptr(buffer));
-    printf("case 1: base address : %p\n", base);
+    printf("    case 1: base address : %p\n", base);
     for (RK_U32 row = 0; row < height; row++) { // Y：1080 行
         if (fwrite(base + row * horStride, 1, width, fp) != width) {
             return false;
         }
     }
-    printf("case 2: base address : %p\n", base);
+    printf("    case 2: base address : %p\n", base);
     const uint8_t *uv = base + horStride * verStride; // UV 从第 1088 行开始
     for (RK_U32 row = 0; row < height / 2; row++) { // UV：540 行
         if (fwrite(uv + row * horStride, 1, width, fp) != width) {
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     bool outputEos = false;
     int exitCode = -1;
     RK_S32 decodedFrameCount = 0;
-    RK_S32 maxFrames = 10;
+    RK_S32 maxFrames = 60;
     bool reachedLimit = false;
     int readSize = 0;
     // step 1:
@@ -118,8 +118,8 @@ int main(int argc, char **argv) {
             if (ret == MPP_OK) {
                 mpp_packet_deinit(&inputPacket);
             } else if (ret == MPP_ERR_BUFFER_FULL) {
-                //队列满：inputPacket 留着，等 1ms 后重送（正常的流量控制，不是错误）
-                //  printf("[warning] decode_put_packet : %s\n", "buffer is full");
+                // 队列满：inputPacket 留着，等 1ms 后重送（正常的流量控制，不是错误）
+                //   printf("[warning] decode_put_packet : %s\n", "buffer is full");
             } else {
                 printf("[FAIL] decode_put_packet ret=%d\n", ret);
                 goto CLEANUP;
@@ -142,9 +142,14 @@ int main(int argc, char **argv) {
                 RK_U32 bufSize = mpp_frame_get_buf_size(outputFrame);
                 printf("|            info change: %ux%u stride %ux%u buf_size %u\n", width, height, horStride,
                        verStride, bufSize);
-                // 建内存池
-                ret = mpp_buffer_group_get_internal(&bufferGroup, MPP_BUFFER_TYPE_DRM);
-                CHECK(ret);
+                if (!bufferGroup) {
+                    // 第一次：建池子
+                    CHECK(mpp_buffer_group_get_internal(&bufferGroup, MPP_BUFFER_TYPE_DRM));
+                } else {
+                    // 以后，，池子留着，清理到buffer
+                    CHECK(mpp_buffer_group_clear(bufferGroup));
+                }
+                // 设置上限
                 ret = mpp_buffer_group_limit_config(bufferGroup, bufSize, 24);
                 CHECK(ret);
                 mpp_api->control(mpp_ctx, MPP_DEC_SET_EXT_BUF_GROUP, bufferGroup);
