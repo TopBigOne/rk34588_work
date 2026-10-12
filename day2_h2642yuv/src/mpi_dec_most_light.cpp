@@ -61,7 +61,6 @@ static bool parse_args(int argc, char** argv, Args& a) {
 }
 
 static bool write_nv12_frame(FILE* fp, MppFrame frame) {
-    puts("write_nv12_frame");
     const RK_U32 width     = mpp_frame_get_width(frame); // 1920
     const RK_U32 height    = mpp_frame_get_height(frame); // 1080
     const RK_U32 horStride = mpp_frame_get_hor_stride(frame); // 1920
@@ -72,13 +71,11 @@ static bool write_nv12_frame(FILE* fp, MppFrame frame) {
     }
     // 便于进行指针运算
     const auto* base = static_cast<const uint8_t*>(mpp_buffer_get_ptr(buffer));
-    printf("    case 1: base address : %p\n", base);
     for (RK_U32 row = 0; row < height; row++) { // Y：1080 行
         if (fwrite(base + row * horStride, 1, width, fp) != width) {
             return false;
         }
     }
-    printf("    case 2: base address : %p\n", base);
     const uint8_t* uv = base + horStride * verStride; // UV 从第 1088 行开始
     for (RK_U32 row = 0; row < height / 2; row++) { // UV：540 行
         if (fwrite(uv + row * horStride, 1, width, fp) != width) {
@@ -121,7 +118,7 @@ int main(int argc, char** argv) {
         printf("usage: %s -i in.h264 [-o out.nv12] [-t h264|h265] [-n 帧数]\n", argv[0]);
         return -1;
     }
-    const size_t chunkSize = 64 * 2014;
+    const size_t chunkSize = 64 * 1024;
     std::vector<uint8_t> chunk(chunkSize);
 
     MppCtx decoderCtx         = nullptr;
