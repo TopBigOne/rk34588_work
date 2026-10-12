@@ -47,3 +47,5 @@ $ADB push "$LOCAL_BIN" "$REMOTE_DIR/" >/dev/null || exit 1
 $ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" || exit 1
 echo "=== 通过 USB 在板子上运行 $REMOTE_DIR/$BIN_NAME $*（MPP 库：${BOARD_MPP_LIB}） ==="
 exec $ADB shell "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*"
+#--------------------测试维度------------start
+#--------------------测试维度------------end

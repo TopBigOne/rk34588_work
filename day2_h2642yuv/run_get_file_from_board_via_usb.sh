@@ -1,6 +1,6 @@
 #!/bin/sh
 # 通过 USB（adb）把板子上的文件"移动"到 Mac：先 adb pull，核对大小一致后，再删掉板子上的那份。
-# 用法：./run_move_file_from_board_via_usb.sh [板子上的文件] [Mac 上的目录]
+# 用法：./run_get_file_from_board_via_usb.sh [板子上的文件] [Mac 上的目录]
 #   默认：/userdata/av/bbb.yuv → ./result_from_board/
 # 可选环境变量：
 #   KEEP=1              只拷贝，不删板子上的文件
