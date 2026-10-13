@@ -15,10 +15,27 @@ project(day2_h2642yuv)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 先写成面条代码，全部在 main.cpp 里；跑通后再拆成 src/ 下的类（和 Day 1 一样）
+# 生成一个可执行文件：目标名 day2_h2642yuv，源文件都在 src/ 下，按功能分目录（和 day1_yuv2h264 一样）：
+#   src/main.cpp     只负责"组装"
+#   src/app/         解析命令行参数
+#   src/decoder/     MppDecoder：MPP 硬件解码器（含 info change 和内存池）
+#   src/source/      输入：StreamSource 接口 + ReadStream（码流文件）；以后的 RTSP 拉流也放这里
+#   src/sink/        输出：FrameSink 接口 + WriteYuv（NV12 文件）；以后的送显示也放这里
+#   src/pipeline/    DecodePipeline（流程骨架）+ DecodeStats（统计）
+#   src/common/      公共工具：MPP_CHECK、RAII 句柄（只有头文件）
+# 设计见 guide/03_重构成类.md
 add_executable(day2_h2642yuv
-        src/mpi_dec_most_light.cpp
+        src/main.cpp
+        src/app/args.cpp
+        src/decoder/mpp_decoder.cpp
+        src/source/read_stream.cpp
+        src/sink/write_yuv.cpp
+        src/pipeline/decode_pipeline.cpp
+        src/pipeline/decode_stats.cpp
 )
+
+# 头文件搜索目录加上 src/：所有 #include 都写成相对 src/ 的路径，比如 #include "decoder/mpp_decoder.h"
+target_include_directories(day2_h2642yuv PRIVATE src)
 
 target_compile_options(day2_h2642yuv PRIVATE -Wall -Wextra)
 
