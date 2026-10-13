@@ -1,8 +1,15 @@
+// 【扫一眼】逐行 fwrite，M3 里自己写过
 #include "sink/write_yuv.h"
 
 #include <cstdint> // uint8_t
 #include <cstdio>  // fopen / fwrite / printf
 
+/**
+ * @brief 创建输出文件（"wb"：已存在就清空重写）
+ * @param path  文件路径
+ * @return 成功返回 true；打开失败打印原因，返回 false
+ * @note 【扫一眼】
+ */
 bool WriteYuv::open(const char* path) {
     file_.reset(fopen(path, "wb"));
     if (!file_) {
@@ -12,6 +19,12 @@ bool WriteYuv::open(const char* path) {
     return true;
 }
 
+/**
+ * @brief 写一帧 NV12：Y 平面 height 行 + UV 平面 height/2 行，每行只写 width 字节（跳过 stride 填充）
+ * @param frame  正常的图像帧（有 buffer）。只借用，不保存
+ * @return 全部写成功返回 true；没有 buffer 或 fwrite 写不满返回 false
+ * @note 【扫一眼】M3 里自己写过的 write_nv12_frame
+ */
 bool WriteYuv::write(MppFrame frame) {
     const RK_U32 width     = mpp_frame_get_width(frame);      // 1920
     const RK_U32 height    = mpp_frame_get_height(frame);     // 1080

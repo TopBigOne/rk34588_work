@@ -1,3 +1,4 @@
+// 【扫一眼】参数解析，原样从面条版搬过来，属于样板代码
 /*
  * 【解析参数】命令行参数 → Args
  *
@@ -16,11 +17,14 @@ struct Args {
     int maxFrames      = 0; // -n：最多解多少帧，0 = 解到码流结束（EOS）
 };
 
-// 打印用法（参数错误时调用）
+/**
+ * @brief 打印用法（参数错误时调用）
+ * @param prog  程序名（argv[0]）
+ */
 void usage(const char* prog);
 
 /**
- * 解析命令行参数。每个参数都是 "-名字 值" 成对出现
+ * @brief 解析命令行参数。每个参数都是 "-名字 值" 成对出现
  * @param argc  main 的 argc
  * @param argv  main 的 argv
  * @param a     解析结果写到这里（引用，函数会改它）

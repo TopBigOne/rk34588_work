@@ -31,6 +31,12 @@
  * 程序带了 rpath（见 CMakeLists.txt），板子上会自动加载 /userdata/mpp_build/lib 里的 MPP 库（出厂的太旧）
  *
  * 设计文档：guide/03_重构成类.md；相关：doc/decode_get_frame拿到的几种帧.md、doc/mpp_buffer_group_limit_config.md
+ *
+ * 学习标记（grep -rn "【手抄】" src 就能列出来）：
+ *   【手抄】  MPP 核心流程：不看原文默写到能写出来为止（Day 3、RTSP 都会反复用到）
+ *            → MppDecoder::init、MppDecoder::handle_info_change、DecodePipeline::run、DecodePipeline::drain_frames
+ *   【精读】  C++ 设计和资源所有权：不用抄，但要能回答旁边写的"检验"问题
+ *   【扫一眼】样板代码：知道在哪里、干什么就行
  */
 #include "app/args.h"
 #include "decoder/mpp_decoder.h"
@@ -41,6 +47,13 @@
 
 #include <cstdio> // printf
 
+/**
+ * @brief 程序入口：解析参数 → 创建各个对象 → DecodePipeline::run() → 打印汇总
+ * @param argc  参数个数
+ * @param argv  参数列表，见 usage()
+ * @return 成功返回 0；参数错误或任何一步失败返回 -1（退出码 255）
+ * @note 【精读】看对象的声明顺序（决定析构顺序），其余是组装代码
+ */
 int main(int argc, char** argv) {
     Args a;
     if (!parse_args(argc, argv, a)) {
@@ -48,6 +61,8 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    // 【精读】声明顺序：为什么 pipeline 最后声明，decoder 在 reader / writer 后面
+    //   检验：return 时这 5 个对象按什么顺序析构？
     // ⚠️ 声明顺序 = 析构顺序的反过来（C++ 规定：局部变量按声明的相反顺序析构）
     //   - pipeline 只保存引用，所以声明在最后（最先销毁）
     //   - decoder 比 reader / writer 先销毁：先停解码器，再关文件

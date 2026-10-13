@@ -1,3 +1,4 @@
+// 【扫一眼】计数加 printf
 /*
  * DecodeStats：解码统计工具类（帧数、错误帧、送包重试次数、用时），最后打印汇总
  *
@@ -15,26 +16,34 @@
 
 class DecodeStats {
 public:
-    // 开始计时。在解码循环开始前调用。用时包含读文件、写文件的时间，不是纯硬件解码时间
+    /**
+     * @brief 开始计时。在解码循环开始前调用
+     * @note 用时包含读文件、写文件的时间，不是纯硬件解码时间
+     */
     void start() { startTime_ = std::chrono::steady_clock::now(); }
 
-    // 停止计时，算出从 start() 到现在的用时。在解码循环结束后调用
+    /**
+     * @brief 停止计时，算出从 start() 到现在的用时。在解码循环结束后调用
+     */
     void stop();
 
-    // 解出一帧正常图像
+    /** @brief 记录解出一帧正常图像 */
     void add_frame() { decodedFrameCount_++; }
 
-    // 遇到一帧 errinfo / discard 的帧（跳过不写）
+    /** @brief 记录一帧 errinfo / discard 的帧（跳过不写） */
     void add_error() { errorFrameCount_++; }
 
-    // decode_put_packet 因为输入队列满返回了一次 MPP_ERR_BUFFER_FULL
+    /** @brief 记录一次送包重试（decode_put_packet 因为输入队列满返回了 MPP_ERR_BUFFER_FULL） */
     void add_put_retry() { putRetryCount_++; }
 
-    // 到目前为止解出了多少帧正常图像（判断 -n 帧数上限、打印错误帧的序号用）
+    /**
+     * @brief 获取已经解出的正常图像帧数
+     * @return 到目前为止 add_frame 被调用的次数（判断 -n 帧数上限、打印错误帧序号用）
+     */
     RK_S32 frame_count() const { return decodedFrameCount_; }
 
     /**
-     * 打印汇总：输入、输出、帧数、错误帧、info change 次数、用时、fps、送包重试次数
+     * @brief 打印汇总：输入、输出、帧数、错误帧、info change 次数、用时、fps、送包重试次数
      * @param streamInputPath  输入文件路径（只用来打印）
      * @param yuvOutputPath    输出文件路径，nullptr 表示没写文件
      * @param infoChangeCount  info change 次数（MppDecoder::info_change_count()）

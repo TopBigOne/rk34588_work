@@ -1,3 +1,4 @@
+// 【扫一眼】从 Day 1 原样复制来的，Day 1 已经学过
 /*
  * mpp_utils.h：各个模块共用的小工具（decoder、source、sink 都会用到；和 day1_yuv2h264 的同名文件一样）
  *

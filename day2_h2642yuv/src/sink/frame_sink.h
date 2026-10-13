@@ -1,3 +1,4 @@
+// 【扫一眼】接口只有一个虚函数，看一眼注释就够了
 /*
  * FrameSink：输出接口 ——"接收解码出来的图像"
  *
@@ -15,7 +16,7 @@ public:
     virtual ~FrameSink() = default;
 
     /**
-     * 输出一帧图像
+     * @brief 输出一帧图像
      * @param frame  正常的图像帧（有 buffer，没有 errinfo / discard）。
      *               只是借用：所有权还在调用方，write 返回后调用方会 mpp_frame_deinit，不要保存它
      * @return  成功返回 true；失败返回 false

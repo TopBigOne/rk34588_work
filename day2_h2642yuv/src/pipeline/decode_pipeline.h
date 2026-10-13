@@ -24,6 +24,7 @@
 class DecodePipeline {
 public:
     /**
+     * @brief 构造：只保存引用 / 指针，不拥有这些对象
      * @param source   输入（已经 open 过）
      * @param decoder  解码器（已经 init 过）
      * @param sink     输出（已经 open 过）；传 nullptr 表示不输出（只解码，测速度）
@@ -33,7 +34,7 @@ public:
         : source_(source), decoder_(decoder), sink_(sink), stats_(stats) {}
 
     /**
-     * 主循环：读一块 → 送进解码器（队列满就等 1ms 原样再送）→ 把能取的帧全取出来 → 写 / 统计
+     * @brief 主循环：读一块 → 送进解码器（队列满就等 1ms 原样再送）→ 把能取的帧全取出来 → 写 / 统计
      * 结束条件：拿到带 EOS 的帧（码流解完了），或者解够 maxFrames 帧
      * @param maxFrames  最多解多少帧，0 = 解到 EOS
      * @return  成功返回 true；任何一步失败打印原因，返回 false
@@ -42,8 +43,9 @@ public:
 
 private:
     /**
-     * 把解码器现在能给的帧全取出来（内层循环），直到它说"现在没有了"、拿到 EOS 帧、或者帧数够了
+     * @brief 把解码器现在能给的帧全取出来（内层循环），直到它说"现在没有了"、拿到 EOS 帧、或者帧数够了
      * 结果通过 outputEos_ / reachedLimit_ 带出来
+     * @param maxFrames  最多解多少帧，0 = 不限
      * @return  成功返回 true；取帧或写输出失败返回 false
      */
     bool drain_frames(int maxFrames);

@@ -1,3 +1,4 @@
+// 【扫一眼】fread 一块，M3 里自己写过
 /*
  * ReadStream : StreamSource —— 从码流文件里按固定长度（默认 64KB）一块一块读
  *
@@ -19,7 +20,7 @@
 class ReadStream : public StreamSource {
 public:
     /**
-     * 打开码流文件
+     * @brief 打开码流文件
      * @param path       文件路径
      * @param chunkSize  每次读多少字节
      * @return  成功返回 true；打开失败打印原因，返回 false
@@ -27,7 +28,10 @@ public:
     bool open(const char* path, size_t chunkSize = 64 * 1024);
 
     /**
-     * fread 一块。读不满 chunkSize 就是文件读完了（isLast = true）
+     * @brief fread 一块。读不满 chunkSize 就是文件读完了
+     * @param data    输出参数：这一块的数据，size() 就是真正读到的字节数
+     * @param isLast  输出参数：true = 这是最后一块
+     * @return 成功返回 true；读出错返回 false
      */
     bool read(std::vector<uint8_t>& data, bool& isLast) override;
 

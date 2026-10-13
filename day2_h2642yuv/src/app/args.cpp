@@ -1,13 +1,27 @@
+// 【扫一眼】参数解析，原样从面条版搬过来，属于样板代码
 #include "app/args.h"
 
 #include <cstdio>  // printf
 #include <cstdlib> // atoi
 #include <cstring> // strcmp
 
+/**
+ * @brief 打印用法
+ * @param prog  程序名（argv[0]）
+ * @note 【扫一眼】
+ */
 void usage(const char* prog) {
     printf("usage: %s -i in.h264 [-o out.nv12] [-t h264|h265] [-n 帧数]\n", prog);
 }
 
+/**
+ * @brief 解析命令行参数，每个参数都是 "-名字 值" 成对出现
+ * @param argc  main 的 argc
+ * @param argv  main 的 argv
+ * @param a     输出参数：解析结果
+ * @return 参数都合法返回 true；有错打印原因，返回 false
+ * @note 【扫一眼】
+ */
 bool parse_args(int argc, char** argv, Args& a) {
     for (int i = 1; i < argc; i += 2) {
         const char* opt = argv[i];
