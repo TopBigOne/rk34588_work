@@ -80,3 +80,13 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 
 - md 文档、shell 脚本和代码分开提交
 - 只有用户要求时才提交或推送
+
+## 项目记忆
+
+学习进度、合作方式、文档风格等记忆放在本仓库的 `memory/` 目录（不放在 `~/.claude` 下）：
+
+@memory/MEMORY.md
+
+- 索引里每一行对应 `memory/` 下的一个文件，需要时打开对应文件看详细内容
+- 进度有变化（里程碑完成、提交、换分支）时，更新 `memory/project_*.md`；新的合作约定写进 `memory/feedback_*.md`，并在 `memory/MEMORY.md` 里加一行
+- 恢复工作时以 `git status`、`git log` 和 `adb devices` 的实际结果为准，记忆可能过时
