@@ -1,5 +1,6 @@
 - [用户学习背景](user_learning_profile.md) — 在学 RK3588 MPP 编解码，国庆 5 天计划，中文交流，爱追问原理
 - [教学分工方式](feedback_teaching_workflow.md) — 我写文档并 review，用户写 MPP 核心代码；先面条后重构；md5 上板验证
 - [文档风格](feedback_docs_style.md) — 详细、SVG 图渲染检查、源码行号和实测数据要核对
-- [Day 2 进度断点](project_day2_status.md) — 2026-10-13：M1～M6 完成，重构代码未上板验收、未提交
+- [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
+- [Day 3 进度断点](project_day3_status.md) — 2026-10-15：板子没检测到 IMX415，用户计划 10/17 周六装摄像头
 - [关键文档和位置](reference_rk_work_docs.md) — 速查表、Day 2 文档、板子参考程序、会话记录 jsonl 路径
