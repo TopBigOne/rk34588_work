@@ -20,12 +20,14 @@ project(day3_cam2h264)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 生成一个可执行文件：目标名 day3_cam2h264，源文件都在 src/ 下
-# 现在只有 src/main.cpp（先写面条代码跑通 V4L2 采集）；写到编码那一步时，
-# 再把 Day 1 的 MppEncoder 加进来，并按 Day 1 的目录结构拆分（app / common / encoder / source / sink / pipeline）
+# 生成一个可执行文件：目标名 day3_cam2h264，源文件都在 src/ 下：
+#   src/main.cpp     先写面条代码跑通 V4L2 采集和编码（M2～M6），之后再按 Day 1 的目录结构拆分
+#   src/encoder/     MppEncoder：从 Day 1 复制过来，加了 horStride / verStride（摄像头的 stride 由驱动决定）
+#   src/common/      公共工具：ALIGN、MPP_CHECK、RAII 句柄（从 Day 1 复制，只有头文件）
 # 编译结果：cmake-build-rk3588-debug/day3_cam2h264
 add_executable(day3_cam2h264
-    src/main.cpp)
+    src/main.cpp
+    src/encoder/mpp_encoder.cpp)
 
 # 头文件搜索目录加上 src/：所有 #include 都写成相对 src/ 的路径，比如 #include "source/v4l2_camera.h"
 # PRIVATE：只有这个目标自己用
