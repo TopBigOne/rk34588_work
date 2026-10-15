@@ -93,8 +93,9 @@ private:
     /**
      * @brief 处理 info change：打印宽高、stride、buf_size，配置内存池，通知解码器继续
      *   第一次：mpp_buffer_group_get_internal 建池子
-     *   以后（码流中途换分辨率）：mpp_buffer_group_clear 清掉旧 buffer，池子复用
-     *   → mpp_buffer_group_limit_config(buf_size, 24) → SET_EXT_BUF_GROUP → SET_INFO_CHANGE_READY
+     *         以后（码流中途换分辨率）：mpp_buffer_group_clear 清掉旧 buffer，池子复用
+     *   → mpp_buffer_group_limit_config(buf_size, 24)
+     *   → SET_EXT_BUF_GROUP → SET_INFO_CHANGE_READY
      * 内存池和 count 的设计见 doc/mpp_buffer_group_limit_config.md
      * @param frame  info change 帧（只带宽高、stride、buf_size，没有图像）
      * @return  成功返回 true；失败打印出错的那一句，返回 false

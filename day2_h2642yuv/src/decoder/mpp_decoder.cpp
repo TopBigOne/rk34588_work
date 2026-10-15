@@ -1,6 +1,6 @@
 #include "decoder/mpp_decoder.h"
 
-#include <cstdio>  // printf
+#include <cstdio> // printf
 #include <utility> // std::move
 
 /**
@@ -25,7 +25,12 @@ MppDecoder::~MppDecoder() {
 /**
  * @brief 开机：创建解码器实例，初始化成解码器，打开内部分帧
  *
- * mpp_create → mpp_init(MPP_CTX_DEC, type) → mpp_dec_cfg_init → GET_CFG → base:split_parse = 1 → SET_CFG
+ *  →mpp_create
+ *  → mpp_init(MPP_CTX_DEC, type)
+ *  → mpp_dec_cfg_init
+ *  → GET_CFG
+ *      → base:split_parse = 1
+ *  → SET_CFG
  *
  * @param type  编码格式：MPP_VIDEO_CodingAVC（H.264）/ MPP_VIDEO_CodingHEVC（H.265）
  * @return 成功返回 true；任何一步失败打印出错的那一句，返回 false（已申请的资源由析构函数释放）
@@ -57,7 +62,8 @@ bool MppDecoder::init(MppCodingType type) {
  *         FeedResult::Error 出错（已打印原因）
  *
  * @note 【精读】为什么每次都新建 packet，而不是像面条版那样一直保留同一个。
- *       检验：返回 Full 时 MPP 收下数据了吗？依据是 mpp.cpp 的哪几行？（提示：第 420 行判断队列满，第 433–440 行才拷贝）
+ *       检验：返回 Full 时 MPP 收下数据了吗？依据是 mpp.cpp 的哪几行？（提示：第 420 行判断队列满，第 433–440
+ * 行才拷贝）
  */
 FeedResult MppDecoder::feed(const uint8_t* data, size_t size, bool eos) {
     // 【精读】const_cast：mpp_packet_init 的参数是 void*（不带 const），MPP 只读这块数据，所以去掉 const 是安全的
@@ -129,13 +135,20 @@ bool MppDecoder::handle_info_change(MppFrame frame) {
     const RK_U32 verStride  = mpp_frame_get_ver_stride(frame);
     const size_t bufferSize = mpp_frame_get_buf_size(frame); // 每帧需要的缓冲区大小（字节），1080p 是 4,177,920
     infoChangeCount_++;
-    printf("|            info change: %ux%u stride %ux%u buf_size %zu\n", width, height, horStride, verStride,
-        bufferSize);
+    printf(
+        "|            info change: %ux%u stride %ux%u buf_size %zu\n", width, height, horStride, verStride, bufferSize);
 
     if (!frameGroup_) {
         // 第一次：建一个"内部分配"的空池子（buffer 按需创建，不是一下子建 24 块）
         MppBufferGroup group = nullptr;
         MPP_CHECK(mpp_buffer_group_get_internal(&group, MPP_BUFFER_TYPE_DRM), false);
+        // 为什么先用局部变量、再 reset：
+        // mpp_buffer_group_get_internal 的参数是 MppBufferGroup*，只能把新池子的句柄写进一个普通变量，
+        // 没法直接写进 unique_ptr，所以先用局部变量 group 接住，再 reset 交给成员 frameGroup_ 管理
+        // （也可以写成 frameGroup_ = MppBufferGroupPtr(group)）
+        // reset 之后，池子的释放归 frameGroup_ 负责：MppDecoder 析构时自动调用 mpp_buffer_group_put。
+        // 所以局部变量 group 之后不要再用，也不要自己调用 put，否则会 put 两次
+        // 走到这里时 frameGroup_ 一定是空的（外面的 if 判断过），所以这次 reset 不会释放任何旧池子
         frameGroup_.reset(group);
     } else {
         // 码流中途换分辨率：池子复用，旧尺寸的 buffer 清掉（空闲的马上销毁，正在用的用完后销毁）
