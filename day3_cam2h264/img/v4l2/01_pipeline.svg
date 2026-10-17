@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="470" viewBox="0 0 1100 470">
+<title>一帧画面从摄像头到程序</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+<rect x="0" y="0" width="1100" height="470" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle">一帧画面从摄像头到你的程序：每一站干了什么</text>
+<rect x="30" y="70" width="190" height="175" rx="8" fill="#FDEBD3" stroke="#B26A00" stroke-width="1.2"/>
+<text x="125" y="95" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">① IMX415</text>
+<text x="125" y="120" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">摄像头（sensor）</text>
+<text x="125" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">把光变成数字</text>
+<text x="125" y="182" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">输出 RAW 数据</text>
+<text x="125" y="204" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">（还不是彩色图）</text>
+<rect x="240" y="70" width="190" height="175" rx="8" fill="#F2F2F2" stroke="#555" stroke-width="1.2"/>
+<text x="335" y="95" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#555" text-anchor="middle" font-weight="bold" dominant-baseline="middle">② 排线 + CSI</text>
+<text x="335" y="120" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">MIPI CSI-2 接口</text>
+<text x="335" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">把数据从摄像头</text>
+<text x="335" y="182" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">传进芯片</text>
+<text x="335" y="204" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">（就是那根排线）</text>
+<rect x="450" y="70" width="190" height="175" rx="8" fill="#E3F2E1" stroke="#2E7D32" stroke-width="1.2"/>
+<text x="545" y="95" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">③ ISP</text>
+<text x="545" y="120" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">图像处理器（rkisp）</text>
+<text x="545" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RAW → 彩色图</text>
+<text x="545" y="182" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">调亮度、去噪点</text>
+<text x="545" y="204" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">缩放、转成 NV12</text>
+<rect x="660" y="70" width="190" height="175" rx="8" fill="#DCE9F7" stroke="#2F5D9A" stroke-width="1.2"/>
+<text x="755" y="95" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">④ /dev/video31</text>
+<text x="755" y="120" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">video 节点（mainpath）</text>
+<text x="755" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">程序从这里取帧</text>
+<text x="755" y="182" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">open + ioctl</text>
+<text x="755" y="204" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">（V4L2 接口）</text>
+<rect x="870" y="70" width="190" height="175" rx="8" fill="#EEE5F7" stroke="#6A3D9A" stroke-width="1.2"/>
+<text x="965" y="95" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#6A3D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">⑤ 你的程序</text>
+<text x="965" y="120" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">day3_cam2h264</text>
+<text x="965" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">DQBUF 拿到一帧</text>
+<text x="965" y="182" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">交给编码器</text>
+<text x="965" y="204" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="13" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">QBUF 还回去</text>
+<line x1="220" y1="158" x2="240" y2="158" stroke="#444" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="430" y1="158" x2="450" y2="158" stroke="#444" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="640" y1="158" x2="660" y2="158" stroke="#444" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="850" y1="158" x2="870" y2="158" stroke="#444" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="325" y="262" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#B26A00" text-anchor="middle" font-weight="normal" dominant-baseline="middle">数据：RAW（每个像素只有一种颜色）</text>
+<text x="745" y="262" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2F5D9A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">数据：NV12（1920×1080，一帧 3,110,400 字节）</text>
+<rect x="390" y="330" width="310" height="110" rx="8" fill="#FFF8E1" stroke="#B26A00" stroke-width="1.2"/>
+<text x="545" y="355" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="14" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">rkaiq_3A_server（一个后台进程）</text>
+<text x="545" y="385" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">每一帧：看 ISP 统计的亮度、颜色</text>
+<text x="545" y="404" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">→ 算出新的曝光、白平衡</text>
+<text x="545" y="423" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">→ 写回 ISP，并通过 I2C 改摄像头的曝光</text>
+<path d="M500,245 L500,330" fill="none" stroke="#B26A00" stroke-width="1.6" marker-end="url(#arrow)" stroke-dasharray="6,4"/>
+<text x="490" y="290" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#B26A00" text-anchor="end" font-weight="normal" dominant-baseline="middle">统计数据（亮不亮、偏不偏色）</text>
+<path d="M600,330 L600,248" fill="none" stroke="#B26A00" stroke-width="1.6" marker-end="url(#arrow)" stroke-dasharray="6,4"/>
+<text x="610" y="290" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#B26A00" text-anchor="start" font-weight="normal" dominant-baseline="middle">新参数写回 ISP</text>
+<path d="M390,410 C130,410 125,330 125,248" fill="none" stroke="#B26A00" stroke-width="1.6" marker-end="url(#arrow)" stroke-dasharray="6,4"/>
+<text x="175" y="440" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#B26A00" text-anchor="middle" font-weight="normal" dominant-baseline="middle">通过 I2C 改摄像头的曝光时间、增益</text>
+</svg>

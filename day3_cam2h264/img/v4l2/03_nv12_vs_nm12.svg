@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="470" viewBox="0 0 1060 470">
+<title>NV12 和 NM12 在内存里的区别</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+<rect x="0" y="0" width="1060" height="470" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle">同样的 1920×1080 图像：NV12 放在 1 块内存里，NM12 分成 2 块（板子上 --try-fmt-video 实测）</text>
+<text x="250" y="70" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">NV12：1 个 plane</text>
+<rect x="80" y="90" width="340" height="200" rx="0" fill="#DCE9F7" stroke="#2F5D9A" stroke-width="2"/>
+<text x="250" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">Y（亮度）</text>
+<text x="250" y="185" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">1920 × 1080</text>
+<rect x="80" y="290" width="340" height="100" rx="0" fill="#FDEBD3" stroke="#B26A00" stroke-width="2"/>
+<text x="250" y="330" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">UV（颜色，U V 交错）</text>
+<text x="250" y="355" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">1920 × 540</text>
+<text x="70" y="290" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#B23" text-anchor="end" font-weight="normal" dominant-baseline="middle">第 1080 行 →</text>
+<path d="M440,90 L450,90 L450,390 L440,390" fill="none" stroke="#333" stroke-width="1.4"/>
+<text x="460" y="220" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">一块连续内存</text>
+<text x="460" y="239" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">= 1 个 dma_buf</text>
+<text x="460" y="258" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">3,110,400 字节</text>
+<text x="250" y="420" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle">Y 后面紧跟着 UV，只有一个起始地址</text>
+<text x="250" y="442" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">→ 能包成一个 MppBuffer 交给编码器 ✅</text>
+<text x="800" y="70" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#6A3D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">NM12：2 个 plane</text>
+<rect x="630" y="90" width="340" height="200" rx="0" fill="#DCE9F7" stroke="#2F5D9A" stroke-width="2"/>
+<text x="800" y="160" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">Y（亮度）</text>
+<text x="800" y="185" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">plane 0：2,073,600 字节</text>
+<text x="800" y="305" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#888" text-anchor="middle" font-weight="normal" dominant-baseline="middle">（两块内存的地址没有关系，中间可能隔得很远）</text>
+<rect x="630" y="320" width="340" height="70" rx="0" fill="#FDEBD3" stroke="#B26A00" stroke-width="2"/>
+<text x="800" y="345" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">UV（颜色）</text>
+<text x="800" y="368" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">plane 1：1,036,800 字节</text>
+<text x="800" y="420" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle">两块内存 = 2 个 dma_buf、2 个起始地址</text>
+<text x="800" y="442" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#B23" text-anchor="middle" font-weight="bold" dominant-baseline="middle">→ 包不成一个 MppBuffer ❌</text>
+</svg>

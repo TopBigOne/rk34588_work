@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="360" viewBox="0 0 1000 360">
+<title>RAW Bayer 和 ISP 处理后的图像</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+<rect x="0" y="0" width="1000" height="360" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle">摄像头输出的 RAW：每个像素只记录一种颜色，ISP 负责把它变成每个像素都有完整颜色的图</text>
+<rect x="60" y="80" width="52" height="52" rx="0" fill="#F6C7C7" stroke="#777" stroke-width="1.2"/>
+<text x="86.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#B23" text-anchor="middle" font-weight="bold" dominant-baseline="middle">R</text>
+<rect x="112" y="80" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="138.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="164" y="80" width="52" height="52" rx="0" fill="#F6C7C7" stroke="#777" stroke-width="1.2"/>
+<text x="190.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#B23" text-anchor="middle" font-weight="bold" dominant-baseline="middle">R</text>
+<rect x="216" y="80" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="242.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="60" y="132" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="86.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="112" y="132" width="52" height="52" rx="0" fill="#C9D9F3" stroke="#777" stroke-width="1.2"/>
+<text x="138.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">B</text>
+<rect x="164" y="132" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="190.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="216" y="132" width="52" height="52" rx="0" fill="#C9D9F3" stroke="#777" stroke-width="1.2"/>
+<text x="242.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">B</text>
+<rect x="60" y="184" width="52" height="52" rx="0" fill="#F6C7C7" stroke="#777" stroke-width="1.2"/>
+<text x="86.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#B23" text-anchor="middle" font-weight="bold" dominant-baseline="middle">R</text>
+<rect x="112" y="184" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="138.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="164" y="184" width="52" height="52" rx="0" fill="#F6C7C7" stroke="#777" stroke-width="1.2"/>
+<text x="190.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#B23" text-anchor="middle" font-weight="bold" dominant-baseline="middle">R</text>
+<rect x="216" y="184" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="242.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="60" y="236" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="86.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="112" y="236" width="52" height="52" rx="0" fill="#C9D9F3" stroke="#777" stroke-width="1.2"/>
+<text x="138.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">B</text>
+<rect x="164" y="236" width="52" height="52" rx="0" fill="#CDEBC9" stroke="#777" stroke-width="1.2"/>
+<text x="190.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">G</text>
+<rect x="216" y="236" width="52" height="52" rx="0" fill="#C9D9F3" stroke="#777" stroke-width="1.2"/>
+<text x="242.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="16" fill="#2F5D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">B</text>
+<text x="164" y="310" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="14" fill="#222" text-anchor="middle" font-weight="bold" dominant-baseline="middle">RAW（Bayer 排列）</text>
+<text x="164" y="334" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle">每格只有 R、G、B 中的一个值，看起来像马赛克</text>
+<line x1="310" y1="184" x2="420" y2="184" stroke="#2E7D32" stroke-width="2.2" marker-end="url(#arrow)"/>
+<text x="365" y="165" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">ISP</text>
+<text x="365" y="210" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">去马赛克</text>
+<text x="365" y="228" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">降噪、调色</text>
+<text x="365" y="246" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="middle" font-weight="normal" dominant-baseline="middle">转成 YUV</text>
+<rect x="450" y="80" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="476.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="502" y="80" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="528.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="554" y="80" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="580.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="606" y="80" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="632.0" y="106.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="450" y="132" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="476.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="502" y="132" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="528.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="554" y="132" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="580.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="606" y="132" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="632.0" y="158.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="450" y="184" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="476.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="502" y="184" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="528.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="554" y="184" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="580.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="606" y="184" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="632.0" y="210.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="450" y="236" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="476.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="502" y="236" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="528.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="554" y="236" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="580.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<rect x="606" y="236" width="52" height="52" rx="0" fill="#E8DCC8" stroke="#777" stroke-width="1.2"/>
+<text x="632.0" y="262.0" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="11" fill="#6B4F2A" text-anchor="middle" font-weight="normal" dominant-baseline="middle">RGB</text>
+<text x="554" y="310" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="14" fill="#222" text-anchor="middle" font-weight="bold" dominant-baseline="middle">完整的彩色图</text>
+<text x="554" y="334" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle" font-weight="normal" dominant-baseline="middle">每格都有完整颜色（再转成 NV12 输出）</text>
+<text x="700" y="110" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">为什么摄像头不直接输出彩色？</text>
+<text x="700" y="132" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">感光元件每个点只能测光的强弱，</text>
+<text x="700" y="154" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">要在上面盖一层 R / G / B 小滤镜才能分颜色，</text>
+<text x="700" y="176" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">所以每个点只知道一种颜色。</text>
+<text x="700" y="198" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle"></text>
+<text x="700" y="220" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">缺的两种颜色由 ISP 根据旁边的像素算出来，</text>
+<text x="700" y="242" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#333" text-anchor="start" font-weight="normal" dominant-baseline="middle">这一步叫"去马赛克"（demosaic）。</text>
+</svg>

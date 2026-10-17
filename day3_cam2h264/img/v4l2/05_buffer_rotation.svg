@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="470" viewBox="0 0 1060 470">
+<title>V4L2 缓冲区轮转</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+<rect x="0" y="0" width="1060" height="470" rx="10" fill="#FFFFFF" stroke="#DDDDDD"/>
+<text x="30" y="30" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#222" text-anchor="start" font-weight="bold" dominant-baseline="middle">4 块缓冲区在三个地方之间转圈：每块缓冲区任何时候只在其中一个地方</text>
+<rect x="60" y="80" width="280" height="150" rx="8" fill="#FDEBD3" stroke="#B26A00" stroke-width="1.2"/>
+<text x="200" y="105" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">① 驱动：等着被写</text>
+<text x="200" y="130" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">空的，排队等摄像头往里写</text>
+<rect x="130" y="155" width="60" height="50" rx="4" fill="#FFFFFF" stroke="#B26A00" stroke-width="1.2"/>
+<text x="160" y="180" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">[2]</text>
+<rect x="205" y="155" width="60" height="50" rx="4" fill="#FFFFFF" stroke="#B26A00" stroke-width="1.2"/>
+<text x="235" y="180" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#B26A00" text-anchor="middle" font-weight="bold" dominant-baseline="middle">[3]</text>
+<rect x="720" y="80" width="280" height="150" rx="8" fill="#E3F2E1" stroke="#2E7D32" stroke-width="1.2"/>
+<text x="860" y="105" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">② 驱动：已经写好</text>
+<text x="860" y="130" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">装着一帧画面，等程序来取</text>
+<rect x="830" y="155" width="60" height="50" rx="4" fill="#FFFFFF" stroke="#2E7D32" stroke-width="1.2"/>
+<text x="860" y="180" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#2E7D32" text-anchor="middle" font-weight="bold" dominant-baseline="middle">[0]</text>
+<rect x="390" y="290" width="280" height="150" rx="8" fill="#EEE5F7" stroke="#6A3D9A" stroke-width="1.2"/>
+<text x="530" y="315" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="15" fill="#6A3D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">③ 程序手里</text>
+<text x="530" y="340" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle" font-weight="normal" dominant-baseline="middle">正在编码，驱动不会碰它</text>
+<rect x="500" y="365" width="60" height="50" rx="4" fill="#FFFFFF" stroke="#6A3D9A" stroke-width="1.2"/>
+<text x="530" y="390" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="14" fill="#6A3D9A" text-anchor="middle" font-weight="bold" dominant-baseline="middle">[1]</text>
+<line x1="345" y1="150" x2="712" y2="150" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="530" y="135" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#222" text-anchor="middle" font-weight="normal" dominant-baseline="middle">摄像头写满一帧（每 33ms 一帧）</text>
+<path d="M860,235 C860,330 760,365 676,365" fill="none" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="880" y="300" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#2E7D32" text-anchor="start" font-weight="bold" dominant-baseline="middle">VIDIOC_DQBUF</text>
+<text x="880" y="320" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle">程序取走一块</text>
+<path d="M384,365 C290,365 200,330 200,237" fill="none" stroke="#B26A00" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="70" y="300" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13" fill="#B26A00" text-anchor="start" font-weight="bold" dominant-baseline="middle">VIDIOC_QBUF</text>
+<text x="70" y="320" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#444" text-anchor="start" font-weight="normal" dominant-baseline="middle">编码完了，还回去</text>
+<text x="530" y="458" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" font-size="12" fill="#B23" text-anchor="middle" font-weight="normal" dominant-baseline="middle">程序一直不 QBUF → ① 空了 → 摄像头没地方写 → 丢帧；4 块都在 ③ → 下一次 DQBUF 永远等不到</text>
+</svg>
