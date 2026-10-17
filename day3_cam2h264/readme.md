@@ -84,6 +84,17 @@
 | 01 | [环境准备](guide/01_环境准备.md) | **装摄像头**（周六）、3 条检查、3A 服务、用 `v4l2-ctl` 和官方 `mpi_enc_test` 先跑通 |
 | 02 | [读源码](guide/02_读源码.md) | 写代码前：按顺序读 `camera_source.c` 和 `mpi_enc_test.c` 的摄像头部分，读完自测 |
 | 03 | [写代码 M1～M6](guide/03_写代码_M1到M6.md) | 写代码时：里程碑、每一步怎么验证、**stride 的坑**、怎么复用 Day 1 的编码器 |
+| 04 | [摄像头和 V4L2 知识](guide/04_摄像头和V4L2知识.md) | 读源码、写 M2 遇到概念时查：采集链路、**`/dev/video31` 是什么（mainpath / selfpath、两个 ISP）**、**单平面和多平面**、像素格式、MMAP / DMABUF、缓冲区轮转、3A |
+
+### 知识点（`doc/`，一个技术点一篇）
+
+| 文档 | 内容 |
+|---|---|
+| [v4l2-ctl和media-ctl用法.md](doc/v4l2-ctl和media-ctl用法.md) | 两个摄像头调试命令：查能力、设格式、抓帧、测帧率、看链路、按名字找节点；参数和 ioctl / M2 代码对照；常见报错。全部板子实测 |
+| [程序里怎么找到摄像头节点.md](doc/程序里怎么找到摄像头节点.md) | 自己写相机程序时不写死 `/dev/videoN`：video32 是怎么知道的、为什么光看名字不够、用 Media Controller API 从摄像头顺着连线找到 ISP 的 mainpath（完整代码，板子实测找到 /dev/video22） |
+| [FindCamera输出的每个字段是什么.md](doc/FindCamera输出的每个字段是什么.md) | 子设备 `/dev/v4l-subdev2`（摄像头的旋钮）、链路 `media1 → media2`、video22 / video23 一个摄像头同时出两路（实测都是 30fps）：是什么、解决什么问题、怎么用 |
+| [链接错误undefined_reference.md](doc/链接错误undefined_reference.md) | 写 FindCamera 时遇到的真实报错：编译和链接两步、为什么声明了构造函数不写实现会报错、三种改法、怎么区分编译错误和链接错误 |
+| [终端彩色输出_ANSI颜色码.md](doc/终端彩色输出_ANSI颜色码.md) | 像 logcat 一样分级别着色：ANSI 颜色码原理、`src/common/log.h` 的 `LOGV/D/I/W/E` 用法、`NO_COLOR` 关颜色、为什么要 fflush、为什么不用 isatty |
 
 ### 写代码时对照着看
 
