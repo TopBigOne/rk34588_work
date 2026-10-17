@@ -27,7 +27,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 编译结果：cmake-build-rk3588-debug/day3_cam2h264
 add_executable(day3_cam2h264
     src/main.cpp
-    src/encoder/mpp_encoder.cpp)
+    src/encoder/mpp_encoder.cpp
+        src/camera/find_camera.cpp
+        src/camera/find_camera.h)
 
 # 头文件搜索目录加上 src/：所有 #include 都写成相对 src/ 的路径，比如 #include "source/v4l2_camera.h"
 # PRIVATE：只有这个目标自己用
