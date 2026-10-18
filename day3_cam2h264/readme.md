@@ -11,7 +11,7 @@
 ```
  RK3588 开发板
  ──────────────────────────────────────────────────────────────────────────────────────
- IMX415 ──MIPI──→ CSI ──→ ISP（rkisp，3A 服务调曝光、白平衡）──→ /dev/video31（rkisp_mainpath）
+ IMX415 ──MIPI──→ CSI ──→ ISP（rkisp，3A 服务调曝光、白平衡）──→ /dev/video22（ISP0 的 rkisp_mainpath，摄像头装在 MIPI CSI3）
                                                                       │
              启动时一次：REQBUFS 要 4 块缓冲区 → EXPBUF 拿到每块的 dma_buf fd   │
                         → mpp_buffer_import 把 fd 包装成 MppBuffer           │
@@ -41,7 +41,7 @@
 
 | # | 在干什么 | 比喻 | 关键调用 | 里程碑 |
 |:---:|---|---|---|:---:|
-| ① | **打开摄像头，说好要什么格式** | 跟照相馆说：1920×1080、NV12 | `open("/dev/video31")` → `VIDIOC_QUERYCAP` → `VIDIOC_S_FMT` → `VIDIOC_G_FMT`（读回 `bytesperline`） | M2 |
+| ① | **打开摄像头，说好要什么格式** | 跟照相馆说：1920×1080、NV12 | `open("/dev/video22")` → `VIDIOC_QUERYCAP` → `VIDIOC_S_FMT` → `VIDIOC_G_FMT`（读回 `bytesperline`） | M2 |
 | ② | **要几块缓冲区，拿到 CPU 地址和 fd** | 租 4 个托盘，每个托盘有地址也有钥匙 | `VIDIOC_REQBUFS(4, MMAP)` → `VIDIOC_QUERYBUF` + `mmap` → `VIDIOC_EXPBUF` | M2 / M3 |
 | ③ | **开始拍** | 托盘全交给照相馆，开机 | `VIDIOC_QBUF` × 4 → `VIDIOC_STREAMON` | M2 |
 | ④ | **把摄像头的缓冲区交给编码器** | 把托盘钥匙复印一把给印刷厂 | `mpp_buffer_import(info.fd = expbuf.fd)` → Day 1 的 `MppEncoder::init`（stride 用 ① 读回来的） | M3 |
@@ -65,7 +65,7 @@
 
 | 里程碑 | 内容 | 状态 |
 |:---:|---|:---:|
-| M0 | 装摄像头，通过 3 条检查；官方 `mpi_enc_test -i /dev/video31` 能录出画面 | ⬜ |
+| M0 | 装摄像头，通过 3 条检查；官方 `mpi_enc_test -i /dev/video22` 能录出画面 | ⬜ |
 | M1 | 不写代码：`v4l2-ctl` 抓一帧 NV12，在 Mac 上看画面 | ⬜ |
 | M2 | 自己写 V4L2：打开 → S_FMT → REQBUFS → mmap → STREAMON → DQBUF，存一帧 NV12 | ⬜ |
 | M3 | EXPBUF → `mpp_buffer_import` → 编码 1 帧（stride 跟摄像头一致） | ⬜ |

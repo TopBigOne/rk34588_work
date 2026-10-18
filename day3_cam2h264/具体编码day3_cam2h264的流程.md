@@ -5,6 +5,8 @@
 > **这份文档的代码可以直接抄**：每个里程碑都给了完整的 `src/main.cpp`，整个替换掉就行。
 > 这些代码 2026-10-16 都在 Mac 上交叉编译过（`-Wall -Wextra` 0 warning），也推到板子上跑过——但那时**还没装摄像头**，所以只验证到"打开设备 → 设格式 → 要缓冲区 → mmap → EXPBUF → import"，到 `VIDIOC_STREAMON` 就因为没有 sensor 失败了（`Operation not permitted`）。STREAMON 之后的部分（取帧、编码）要等装好摄像头再验证，文档里的"应该看到"标了 **未实测** 的就是这部分。
 >
+> **摄像头节点**：2026-10-17 实测，IMX415 装在 **MIPI CSI3** 时节点是 **`/dev/video22`**（ISP0 的 mainpath），代码和命令里都按这个写。装在别的接口上，用 `FindCamera` 或 `media-ctl -e rkisp_mainpath` 查（见 doc/程序里怎么找到摄像头节点.md）。
+>
 > 本文的行号：`camera_source.c` 和 `mpi_enc_test.c` 都对应 `rk_code/external/mpp/`（MPP 官方源码）。
 
 ---
@@ -35,7 +37,7 @@ Day 3 新东西只有一个：**V4L2**。编码器直接用 Day 1 的 `MppEncode
 ```
 main()
  ├─ run()
- │   ① open("/dev/video31")  →  VIDIOC_QUERYCAP（检查支持 MPLANE 采集和 streaming）
+ │   ① open("/dev/video22")  →  VIDIOC_QUERYCAP（检查支持 MPLANE 采集和 streaming）
  │   ② VIDIOC_S_FMT（1920x1080 NV12）→ VIDIOC_G_FMT（⭐ 读回 bytesperline、sizeimage）
  │   ③ VIDIOC_REQBUFS（4 块，MMAP）
  │   ④ 每块 i：VIDIOC_QUERYBUF → mmap（CPU 地址）
@@ -76,7 +78,7 @@ main()
 ```bash
 adb shell 'dmesg | grep imx415 | grep -i unexpected'   # 插的那个接口不应该再报
 adb shell 'pidof rkaiq_3A_server'                      # 有 pid
-adb shell 'v4l2-ctl --list-devices'                    # 确认节点，代码里写死的是 /dev/video31
+adb shell 'v4l2-ctl --list-devices'                    # 确认节点，代码里写死的是 /dev/video22
 ```
 节点不是 `video31` 的话，改代码第一段的 `kDevice`（M5 以后用 `-d` 参数）。
 
@@ -119,7 +121,7 @@ M2 不编码，只验证"我能从摄像头拿到画面"。拿到的那一帧存
 #include <unistd.h>          // close
 
 // ==================== 参数（M2 先写死，M5 再改成命令行参数） ====================
-static const char* kDevice     = "/dev/video31";               // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
+static const char* kDevice     = "/dev/video22";               // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
 static const int kWidth        = 1920;
 static const int kHeight       = 1080;
 static const int kSkipFrames   = 30;                           // 开头丢掉多少帧（自动曝光还没稳定）
@@ -135,7 +137,7 @@ struct CamBuffer {
     size_t length = 0;          // mmap 的长度，munmap 时要用
 };
 
-static int g_videoFd = -1;          // /dev/video31 的文件描述符
+static int g_videoFd = -1;          // /dev/video22 的文件描述符
 static CamBuffer g_bufs[kBufCount]; // 4 块缓冲区
 static bool g_streaming = false;    // 有没有 STREAMON，cleanup 时决定要不要 STREAMOFF
 static FILE* g_out      = nullptr;  // 输出的 .nv12 文件
@@ -340,7 +342,7 @@ cd /Users/dev/Documents/AV/rk_work/day3_cam2h264
 
 应该看到：
 ```
-device /dev/video31: driver rkisp_v6, card rkisp_mainpath        ← 2026-10-16 实测
+device /dev/video22: driver rkisp_v6, card rkisp_mainpath        ← 2026-10-16 实测
 format: 1920x1080 NV12, planes 1, bytesperline 1920, sizeimage 3110400   ← 实测
 buffer 0: length 3133440                                         ← 实测（为什么比 sizeimage 大，见 3.1）
 buffer 1: length 3133440
@@ -416,7 +418,7 @@ M3 的代码已经写成循环了，`kFrames = 1` 时只编 1 帧；M4 只要把
 #include "encoder/mpp_encoder.h" // Day 1 的编码器（加了 horStride / verStride / rotation）
 
 // ==================== 参数（先写死，M5 再改成命令行参数） ====================
-static const char* kDevice     = "/dev/video31";       // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
+static const char* kDevice     = "/dev/video22";       // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
 static const int kWidth        = 1920;
 static const int kHeight       = 1080;
 static const int kFrames       = 1;                       // 编多少帧
@@ -436,7 +438,7 @@ struct CamBuffer {
     MppBuffer mppBuf = nullptr;    // ③ MppBuffer（mpp_buffer_import 包装的），交给编码器用
 };
 
-static int g_videoFd = -1;              // /dev/video31 的文件描述符
+static int g_videoFd = -1;              // /dev/video22 的文件描述符
 static CamBuffer g_bufs[kBufCount];     // 4 块缓冲区
 static bool g_streaming = false;        // 有没有 STREAMON，cleanup 时决定要不要 STREAMOFF
 static FILE* g_out      = nullptr;      // 输出的 .h264 文件
@@ -724,7 +726,7 @@ int main() {
 
 应该看到（`buffer` 那几行是 2026-10-16 实测，`encoder ready` 以后**未实测**）：
 ```
-device /dev/video31: driver rkisp_v6, card rkisp_mainpath
+device /dev/video22: driver rkisp_v6, card rkisp_mainpath
 format: 1920x1080 NV12, planes 1, bytesperline 1920, sizeimage 3110400
 buffer 0: length 3133440, dma_buf fd 12          ← fd 的数字每次可能不一样
 buffer 1: length 3133440, dma_buf fd 13
@@ -799,7 +801,7 @@ ffplay result_from_board/cam_m4.h264
 
 ```cpp
 // day3_cam2h264 M5：摄像头 → V4L2（MMAP + EXPBUF）→ mpp_buffer_import（零拷贝）→ MppEncoder → .h264
-// 用法：day3_cam2h264 [-d /dev/video31] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] [-t h264|h265] [-r 0|1|2|3]
+// 用法：day3_cam2h264 [-d /dev/video22] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] [-t h264|h265] [-r 0|1|2|3]
 #include <cerrno>   // errno
 #include <chrono>   // 计时
 #include <cstdint>  // uint8_t / uint32_t
@@ -818,7 +820,7 @@ ffplay result_from_board/cam_m4.h264
 
 // ==================== 参数（M5：命令行可以改） ====================
 struct Args {
-    const char* device = "/dev/video31";          // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
+    const char* device = "/dev/video22";          // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
     int width          = 1920;
     int height         = 1080;
     int frames         = 300;                     // 编多少帧：30fps × 10 秒
@@ -841,7 +843,7 @@ struct CamBuffer {
     MppBuffer mppBuf = nullptr;    // ③ MppBuffer（mpp_buffer_import 包装的），交给编码器用
 };
 
-static int g_videoFd = -1;              // /dev/video31 的文件描述符
+static int g_videoFd = -1;              // /dev/video22 的文件描述符
 static CamBuffer g_bufs[kBufCount];     // 4 块缓冲区
 static bool g_streaming = false;        // 有没有 STREAMON，cleanup 时决定要不要 STREAMOFF
 static FILE* g_out      = nullptr;      // 输出的 .h264 文件
@@ -1140,7 +1142,7 @@ static int run(const Args& args) {
 }
 
 static void usage(const char* prog) {
-    printf("usage: %s [-d /dev/video31] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] "
+    printf("usage: %s [-d /dev/video22] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] "
            "[-t h264|h265] [-r 0|1|2|3]\n",
         prog);
 }
@@ -1205,7 +1207,7 @@ int main(int argc, char** argv) {
 ### 运行（未实测）
 
 ```bash
-./run_on_board_with_mac.sh                                               # 全用默认值：/dev/video31、1080p、300 帧、H.264
+./run_on_board_with_mac.sh                                               # 全用默认值：/dev/video22、1080p、300 帧、H.264
 ./run_on_board_with_mac.sh -n 300 -t h265 -o /userdata/av/out.h265       # H.265
 ./run_on_board_with_mac.sh -r 2 -o /userdata/av/out_r2.h264              # 转 180°
 ./run_on_board_with_mac.sh -w 1280 -h 720 -o /userdata/av/out_720p.h264  # 720p
@@ -1246,7 +1248,7 @@ M6 在 M5 的基础上加一个参数 `-c 1`：不用零拷贝，而是每帧用
 
 ```cpp
 // day3_cam2h264 M6：在 M5 的基础上加 -c 1（拷贝模式），和零拷贝对比 CPU 占用
-// 用法：day3_cam2h264 [-d /dev/video31] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] [-t h264|h265] [-r 0|1|2|3] [-c 0|1]
+// 用法：day3_cam2h264 [-d /dev/video22] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] [-t h264|h265] [-r 0|1|2|3] [-c 0|1]
 #include <cerrno>   // errno
 #include <chrono>   // 计时
 #include <cstdint>  // uint8_t / uint32_t
@@ -1265,7 +1267,7 @@ M6 在 M5 的基础上加一个参数 `-c 1`：不用零拷贝，而是每帧用
 
 // ==================== 参数（M5：命令行可以改） ====================
 struct Args {
-    const char* device = "/dev/video31";          // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
+    const char* device = "/dev/video22";          // 摄像头节点（以 guide/01 第 2.3 节查到的为准）
     int width          = 1920;
     int height         = 1080;
     int frames         = 300;                     // 编多少帧：30fps × 10 秒
@@ -1289,7 +1291,7 @@ struct CamBuffer {
     MppBuffer mppBuf = nullptr;    // ③ MppBuffer（mpp_buffer_import 包装的），交给编码器用
 };
 
-static int g_videoFd = -1;              // /dev/video31 的文件描述符
+static int g_videoFd = -1;              // /dev/video22 的文件描述符
 static CamBuffer g_bufs[kBufCount];     // 4 块缓冲区
 static bool g_streaming = false;        // 有没有 STREAMON，cleanup 时决定要不要 STREAMOFF
 static FILE* g_out      = nullptr;      // 输出的 .h264 文件
@@ -1622,7 +1624,7 @@ static int run(const Args& args) {
 }
 
 static void usage(const char* prog) {
-    printf("usage: %s [-d /dev/video31] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] "
+    printf("usage: %s [-d /dev/video22] [-w 1920] [-h 1080] [-n 300] [-s 30] [-o /userdata/av/out.h264] "
            "[-t h264|h265] [-r 0|1|2|3] [-c 0|1]\n",
         prog);
 }
