@@ -42,8 +42,10 @@ if ! $ADB get-state >/dev/null 2>&1; then
     exit 1
 fi
 
-$ADB shell "mkdir -p $REMOTE_DIR" || exit 1
+# 所有 adb shell 都加 < /dev/null：不让 adb 读终端输入。否则一次粘贴多行命令时，后面那几行会被 adb 转发到板子吃掉
+# （2026-10-18 在 day3 实测发现，见 day3_cam2h264/run_move_file_from_board_via_usb.sh 的注释）。程序不需要键盘输入，Ctrl+C 照样能停。
+$ADB shell "mkdir -p $REMOTE_DIR" < /dev/null || exit 1
 $ADB push "$LOCAL_BIN" "$REMOTE_DIR/" >/dev/null || exit 1
-$ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" || exit 1
+$ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" < /dev/null || exit 1
 echo "=== 通过 USB 在板子上运行 $REMOTE_DIR/$BIN_NAME $*（MPP 库：${BOARD_MPP_LIB}） ==="
-exec $ADB shell "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*"
+exec $ADB shell "LD_LIBRARY_PATH=$BOARD_MPP_LIB $REMOTE_DIR/$BIN_NAME $*" < /dev/null

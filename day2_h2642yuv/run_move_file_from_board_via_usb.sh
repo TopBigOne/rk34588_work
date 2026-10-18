@@ -29,7 +29,9 @@ if ! $ADB get-state >/dev/null 2>&1; then
 fi
 
 # 板子上的文件大小（字节）；文件不存在时 stat 失败，拿到的是空字符串
-BOARD_SIZE=$($ADB shell "stat -c %s '$SRC' 2>/dev/null" | tr -d '\r')
+# 所有 adb shell 都加 < /dev/null：不让 adb 读终端输入。否则一次粘贴多行命令时，后面那几行会被 adb 转发到板子吃掉
+# （2026-10-18 在 day3 实测发现，见 day3_cam2h264/run_move_file_from_board_via_usb.sh 的注释）。程序不需要键盘输入，Ctrl+C 照样能停。
+BOARD_SIZE=$($ADB shell "stat -c %s '$SRC' 2>/dev/null" < /dev/null | tr -dc '0-9')  # 只留数字，再防一层
 if [ -z "$BOARD_SIZE" ]; then
     echo "板子上找不到 ${SRC}" >&2
     exit 1
@@ -49,6 +51,6 @@ fi
 if [ "$KEEP" = "1" ]; then
     echo "=== 已拷贝到 ${DST}（KEEP=1，板子上的文件保留） ==="
 else
-    $ADB shell "rm -f '$SRC'" || exit 1
+    $ADB shell "rm -f '$SRC'" < /dev/null || exit 1
     echo "=== 已移动到 ${DST}，板子上的 ${SRC} 已删除 ==="
 fi
