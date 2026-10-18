@@ -104,6 +104,8 @@
 | [videodev2.h是从哪来的_内核uapi头文件.md](doc/videodev2.h是从哪来的_内核uapi头文件.md) | `<linux/videodev2.h>` 是 Linux 内核自带的（不是正点原子的）：文件开头的证据、uapi 头文件怎么到 sysroot、Rockchip 私有的 `rk-*.h`、头文件和内核版本不一致有没有关系 |
 | [V4L2这个名字是什么意思.md](doc/V4L2这个名字是什么意思.md) | V4L2 = Video for Linux 2（4 是 for 的谐音）、为什么有个 2、`VIDIOC_` / `v4l2_` / `V4L2_` 这些名字怎么拆、V4L2 还管哪些设备 |
 | [C++小坑和常见写法.md](doc/C++小坑和常见写法.md) | 写 M2 时真实踩过的 9 个坑（`if (fd)`、宏分号、CAP_/BUF_TYPE_、`g_bufs->start`、range-for 拷贝、mmap 参数放错、没 return、reinterpret_cast、`vector{0}`）+ 输出参数的写法，都配当时的代码 |
+| [重定向和_dev_null.md](doc/重定向和_dev_null.md) | `>/dev/null 2>&1` 是什么意思：程序的 0/1/2 号口、`>` `2>` `2>&1` `<`、/dev/null 黑洞、为什么 `2>&1` 要写在后面（实测）、脚本里每种写法的含义 |
+| [adb_shell会吃掉终端输入.md](doc/adb_shell会吃掉终端输入.md) | 一次粘贴多行命令时后面的行消失了：现象、原因、复现方法、`< /dev/null` 修法和验证、什么时候不能加 |
 
 ### 写代码时对照着看
 
