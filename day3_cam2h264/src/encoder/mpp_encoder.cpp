@@ -189,9 +189,6 @@ bool MppEncoder::encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& enc
         const auto* pos = static_cast<const uint8_t*>(mpp_packet_get_pos(outputPacket));
         // 取看看文档： void* 能转成任何对象指针.md
         encodedPacket.data.assign(pos, pos + packetLength);
-        std::size_t packetSize = encodedPacket.data.size();
-        printf("    packetSize :  %lu\n",packetSize);
-
     }
     return true;
 }
