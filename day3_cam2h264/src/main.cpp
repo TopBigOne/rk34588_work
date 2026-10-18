@@ -9,23 +9,20 @@
 #include <fcntl.h>
 #include <linux/media.h>
 #include <linux/videodev2.h>
-#include <queue>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
 #define CHECK_CAMERA_INFO (0)
-const char* const kTag = "day3_main"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
-
-static const char* kDevice         = "/dev/video22";
-static const int kWidth            = 1920;
-static const int kHeight           = 1080;
-static const int kSkipFrames       = 30;
-static const char* kOutputFilePath = "/userdata/av/cam_m2.nv12";
-
+const char* const kTag              = "day3_main"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
+static const char* kDevice          = "/dev/video22";
+static const int kWidth             = 1920;
+static const int kHeight            = 1080;
+static const int kSkipFrames        = 30;
+static const char* kOutputFilePath  = "/userdata/av/cam_m2.nv12";
 static const int kBufCount          = 4;
 static const v4l2_buf_type kBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-#include <sys/mman.h>
+
 struct CamBuffer {
     void* start   = MAP_FAILED;
     size_t length = 0;
@@ -36,14 +33,9 @@ static CamBuffer g_bufs[kBufCount];
 static bool g_streaming = false;
 static FILE* g_out      = nullptr;
 
-
 static int run();
-
 static void clear_up();
-
-
 static void getCameraInfo();
-
 void getCameraInfo() {
     if (CHECK_CAMERA_INFO) {
         FindCamera find_camera;
@@ -71,6 +63,7 @@ static int xioctl(int fd, unsigned long request, void* arg) {
 
 
 bool queue_buffer(int i);
+
 int dequeue_buffer(uint32_t* bytesUsed);
 
 /**
@@ -254,7 +247,6 @@ static void clear_up() {
         g_out = nullptr;
     }
 }
-
 
 int main() {
     int ret = 0;
