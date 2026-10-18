@@ -30,6 +30,15 @@
 // 日志级别，和 logcat 一样从低到高
 enum class LogLevel { Verbose, Debug, Info, Warn, Error };
 
+
+// 和 Android 的 Log.v / Log.d / Log.i / Log.w / Log.e 对应
+#define LOGV(tag, ...) log_print(LogLevel::Verbose, tag, __VA_ARGS__)
+#define LOGD(tag, ...) log_print(LogLevel::Debug, tag, __VA_ARGS__)
+#define LOGI(tag, ...) log_print(LogLevel::Info, tag, __VA_ARGS__)
+#define LOGW(tag, ...) log_print(LogLevel::Warn, tag, __VA_ARGS__)
+#define LOGE(tag, ...) log_print(LogLevel::Error, tag, __VA_ARGS__)
+
+
 /**
  * @brief 要不要输出颜色
  * @return 没设置环境变量 NO_COLOR 时返回 true；设置了（任何值）返回 false
@@ -69,8 +78,8 @@ __attribute__((format(printf, 3, 4))) inline void log_print(LogLevel level, cons
         "\033[38;2;232;169;8m",  // W：E8A908
         "\033[38;2;196;14;10m",  // E：C40E0A
     };
-    static const char kLetter[]       = {'V', 'D', 'I', 'W', 'E'};
-    const char* const kReset          = "\033[0m";
+    static const char kLetter[] = {'V', 'D', 'I', 'W', 'E'};
+    const char* const kReset    = "\033[0m";
 
     const int i      = static_cast<int>(level);
     const bool color = log_color_enabled();
@@ -90,10 +99,3 @@ __attribute__((format(printf, 3, 4))) inline void log_print(LogLevel level, cons
     printf("%s\n", color ? kReset : "");
     fflush(stdout);
 }
-
-// 和 Android 的 Log.v / Log.d / Log.i / Log.w / Log.e 对应
-#define LOGV(tag, ...) log_print(LogLevel::Verbose, tag, __VA_ARGS__)
-#define LOGD(tag, ...) log_print(LogLevel::Debug, tag, __VA_ARGS__)
-#define LOGI(tag, ...) log_print(LogLevel::Info, tag, __VA_ARGS__)
-#define LOGW(tag, ...) log_print(LogLevel::Warn, tag, __VA_ARGS__)
-#define LOGE(tag, ...) log_print(LogLevel::Error, tag, __VA_ARGS__)

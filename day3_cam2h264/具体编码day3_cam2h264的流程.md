@@ -39,7 +39,8 @@ main()
  │   ② VIDIOC_S_FMT（1920x1080 NV12）→ VIDIOC_G_FMT（⭐ 读回 bytesperline、sizeimage）
  │   ③ VIDIOC_REQBUFS（4 块，MMAP）
  │   ④ 每块 i：VIDIOC_QUERYBUF → mmap（CPU 地址）
- │             → VIDIOC_EXPBUF（dma_buf fd）→ mpp_buffer_import（MppBuffer）        ← M3 新增
+ │             → VIDIOC_EXPBUF（dma_buf fd）
+ │             → mpp_buffer_import（MppBuffer）        ← M3 新增
  │   ⑤ VIDIOC_QBUF × 4 → VIDIOC_STREAMON
  │   ⑥ encoder.init（stride 用 ② 读回来的）→ get_header → fwrite                  ← M3 新增
  │   ⑦ 丢掉前 30 帧：DQBUF → QBUF
@@ -50,23 +51,23 @@ main()
 
 一块摄像头缓冲区有三个"把手"，都存在 `CamBuffer` 里（guide/02 第 2.2 节）：
 
-| 把手 | 字段 | 从哪来 | 给谁用 |
-|---|---|---|---|
-| ① CPU 地址 | `start` | `mmap` | CPU：M2 存文件、M6 拷贝 |
-| ② dma_buf fd | `dmaFd` | `VIDIOC_EXPBUF` | 任何支持 dma_buf 的硬件 |
-| ③ MppBuffer | `mppBuf` | `mpp_buffer_import` | 编码器 |
+| 把手          | 字段 | 从哪来 | 给谁用 |
+|---------------|---|---|---|
+| ① CPU 地址    | `start` | `mmap` | CPU：M2 存文件、M6 拷贝 |
+| ② dma_buf fd  | `dmaFd` | `VIDIOC_EXPBUF` | 任何支持 dma_buf 的硬件 |
+| ③ MppBuffer   | `mppBuf` | `mpp_buffer_import` | 编码器 |
 
 ---
 
 ## 2. 准备工作（写 M2 之前）
 
 ### 2.1 已经准备好的
-| 东西 | 位置 | 说明 |
-|---|---|---|
-| CMake | `CMakeLists.txt` | 已经编译 `src/main.cpp` 和 `src/encoder/mpp_encoder.cpp`，链接 MPP，rpath 指向 `/userdata/mpp_build/lib` |
-| 编码器 | `src/encoder/mpp_encoder.*` | 从 Day 1 复制，`EncoderConfig` 加了 `horStride`、`verStride`、`rotation` 三个字段（默认 0，不填和 Day 1 一样） |
-| 工具宏 | `src/common/mpp_utils.h` | 编码器要用的 `ALIGN`、`MPP_CHECK`、RAII 句柄 |
-| 脚本 | `run_on_board_with_mac.sh` 等 | 编译 → 推到板子 → 运行，全走 adb |
+| 东西    | 位置                          | 说明 |
+|---------|-------------------------------|---|
+| CMake   | `CMakeLists.txt`              | 已经编译 `src/main.cpp` 和 `src/encoder/mpp_encoder.cpp`，链接 MPP，rpath 指向 `/userdata/mpp_build/lib` |
+| 编码器  | `src/encoder/mpp_encoder.*`   | 从 Day 1 复制，`EncoderConfig` 加了 `horStride`、`verStride`、`rotation` 三个字段（默认 0，不填和 Day 1 一样） |
+| 工具宏  | `src/common/mpp_utils.h`      | 编码器要用的 `ALIGN`、`MPP_CHECK`、RAII 句柄 |
+| 脚本    | `run_on_board_with_mac.sh` 等 | 编译 → 推到板子 → 运行，全走 adb |
 
 ### 2.2 你要在 CLion 里做的
 加一个 `RK3588-Debug` profile（guide/01 第 5.1 节），Build directory 填 `cmake-build-rk3588-debug`。
@@ -86,15 +87,15 @@ adb shell 'v4l2-ctl --list-devices'                    # 确认节点，代码�
 M2 不编码，只验证"我能从摄像头拿到画面"。拿到的那一帧存成文件，拉回 Mac 用 ffplay 看。
 
 ### 步骤
-| # | 做什么 | 关键调用 | 对照官方 |
-|:---:|---|---|---|
-| ① | 打开设备，检查能力 | `open` → `VIDIOC_QUERYCAP` | `camera_source.c` 128、145～158 |
-| ② | 设格式，读回实际值 | `VIDIOC_S_FMT` → `VIDIOC_G_FMT` | 161～206 |
-| ③ | 要 4 块缓冲区 | `VIDIOC_REQBUFS` | 209～221 |
-| ④ | 每块查长度、mmap | `VIDIOC_QUERYBUF` → `mmap` | 224～264 |
-| ⑤ | 全部交给驱动，开始采集 | `VIDIOC_QBUF` × 4 → `VIDIOC_STREAMON` | 287～311 |
-| ⑥ | 丢掉前 30 帧 | `VIDIOC_DQBUF` → `VIDIOC_QBUF` | 314～318（官方丢 4 帧，mpi_enc_test 再丢 50 帧） |
-| ⑦ | 取一帧存文件，还回去 | `DQBUF` → `fwrite(start, bytesused)` → `QBUF` | 367～427 |
+| #   | 做什么                 | 关键调用                                      | 对照官方                                         |
+|:---:|------------------------|-----------------------------------------------|--------------------------------------------------|
+|  ①  | 打开设备，检查能力     | `open` → `VIDIOC_QUERYCAP`                    | `camera_source.c` 128、145～158                  |
+|  ②  | 设格式，读回实际值     | `VIDIOC_S_FMT` → `VIDIOC_G_FMT`               | 161～206                                         |
+|  ③  | 要 4 块缓冲区          | `VIDIOC_REQBUFS`                              | 209～221                                         |
+|  ④  | 每块查长度、mmap       | `VIDIOC_QUERYBUF` → `mmap`                    | 224～264                                         |
+|  ⑤  | 全部交给驱动，开始采集 | `VIDIOC_QBUF` × 4 → `VIDIOC_STREAMON`         | 287～311                                         |
+|  ⑥  | 丢掉前 30 帧           | `VIDIOC_DQBUF` → `VIDIOC_QBUF`                | 314～318（官方丢 4 帧，mpi_enc_test 再丢 50 帧） |
+|  ⑦  | 取一帧存文件，还回去   | `DQBUF` → `fwrite(start, bytesused)` → `QBUF` | 367～427                                         |
 
 ### Multiplanar 的三个注意点（不注意就 `EINVAL`）
 板子上的 video 节点是 **Multiplanar** 类型（2026-10-15 实测）：
