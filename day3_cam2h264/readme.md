@@ -86,6 +86,12 @@
 | 03 | [写代码 M1～M6](guide/03_写代码_M1到M6.md) | 写代码时：里程碑、每一步怎么验证、**stride 的坑**、怎么复用 Day 1 的编码器 |
 | 04 | [摄像头和 V4L2 知识](guide/04_摄像头和V4L2知识.md) | 读源码、写 M2 遇到概念时查：采集链路、**`/dev/video31` 是什么（mainpath / selfpath、两个 ISP）**、**单平面和多平面**、像素格式、MMAP / DMABUF、缓冲区轮转、3A |
 
+### 验证代码运行结果（`验证代码运行结果/`，每个里程碑一篇）
+
+| 文档 | 内容 |
+|---|---|
+| [验证M2代码.md](验证代码运行结果/验证M2代码.md) | M2 怎么自己测：正常流程 6 项（日志、退出码、文件大小、看画面、和 v4l2-ctl 对比、动起来测）、故意制造错误 4 项、资源泄漏；测试记录 |
+
 ### 知识点（`doc/`，一个技术点一篇）
 
 | 文档 | 内容 |
@@ -95,6 +101,9 @@
 | [FindCamera输出的每个字段是什么.md](doc/FindCamera输出的每个字段是什么.md) | 子设备 `/dev/v4l-subdev2`（摄像头的旋钮）、链路 `media1 → media2`、video22 / video23 一个摄像头同时出两路（实测都是 30fps）：是什么、解决什么问题、怎么用 |
 | [链接错误undefined_reference.md](doc/链接错误undefined_reference.md) | 写 FindCamera 时遇到的真实报错：编译和链接两步、为什么声明了构造函数不写实现会报错、三种改法、怎么区分编译错误和链接错误 |
 | [终端彩色输出_ANSI颜色码.md](doc/终端彩色输出_ANSI颜色码.md) | 像 logcat 一样分级别着色：ANSI 颜色码原理、`src/common/log.h` 的 `LOGV/D/I/W/E` 用法、`NO_COLOR` 关颜色、为什么要 fflush、为什么不用 isatty |
+| [videodev2.h是从哪来的_内核uapi头文件.md](doc/videodev2.h是从哪来的_内核uapi头文件.md) | `<linux/videodev2.h>` 是 Linux 内核自带的（不是正点原子的）：文件开头的证据、uapi 头文件怎么到 sysroot、Rockchip 私有的 `rk-*.h`、头文件和内核版本不一致有没有关系 |
+| [V4L2这个名字是什么意思.md](doc/V4L2这个名字是什么意思.md) | V4L2 = Video for Linux 2（4 是 for 的谐音）、为什么有个 2、`VIDIOC_` / `v4l2_` / `V4L2_` 这些名字怎么拆、V4L2 还管哪些设备 |
+| [C++小坑和常见写法.md](doc/C++小坑和常见写法.md) | 写 M2 时真实踩过的 9 个坑（`if (fd)`、宏分号、CAP_/BUF_TYPE_、`g_bufs->start`、range-for 拷贝、mmap 参数放错、没 return、reinterpret_cast、`vector{0}`）+ 输出参数的写法，都配当时的代码 |
 
 ### 写代码时对照着看
 
