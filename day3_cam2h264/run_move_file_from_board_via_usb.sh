@@ -29,7 +29,10 @@ if ! $ADB get-state >/dev/null 2>&1; then
 fi
 
 # 板子上的文件大小（字节）；文件不存在时 stat 失败，拿到的是空字符串
-BOARD_SIZE=$($ADB shell "stat -c %s '$SRC' 2>/dev/null" | tr -d '\r')
+# < /dev/null：不让 adb shell 读终端输入。否则一次粘贴多行命令时，后面那几行会被 adb 当成输入转发到板子，
+#              混进这里的输出（2026-10-18 实测：粘贴 "脚本 + ffplay" 两行，ffplay 那行跑进了 BOARD_SIZE，报"大小不一致"）
+# tr -dc '0-9'：只留数字，再防一层
+BOARD_SIZE=$($ADB shell "stat -c %s '$SRC' 2>/dev/null" < /dev/null | tr -dc '0-9')
 if [ -z "$BOARD_SIZE" ]; then
     echo "板子上找不到 ${SRC}" >&2
     exit 1
@@ -49,6 +52,6 @@ fi
 if [ "$KEEP" = "1" ]; then
     echo "=== 已拷贝到 ${DST}（KEEP=1，板子上的文件保留） ==="
 else
-    $ADB shell "rm -f '$SRC'" || exit 1
+    $ADB shell "rm -f '$SRC'" < /dev/null || exit 1
     echo "=== 已移动到 ${DST}，板子上的 ${SRC} 已删除 ==="
 fi

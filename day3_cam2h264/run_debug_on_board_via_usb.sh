@@ -53,9 +53,11 @@ if ! $ADB get-state >/dev/null 2>&1; then
 fi
 
 # 3. 推程序；顺手结束上一次没退出的 gdbserver（否则端口被占用）
-$ADB shell "mkdir -p $REMOTE_DIR; pkill gdbserver" >/dev/null 2>&1
+# 所有 adb shell 都加 < /dev/null：不让 adb 读终端输入。否则一次粘贴多行命令时，后面那几行会被 adb 转发到板子吃掉
+# （2026-10-18 实测，见 run_move_file_from_board_via_usb.sh 的注释）。我们的程序不需要键盘输入，Ctrl+C 照样能停。
+$ADB shell "mkdir -p $REMOTE_DIR; pkill gdbserver" < /dev/null >/dev/null 2>&1
 $ADB push "$LOCAL_BIN" "$REMOTE_DIR/" >/dev/null || exit 1
-$ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" || exit 1
+$ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" < /dev/null || exit 1
 
 # 4. 端口转发：Mac 的 localhost:GDB_PORT → 板子的 GDB_PORT（走 USB）
 $ADB forward "tcp:$GDB_PORT" "tcp:$GDB_PORT" >/dev/null || exit 1
@@ -64,4 +66,4 @@ $ADB forward "tcp:$GDB_PORT" "tcp:$GDB_PORT" >/dev/null || exit 1
 #    程序带了 rpath（见 CMakeLists.txt），会自动加载 /userdata/mpp_build/lib 里的 MPP 库，不用设 LD_LIBRARY_PATH
 echo "=== 板子上启动 gdbserver :$GDB_PORT $REMOTE_DIR/$BIN_NAME $* ==="
 echo "=== 现在去 CLion 选 Remote Debug 配置（localhost:${GDB_PORT}），点调试 ==="
-exec $ADB shell "gdbserver :$GDB_PORT $REMOTE_DIR/$BIN_NAME $*"
+exec $ADB shell "gdbserver :$GDB_PORT $REMOTE_DIR/$BIN_NAME $*" < /dev/null
