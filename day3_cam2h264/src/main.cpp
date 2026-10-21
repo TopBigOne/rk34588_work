@@ -15,14 +15,15 @@
 #include <vector>
 
 #define CHECK_CAMERA_INFO (0)
-const char* const kTag              = "day3_main"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
-static const char* kDevice          = "/dev/video22";
-static const int kWidth             = 1920;
-static const int kHeight            = 1080;
-static const int kFrames            = 500;
-static const int kSkipFrames        = 30;
-static const char* kOutputFilePath  = "/userdata/av/cam_m3.h264";
-static const int kBufCount          = 4;
+const char* const kTag             = "day3_main"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
+static const char* kDevice         = "/dev/video22";
+static const int kWidth            = 1920;
+static const int kHeight           = 1080;
+static const int kFrames           = 500;
+static const int kSkipFrames       = 30;
+static const char* kOutputFilePath = "/userdata/av/cam_m3.h264";
+static const int kBufCount         = 4;
+// 多平面视频采集
 static const v4l2_buf_type kBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 
 struct CamBuffer {
@@ -38,8 +39,11 @@ static bool g_streaming = false;
 static FILE* g_out      = nullptr;
 
 static int run();
+
 static void clear_up();
+
 static void getCameraInfo();
+
 void getCameraInfo() {
     if (CHECK_CAMERA_INFO) {
         FindCamera find_camera;
@@ -50,7 +54,6 @@ void getCameraInfo() {
 static int xioctl(int fd, unsigned long request, void* arg) {
     int ret;
     do {
-        // todo ioctl() 的用法 是什么
         ret = ioctl(fd, request, arg);
     } while (ret == -1 && errno == EINTR);
     return ret;
@@ -86,13 +89,20 @@ static int dequeue_buffer(uint32_t* bytesUsed);
  */
 bool queue_buffer(int index) {
     v4l2_plane planes[1] = {};
-    v4l2_buffer buf      = {};
-    buf.type             = kBufType;
-    buf.memory           = V4L2_MEMORY_MMAP;
-    buf.index            = index;
-    buf.m.planes         = planes;
-    buf.length           = 1;
-    if (xioctl(g_videoFd, VIDIOC_QBUF, &buf) == -1) {
+    v4l2_buffer v4l2Buf  = {};
+    v4l2Buf.type         = kBufType;
+    v4l2Buf.memory       = V4L2_MEMORY_MMAP;
+    v4l2Buf.index        = index;
+    v4l2Buf.m.planes     = planes;
+    v4l2Buf.length       = 1;
+    // ioctl(谁, 干什么, 表格)：
+    //   g_videoFd   = 谁：发给 /dev/video22 背后的摄像头驱动（rkisp mainpath）
+    //   VIDIOC_QBUF = 干什么：命令号"把 buffer 还回去"，videodev2.h 第 5120 行 _IOWR('V', 15, struct v4l2_buffer)
+    //   &buf        = 表格：还哪一块（index）、什么类型
+    // 两者的隐形关系：buffer 队列挂在"做了 REQBUFS 的那个 fd"上，index 也只对这个 fd 有意义。
+    //   2026-10-21 实测：同一个 /dev/video22 再 open 一个 fd 去 QBUF / REQBUFS → EBUSY（队列已经有主人）；
+    //   没 REQBUFS 就 QBUF、index 越界、同一块重复 QBUF → EINVAL
+    if (xioctl(g_videoFd, VIDIOC_QBUF, &v4l2Buf) == -1) {
         LOGE(kTag, "     VIDIOC_QBUF %d: %s", index, strerror(errno));
         return false;
     }
@@ -122,6 +132,12 @@ int dequeue_buffer(uint32_t* bytesUsed) {
     buf.memory           = V4L2_MEMORY_MMAP;
     buf.m.planes         = planes;
     buf.length           = 1;
+    // ioctl(谁, 干什么, 表格)：
+    //   g_videoFd    = 谁：从 /dev/video22 背后的摄像头驱动取
+    //   VIDIOC_DQBUF = 干什么：命令号"取一块写好的 buffer"，videodev2.h 第 5130 行 _IOWR('V', 17, struct v4l2_buffer)
+    //   &buf         = 表格：进去时只填 type / memory / planes；驱动把 index、bytesused、sequence 写回来
+    // 两者的隐形关系：和 QBUF 一样，只能对做了 REQBUFS 的同一个 fd 调用（别的 fd → EBUSY）。
+    //   fd 是阻塞打开的（没加 O_NONBLOCK），所以没有写好的帧时会在这里一直等
     if (xioctl(g_videoFd, VIDIOC_DQBUF, &buf) == -1) {
         LOGE(kTag, "    VIDIOC_DQBUF: %s", strerror(errno));
         return -1;
@@ -164,7 +180,7 @@ int run() {
     fmt.fmt.pix_mp.height      = kHeight;
     fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
     fmt.fmt.pix_mp.field       = V4L2_FIELD_NONE;
-    fmt.fmt.pix_mp.num_planes  = 1;
+    fmt.fmt.pix_mp.num_planes  = 1; // 这个格式实际用了几个平面（几块独立内存）。
     // set format by manual
     V4L2_CHECK(VIDIOC_S_FMT, &fmt);
     // get again because the drive maybe change it
@@ -213,14 +229,33 @@ int run() {
             return -1;
         }
 
-        // 4.3:
+        // 4.3: VIDIOC_EXPBUF —— 把第 i 块缓冲区"导出"成一个 dma_buf fd，好交给编码器用（零拷贝的关键一步）
+        //
+        // 为什么要这一步：
+        //   REQBUFS 时内存已经由摄像头驱动分配好了（4.2 的 mmap 也是这块内存），但 mmap 拿到的 start
+        //   只是"本程序 CPU 能用的地址"，编码器是另一块硬件，看不懂这个地址。
+        //   EXPBUF 让驱动给这块内存发一把"钥匙"——dma_buf fd。拿着这个 fd，别的硬件（MPP 编码器、RGA、
+        //   显示）就能找到同一块物理内存，直接读，不用 CPU 复制。
+        //
+        // 它不做的事：不分配新内存、不复制数据。导出前后，摄像头写的、mmap 看到的、编码器读的，都是同一块内存。
+        //
+        // 要填的字段（填表 → 交给驱动 → 驱动把结果写回 exp.fd）：
+        //   type  = kBufType  缓冲区类型，和 REQBUFS / QUERYBUF 填的一样（多平面采集）
+        //   index = i         导出第几块（0 ～ kBufCount-1）
+        //   plane = 0         导出这块缓冲区的第几个 plane。NV12 在这里只有 1 个 plane，所以是 0
+        //   flags = O_CLOEXEC 新 fd 的属性：本程序以后如果 exec 别的程序，这个 fd 自动关掉，不会泄露给子程序
+        // 驱动返回：
+        //   exp.fd            新的 dma_buf fd（实测 4 块分别是 12、13、14、15）
+        //
+        // 注意：这个 fd 是新打开的文件，用完要 close（clear_up() 里 close(g_buf.dmaFd)），否则 fd 泄漏
         v4l2_exportbuffer exp = {};
         exp.type              = kBufType;
         exp.index             = i;
         exp.plane             = 0;
         exp.flags             = O_CLOEXEC;
         V4L2_CHECK(VIDIOC_EXPBUF, &exp);
-        g_bufs[i].dmaFd = exp.fd;
+        // 中文：驱动返回的 dma-buf 文件描述符（输出参数）
+        g_bufs[i].dmaFd = exp.fd; // 存起来：4.4 交给 mpp_buffer_import，clear_up() 里 close
 
         // 4.4
         MppBufferInfo bufInfo = {};
@@ -228,6 +263,7 @@ int run() {
         bufInfo.fd            = exp.fd;
         bufInfo.size          = planes[0].length;
         bufInfo.index         = i;
+        // 把外部内存（一般是 dma_buf fd）包装成一个 MppBuffer
         if (mpp_buffer_import(&g_bufs[i].mppBuf, &bufInfo) != MPP_OK) {
             LOGE(kTag, "     mpp_buffer_import buffer %d", i);
             return -1;
@@ -236,12 +272,32 @@ int run() {
     }
 
 
-    // 5: start sample with these four buffer
+    // 5: 开拍之前，先把 4 块空 buffer 全部交给驱动
+    //
+    // 为什么要这一步：REQBUFS 只是把 4 块 buffer 造出来，造好时它们在【程序手里】，不在驱动手里。
+    // 摄像头只会往"已经交给驱动的空 buffer"里写画面，驱动手里一块都没有的话，开拍后没地方写。
+    //
+    // 打个比方（食堂打饭）：REQBUFS = 买了 4 个盘子，堆在你桌上；QBUF = 把一个空盘子递到打饭窗口；
+    // STREAMON = 阿姨开始打饭，只往窗口里的盘子盛。所以开饭前要把 4 个盘子都递过去。
+    //
+    // 为什么是循环：QBUF 一次只能交一块（表格里只填一个 index），4 块就调用 4 次，i 就是第几块（0～3）。
+    //
+    // 这个循环只在开始时做一次。之后主循环里每一帧都是：DQBUF 取一块 → encode → QBUF 还这一块，4 块一直转圈。
+    // 交得越少越容易丢帧：2026-10-21 实测只有 1 块 buffer 时，程序什么都不做也只收到 10fps（摄像头是 30fps）。
     for (int i = 0; i < kBufCount; ++i) {
         if (!queue_buffer(i)) {
             return -1;
         }
     }
+
+    // STREAMON：让摄像头开始拍（"开饭"）。从这时起，ISP 每 33ms 往驱动手里的一块空 buffer 写一帧，
+    // 写好的放进"已写好"队列，等 DQBUF 来取。对应的关闭是 clear_up() 里的 STREAMOFF。
+    // 必须先 QBUF 再 STREAMON：顺序反了，开拍那一刻驱动手里没有空 buffer。
+    //
+    // 表格只有一个数：type = 启动哪一种队列（多平面采集）。命令号是 _IOW('V', 18, int)（videodev2.h 第 5140 行），
+    // W = 只往驱动里写，驱动不往回填；但 ioctl 的第 3 个参数必须是地址，所以要先放进变量 type，再传 &type。
+    // 开拍时驱动会一路通知到摄像头芯片：dmesg 里能看到 "imx415 3-001a: s_stream: 1"，STREAMOFF 时是 "s_stream: 0"。
+    // 常见失败：video31（没接摄像头的 ISP1）→ EPERM；相机 App 占着 video22 → EBUSY（在更早的 S_FMT / REQBUFS 就会报）。
     v4l2_buf_type type = kBufType;
     V4L2_CHECK(VIDIOC_STREAMON, &type);
     g_streaming = true;
@@ -290,6 +346,7 @@ int run() {
     for (int i = 0; i < kFrames; ++i) {
         uint32_t bytesUsed = 0;
         int index          = dequeue_buffer(&bytesUsed);
+        // Note : ioctl 失败或序号越界返回 -1
         if (index < 0) {
             return -1;
         }
@@ -370,10 +427,6 @@ int main() {
     int ret = 0;
     getCameraInfo();
     ret = run();
-
-
     clear_up();
-
-
     return ret;
 }
