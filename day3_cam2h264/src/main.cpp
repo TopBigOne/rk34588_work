@@ -248,6 +248,7 @@ int run() {
 
     // 6:
     EncoderConfig cfg;
+    cfg.rotation  = 3; // 摄像头侧装，逆时针转 270° 才正
     cfg.width     = width;
     cfg.height    = height;
     cfg.horStride = bytesPerLine;                                       // 1920
