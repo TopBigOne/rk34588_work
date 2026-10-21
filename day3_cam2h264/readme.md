@@ -108,6 +108,7 @@
 | [重定向和_dev_null.md](doc/重定向和_dev_null.md) | `>/dev/null 2>&1` 是什么意思：程序的 0/1/2 号口、`>` `2>` `2>&1` `<`、/dev/null 黑洞、为什么 `2>&1` 要写在后面（实测）、脚本里每种写法的含义 |
 | [adb_shell会吃掉终端输入.md](doc/adb_shell会吃掉终端输入.md) | 一次粘贴多行命令时后面的行消失了：现象、原因、复现方法、`< /dev/null` 修法和验证、什么时候不能加 |
 | [板载麦克风录音_ALSA.md](doc/板载麦克风录音_ALSA.md) | 板子能录音：ES8388 + 板载麦克风（card 3）、ALSA 和 V4L2 对照、arecord / aplay / amixer 用法、"自己放自己录"证明麦克风在收声（实测 +43 dB）、和音视频录像的关系 |
+| [画面旋转_prep_rotation和sensor翻转.md](doc/画面旋转_prep_rotation和sensor翻转.md) | 把画面转正的两种方法：编码器 `prep:rotation`（0～3 实测，90°/270° 时 MPP 自动输出 1080×1920）和摄像头 flip（只能镜像 / 180°，影响所有出口）；这块板子摄像头是侧着装的，要用 `rotation = 3` |
 
 ### 写代码时对照着看
 
