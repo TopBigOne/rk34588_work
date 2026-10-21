@@ -1,14 +1,14 @@
 #!/bin/sh
 # 通过 USB（adb）把板子上的文件"移动"到 Mac：先 adb pull，核对大小一致后，再删掉板子上的那份。
 # 用法：./run_move_file_from_board_via_usb.sh [板子上的文件] [Mac 上的目录]
-#   默认：/userdata/av/out.h264 → ./result_from_board/
+#   默认：/userdata/av/cam_m3.h264 → ./result_from_board/
 # 可选环境变量：
 #   KEEP=1              只拷贝，不删板子上的文件
 #   ADB=/path/to/adb    不用 PATH 里的 adb 时指定
 #   ADB_SERIAL=xxxx     同时连了多台 adb 设备时，指定板子的序列号（adb devices 第一列）
 
 cd "$(dirname "$0")" || exit 1
-SRC=${1:-/userdata/av/out.h264}
+SRC=${1:-/userdata/av/cam_m3.h264}
 DST_DIR=${2:-result_from_board}
 DST="$DST_DIR/$(basename "$SRC")"
 
