@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="960" height="560" fill="#ffffff"/>
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+    <marker id="arrB" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/>
+    </marker>
+    <marker id="arrG" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <text x="480" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">dma_buf fd 的旅程：数据不动，只传钥匙</text>
+
+  <!-- 内存 -->
+  <rect x="330" y="400" width="300" height="120" rx="10" fill="#fff4e5" stroke="#d4a017" stroke-width="2"/>
+  <text x="480" y="426" text-anchor="middle" font-size="15" font-weight="bold" fill="#8a5a00">物理内存：4 块 buffer（各 3,133,440 字节）</text>
+  <rect x="350" y="440" width="60" height="56" fill="#ffe2a8" stroke="#d4a017"/>
+  <rect x="420" y="440" width="60" height="56" fill="#ffe2a8" stroke="#d4a017"/>
+  <rect x="490" y="440" width="60" height="56" fill="#ffe2a8" stroke="#d4a017"/>
+  <rect x="560" y="440" width="60" height="56" fill="#ffe2a8" stroke="#d4a017"/>
+  <text x="380" y="473" text-anchor="middle" font-size="13">buf 0</text>
+  <text x="450" y="473" text-anchor="middle" font-size="13">buf 1</text>
+  <text x="520" y="473" text-anchor="middle" font-size="13">buf 2</text>
+  <text x="590" y="473" text-anchor="middle" font-size="13">buf 3</text>
+  <text x="480" y="512" text-anchor="middle" font-size="12" fill="#8a5a00">分配者：摄像头驱动（videobuf2_cma_sg）</text>
+
+  <!-- ISP -->
+  <rect x="40" y="400" width="200" height="120" rx="10" fill="#e8f1ff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="140" y="440" text-anchor="middle" font-size="16" font-weight="bold" fill="#1f6feb">ISP（摄像头这边）</text>
+  <text x="140" y="466" text-anchor="middle" font-size="13" fill="#333">/dev/video22</text>
+  <text x="140" y="490" text-anchor="middle" font-size="13" fill="#333">往 buffer 里写画面</text>
+  <line x1="240" y1="460" x2="326" y2="460" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrB)"/>
+  <text x="283" y="450" text-anchor="middle" font-size="13" fill="#1f6feb">写</text>
+
+  <!-- 编码器 -->
+  <rect x="720" y="400" width="200" height="120" rx="10" fill="#e9f7ec" stroke="#1a7f37" stroke-width="2"/>
+  <text x="820" y="436" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">硬件编码器</text>
+  <text x="820" y="462" text-anchor="middle" font-size="13" fill="#333">rkvenc-core</text>
+  <text x="820" y="486" text-anchor="middle" font-size="13" fill="#333">从同一块内存读</text>
+  <line x1="716" y1="460" x2="634" y2="460" stroke="#1a7f37" stroke-width="3" marker-end="url(#arrG)"/>
+  <text x="675" y="450" text-anchor="middle" font-size="13" fill="#1a7f37">读</text>
+
+  <!-- 上方：fd 的传递链 -->
+  <rect x="40" y="70" width="200" height="96" rx="10" fill="#f5f5f5" stroke="#888" stroke-width="1.5"/>
+  <text x="140" y="98" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">① VIDIOC_EXPBUF</text>
+  <text x="140" y="122" text-anchor="middle" font-size="13" fill="#333">驱动发钥匙</text>
+  <text x="140" y="146" text-anchor="middle" font-size="13" fill="#333">exp.fd = 12/13/14/15</text>
+
+  <rect x="280" y="70" width="190" height="96" rx="10" fill="#f5f5f5" stroke="#888" stroke-width="1.5"/>
+  <text x="375" y="98" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">② mpp_buffer_import</text>
+  <text x="375" y="122" text-anchor="middle" font-size="13" fill="#333">fd 包成 MppBuffer</text>
+  <text x="375" y="146" text-anchor="middle" font-size="13" fill="#333">（只记下 fd）</text>
+
+  <rect x="510" y="70" width="190" height="96" rx="10" fill="#f5f5f5" stroke="#888" stroke-width="1.5"/>
+  <text x="605" y="98" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">③ encode()</text>
+  <text x="605" y="122" text-anchor="middle" font-size="13" fill="#333">MPP 取出 fd</text>
+  <text x="605" y="146" text-anchor="middle" font-size="13" fill="#333">写进输入地址寄存器</text>
+
+  <rect x="740" y="70" width="180" height="96" rx="10" fill="#f5f5f5" stroke="#888" stroke-width="1.5"/>
+  <text x="830" y="98" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">④ 内核驱动</text>
+  <text x="830" y="122" text-anchor="middle" font-size="13" fill="#333">/dev/mpp_service</text>
+  <text x="830" y="146" text-anchor="middle" font-size="13" fill="#333">fd → 硬件地址</text>
+
+  <line x1="240" y1="118" x2="276" y2="118" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="470" y1="118" x2="506" y2="118" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="700" y1="118" x2="736" y2="118" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- 钥匙从内存发出、最后交给编码器 -->
+  <line x1="140" y1="396" x2="140" y2="170" stroke="#999" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+  <text x="150" y="290" font-size="12" fill="#666">给 buffer 发钥匙</text>
+  <line x1="830" y1="170" x2="830" y2="396" stroke="#999" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+  <text x="820" y="290" text-anchor="end" font-size="12" fill="#666">让编码器挂上这块内存</text>
+
+  <!-- 中间说明 -->
+  <rect x="300" y="215" width="360" height="120" rx="10" fill="#fffbe6" stroke="#e0c000" stroke-dasharray="4,3"/>
+  <text x="480" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#5c4b00">你的程序 = 传钥匙的人</text>
+  <text x="480" y="271" text-anchor="middle" font-size="13" fill="#333">只拿着 fd 转交，自己不读画面</text>
+  <text x="480" y="295" text-anchor="middle" font-size="13" fill="#333">CPU 复制的字节数：0</text>
+  <text x="480" y="319" text-anchor="middle" font-size="13" fill="#333">用完在 clear_up() 里 close(fd)</text>
+</svg>

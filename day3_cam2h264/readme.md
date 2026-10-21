@@ -109,6 +109,8 @@
 | [adb_shell会吃掉终端输入.md](doc/adb_shell会吃掉终端输入.md) | 一次粘贴多行命令时后面的行消失了：现象、原因、复现方法、`< /dev/null` 修法和验证、什么时候不能加 |
 | [板载麦克风录音_ALSA.md](doc/板载麦克风录音_ALSA.md) | 板子能录音：ES8388 + 板载麦克风（card 3）、ALSA 和 V4L2 对照、arecord / aplay / amixer 用法、"自己放自己录"证明麦克风在收声（实测 +43 dB）、和音视频录像的关系 |
 | [画面旋转_prep_rotation和sensor翻转.md](doc/画面旋转_prep_rotation和sensor翻转.md) | 把画面转正的两种方法：编码器 `prep:rotation`（0～3 实测，90°/270° 时 MPP 自动输出 1080×1920）和摄像头 flip（只能镜像 / 180°，影响所有出口）；这块板子摄像头是侧着装的，要用 `rotation = 3` |
+| [面试会问的问题.md](doc/面试会问的问题.md) | 面试会问的 6 个问题（零拷贝、stride、为什么 4 个 buffer、忘了 QBUF、侧装旋转、编码跟不上），每题 30 秒版 + 展开讲；丢帧实测：1 块 buffer 只有 10fps、每帧处理 50 ms → 20fps |
+| [dma_buf_fd给了谁_从EXPBUF到编码器.md](doc/dma_buf_fd给了谁_从EXPBUF到编码器.md) | EXPBUF 导出的 fd 走过的 4 站：EXPBUF → mpp_buffer_import（EXT_DMA 只检查 fd）→ MPP 把 fd 写进 VEPU580 输入地址寄存器（UV 偏移 = hor_stride × ver_stride）→ 内核换成硬件地址；板子实测 `/proc/pid/fd` 和 dma_buf bufinfo：摄像头的 4 块 buffer 上挂着 `rkvenc-core` |
 
 ### 写代码时对照着看
 
