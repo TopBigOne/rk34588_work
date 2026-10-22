@@ -6,7 +6,7 @@
 #   ADB=/path/to/adb    不用 PATH 里的 adb 时指定
 #   ADB_SERIAL=xxxx     同时连了多台 adb 设备时，指定板子的序列号（adb devices 第一列）
 
-BIN_NAME=day3_camrea_cache_test
+BIN_NAME=day3_camera_cache_test
 BUILD_DIR=cmake-build-rk3588-debug
 REMOTE_DIR=/tmp/CLion/run
 # 板子 /usr/lib 里出厂的 librockchip_mpp 太旧（缺 mpp_buffer_sync_begin_f 等函数），
