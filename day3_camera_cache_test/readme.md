@@ -1,4 +1,4 @@
-# day3_camrea_cache_test：摄像头的 buffer 是 cached 还是 uncached？
+# day3_camera_cache_test：摄像头的 buffer 是 cached 还是 uncached？
 
 > M6 里有一个猜测："摄像头的 buffer 是 uncached 的，CPU 用 memcpy 读它会特别慢"。这个探针用来验证它。
 > 结论（2026-10-23 实测）：**猜错了，摄像头的 buffer 是 cached 的**，CPU 读它和读普通内存一样快。
@@ -33,7 +33,7 @@ CPU 旁边有一块很小但很快的存储，叫缓存（cache）。
 ## 3. 怎么运行
 
 ```bash
-cd /Users/dev/Documents/AV/rk_work/day3_camrea_cache_test
+cd /Users/dev/Documents/AV/rk_work/day3_camera_cache_test
 ./run_on_board_with_mac.sh
 ```
 

@@ -347,9 +347,24 @@ if (g_copyBufGroup != nullptr) {
 
 再加上：内存带宽翻倍（每个字节读一次、写一次）、每帧多 2 ms 延迟、多耗电。所以 4K、多路、低延迟、低功耗的产品里，零拷贝是必需的。
 
-**4. "摄像头 buffer 是 uncached，memcpy 会特别慢"的猜测：没有得到证实**
+**4. "摄像头 buffer 是 uncached，memcpy 会特别慢"的猜测：错了，摄像头的 buffer 是 cached 的**
 
-1.5 GB/秒不算特别慢，一帧只占 2 ms。要确认到底 cached 还是 uncached，需要对照实验：在同一块板子上从一块确定是 cached 的普通内存拷 3 MB，比较速度（⬜ 还没做）。
+2026-10-23 用探针 `day3_camera_cache_test` 实测（见它的 readme.md）：同样读 3,110,400 字节，只换"从哪块内存读"，各 30 次取平均，测两轮（第二轮倒序）：
+
+| 内存 | memcpy | 逐 8 字节读求和 |
+|---|---|---|
+| malloc（一定是 cached） | 0.35 ms | 0.30 ms |
+| dma_heap `system`（cached，和 g_copyBuf 同一种） | 0.31 ms | 0.30 ms |
+| dma_heap `system-uncached`（一定是 uncached） | **3.07 ms** | **5.30 ms** |
+| **摄像头的 buffer**（video22 mmap） | **0.35 ms** | **0.29 ms** |
+
+（第二轮的数字。第一轮最先测的 malloc 慢了 3 倍，是因为 CPU 刚开始干活时频率还没升上去，第二轮倒序后就正常了。）
+
+摄像头的 buffer 和 cached 内存一样快，比 uncached 内存快 9～18 倍 → **它是 cached 的**。
+
+**那 M6 里拷一帧为什么要 2.12 ms，探针里只要 0.35 ms？** 探针是把**同一块**内存反复读 30 次，第一次读完后数据大多留在 CPU 缓存里（RK3588 的 L3 缓存是 3 MB，一帧刚好放得下），后面几次读得很快。M6 里每一帧都是 ISP **刚写进内存的新画面**，CPU 缓存里没有，必须真的从内存读；再加上写 `g_copyBuf`、`sync_end` 把 3 MB 缓存刷回内存。所以 2.12 ms 才是"拷一帧新画面"的真实代价。（按原理推断，未单独测量每一部分）
+
+> 摄像头的 buffer 是 cached 的，CPU 为什么还能读到 ISP 刚写的新数据？因为 V4L2 驱动在 DQBUF 时会替我们做缓存同步（让 CPU 缓存里的旧数据作废），这和 MPP 的 `sync_begin` 是同一类操作，只是驱动自动做了。（按 V4L2 videobuf2 的机制推断，未看驱动源码）
 
 ### 8.4 一个还没解释的现象：零拷贝的 encode 慢 0.37 ms
 
