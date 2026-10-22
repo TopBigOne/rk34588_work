@@ -16,7 +16,7 @@
  *   MppEncoder encoder;
  *   if (!encoder.init(cfg)) return -1;          // ① 开机 + ② 设参数
  *   encoder.get_header(header);                  // ③ SPS/PPS
- *   while (!packet.eos) {
+ *   while (!packet.isEos) {
  *       ...往 frameBuffer 里填一帧（按 hor_stride() / ver_stride() 排布）...
  *       encoder.encode(frameBuffer, inputEos, packet);   // ⑤ 送一帧、取一包
  *   }
@@ -55,7 +55,7 @@ struct EncoderConfig {
 struct EncodedPacket {
     std::vector<uint8_t> data; // 码流数据（从 MppPacket 的 pos + length 拷出来）。可能是空的，见 encode()
     bool isKeyFrame = false;   // 是不是 I 帧（来自 MppMeta 的 KEY_OUTPUT_INTRA）
-    bool eos        = false;   // 编码器说"码流全给你了"，调用方据此结束循环
+    bool isEos      = false;   // 编码器说"码流全给你了"，调用方据此结束循环
 };
 
 class MppEncoder {

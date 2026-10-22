@@ -132,7 +132,7 @@ bool MppEncoder::get_header(std::vector<uint8_t>& header) {
 bool MppEncoder::encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& encodedPacket) {
     encodedPacket.data.clear();
     encodedPacket.isKeyFrame = false;
-    encodedPacket.eos        = false;
+    encodedPacket.isEos      = false;
 
     // 5.1 包装成 MppFrame
     // MppFrame 是贴在 frameBuffer 上的"标签"：告诉编码器这块内存里的图像多宽多高、stride 多少、什么格式
@@ -172,7 +172,7 @@ bool MppEncoder::encode(MppBuffer frameBuffer, bool inputEos, EncodedPacket& enc
 
 
     // 编码器说：这是最后一个，调用方据此结束循环
-    encodedPacket.eos = mpp_packet_get_eos(outputPacket);
+    encodedPacket.isEos = mpp_packet_get_eos(outputPacket);
     // EOS 对应的最后一个包可能是空的（length = 0），不算一帧，data 保持为空
     const size_t packetLength = mpp_packet_get_length(outputPacket);
     if (packetLength > 0) {

@@ -1,4 +1,4 @@
-#include "camera/find_camera.h"
+#include "camera/camera_finder.h"
 
 #include "common/log.h"  // LOGD / LOGI / LOGE：带颜色的日志
 #include <cstdio>        // printf / fopen / fgets
@@ -29,7 +29,7 @@ namespace {
     const char* const kMainPathEntity = "rkisp_mainpath";   // 主出口
     const char* const kSelfPathEntity = "rkisp_selfpath";   // 副出口
 
-    const char* const kTag = "FindCamera"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
+    const char* const kTag = "CameraFinder"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
 
 } // namespace
 
@@ -40,7 +40,7 @@ namespace {
  * @return 至少找到一个摄像头返回 true；一个都没找到返回 false
  * @note 【精读】①～④ 四步和手动用 media-ctl 排查的顺序一样，对照 doc/v4l2-ctl和media-ctl用法.md 第 3 节看
  */
-bool FindCamera::find(std::vector<CameraNode>& cameras, bool verbose) {
+bool CameraFinder::find(std::vector<CameraNode>& cameras, bool verbose) {
     cameras.clear();
     // ① 读出所有的图：/dev/media0、media1 …… 不存在的号码直接跳过
     std::vector<Graph> graphs;
@@ -100,7 +100,7 @@ bool FindCamera::find(std::vector<CameraNode>& cameras, bool verbose) {
  * @brief 查找并打印所有摄像头的信息
  * @note 【扫一眼】只是给人看的；程序里要拿节点去 open，用 find()
  */
-void FindCamera::printAllCameraInfo() {
+void CameraFinder::print_all_camera_info() {
     std::vector<CameraNode> cameras{0};
     if (!find(cameras, true)) { // true：把查找过程打印出来
         LOGE(kTag, "没有找到接通到 ISP 的摄像头（先看 dmesg | grep imx415）");
@@ -123,7 +123,7 @@ void FindCamera::printAllCameraInfo() {
  * @return 成功返回 true；文件不存在或者不是 media 设备返回 false
  * @note 【扫一眼】遍历实体的写法：id 填"上一个 id | MEDIA_ENT_ID_FLAG_NEXT"，内核就返回下一个，直到返回失败
  */
-bool FindCamera::load_graph(const std::string& path, Graph& graph) {
+bool CameraFinder::load_graph(const std::string& path, Graph& graph) {
     FdGuard fd(open(path.c_str(), O_RDONLY | O_CLOEXEC));
     if (fd.fd < 0) {
         return false;
@@ -163,7 +163,7 @@ bool FindCamera::load_graph(const std::string& path, Graph& graph) {
  * @return 找到返回指向它的指针；找不到返回 nullptr
  * @note 【扫一眼】
  */
-const FindCamera::Entity* FindCamera::find_entity(const Graph& graph, const std::string& name) {
+const CameraFinder::Entity* CameraFinder::find_entity(const Graph& graph, const std::string& name) {
     for (const Entity& e : graph.entities) {
         if (e.name == name) {
             return &e;
@@ -180,7 +180,7 @@ const FindCamera::Entity* FindCamera::find_entity(const Graph& graph, const std:
  * @return 有接通的连线返回 true；没有、或者查询失败返回 false
  * @note 【扫一眼】要先按 from.pads / from.links 准备好数组，内核往里填
  */
-bool FindCamera::has_enabled_link(const Graph& graph, const Entity& from, const Entity& to) {
+bool CameraFinder::has_enabled_link(const Graph& graph, const Entity& from, const Entity& to) {
     if (from.links == 0) {
         return false;
     }
@@ -190,11 +190,11 @@ bool FindCamera::has_enabled_link(const Graph& graph, const Entity& from, const 
     }
     std::vector<media_pad_desc> pads(from.pads);
     std::vector<media_link_desc> links(from.links);
-    media_links_enum req = {};
-    req.entity           = from.id;
-    req.pads             = pads.data();
-    req.links            = links.data(); // 内核只返回从 from "出去"的连线
-    if (ioctl(fd.fd, MEDIA_IOC_ENUM_LINKS, &req) != 0) {
+    media_links_enum linksEnum = {};
+    linksEnum.entity           = from.id;
+    linksEnum.pads             = pads.data();
+    linksEnum.links            = links.data(); // 内核只返回从 from "出去"的连线
+    if (ioctl(fd.fd, MEDIA_IOC_ENUM_LINKS, &linksEnum) != 0) {
         return false;
     }
     for (const media_link_desc& link : links) {
@@ -212,7 +212,7 @@ bool FindCamera::has_enabled_link(const Graph& graph, const Entity& from, const 
  * @return 例如 "/dev/video22"；查不到返回空字符串
  * @note 【扫一眼】/sys/dev/char/81:22/uevent 里有一行 DEVNAME=video22（实测）
  */
-std::string FindCamera::dev_path(unsigned major, unsigned minor) {
+std::string CameraFinder::dev_path(unsigned major, unsigned minor) {
     char path[64];
     snprintf(path, sizeof(path), "/sys/dev/char/%u:%u/uevent", major, minor);
     FILE* fp = fopen(path, "r");

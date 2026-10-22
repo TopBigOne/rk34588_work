@@ -1,7 +1,7 @@
-// day3_cam2h264：先用 FindCamera 找出摄像头节点（M2 之前的准备）
+// day3_cam2h264：先用 CameraFinder 找出摄像头节点（M2 之前的准备）
 // 写 M2 时把这个文件整个替换成"具体编码day3_cam2h264的流程.md"里的 M2 代码，
 // 可以把下面的查找逻辑留下来，当作 kDevice 的默认值
-#include "camera/find_camera.h"
+#include "camera/camera_finder.h"
 #include "common/log.h"
 #include "encoder/mpp_encoder.h"
 #include <cerrno>
@@ -19,14 +19,14 @@ const char* const kTag             = "day3_main"; // 日志标签（LOGD / LOGI 
 static const char* kDevice         = "/dev/video22";
 static const int kWidth            = 1920;
 static const int kHeight           = 1080;
-static const int kFrames           = 500;
-static const int kSkipFrames       = 30;
+static const int totalRecordFrameCount       = 500;
+static const int kSkipFrameCount   = 30;
 static const char* kOutputFilePath = "/userdata/av/cam_m3.h264";
 static const int kBufCount         = 4;
 // 多平面视频采集
 static const v4l2_buf_type kBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 
-struct CamBuffer {
+struct CameraBuffer {
     void* start      = MAP_FAILED;
     size_t length    = 0;
     int dmaFd        = -1;
@@ -34,20 +34,20 @@ struct CamBuffer {
 };
 
 static int g_videoFd = -1;
-static CamBuffer g_bufs[kBufCount];
-static bool g_streaming = false;
-static FILE* g_out      = nullptr;
+static CameraBuffer g_bufs[kBufCount];
+static bool g_isStreaming = false;
+static FILE* g_outputFile = nullptr;
 
 static int run();
 
-static void clear_up();
+static void release_resources();
 
-static void getCameraInfo();
+static void print_camera_info();
 
-void getCameraInfo() {
+void print_camera_info() {
     if (CHECK_CAMERA_INFO) {
-        FindCamera find_camera;
-        find_camera.printAllCameraInfo();
+        CameraFinder cameraFinder;
+        cameraFinder.print_all_camera_info();
     }
 }
 
@@ -59,7 +59,7 @@ static int xioctl(int fd, unsigned long request, void* arg) {
     return ret;
 }
 
-// 调用一个 V4L2 ioctl，失败就打印是哪一句、错误原因，然后 return -1（run() 返回后由 cleanup() 释放资源）
+// 调用一个 V4L2 ioctl，失败就打印是哪一句、错误原因，然后 return -1（run() 返回后由 release_resources() 释放资源）
 #define V4L2_CHECK(request, arg)                                                      \
     do {                                                                              \
         if (xioctl(g_videoFd, request, arg) == -1) {                                  \
@@ -69,7 +69,7 @@ static int xioctl(int fd, unsigned long request, void* arg) {
     } while (0)
 
 
-static bool queue_buffer(int i);
+static bool queue_buffer(int index);
 
 static int dequeue_buffer(uint32_t* bytesUsed);
 
@@ -127,30 +127,30 @@ bool queue_buffer(int index) {
  */
 int dequeue_buffer(uint32_t* bytesUsed) {
     v4l2_plane planes[1] = {};
-    v4l2_buffer buf      = {};
-    buf.type             = kBufType;
-    buf.memory           = V4L2_MEMORY_MMAP;
-    buf.m.planes         = planes;
-    buf.length           = 1;
+    v4l2_buffer v4l2Buf  = {};
+    v4l2Buf.type         = kBufType;
+    v4l2Buf.memory       = V4L2_MEMORY_MMAP;
+    v4l2Buf.m.planes     = planes;
+    v4l2Buf.length       = 1;
     // ioctl(谁, 干什么, 表格)：
     //   g_videoFd    = 谁：从 /dev/video22 背后的摄像头驱动取
     //   VIDIOC_DQBUF = 干什么：命令号"取一块写好的 buffer"，videodev2.h 第 5130 行 _IOWR('V', 17, struct v4l2_buffer)
     //   &buf         = 表格：进去时只填 type / memory / planes；驱动把 index、bytesused、sequence 写回来
     // 两者的隐形关系：和 QBUF 一样，只能对做了 REQBUFS 的同一个 fd 调用（别的 fd → EBUSY）。
     //   fd 是阻塞打开的（没加 O_NONBLOCK），所以没有写好的帧时会在这里一直等
-    if (xioctl(g_videoFd, VIDIOC_DQBUF, &buf) == -1) {
+    if (xioctl(g_videoFd, VIDIOC_DQBUF, &v4l2Buf) == -1) {
         LOGE(kTag, "    VIDIOC_DQBUF: %s", strerror(errno));
         return -1;
     }
 
-    if (buf.index >= kBufCount) {
-        LOGE(kTag, "    VIDIOC_DQBUF 返回的序号 %u 越界", buf.index);
+    if (v4l2Buf.index >= kBufCount) {
+        LOGE(kTag, "    VIDIOC_DQBUF 返回的序号 %u 越界", v4l2Buf.index);
         return -1;
     }
     if (bytesUsed) {
         *bytesUsed = planes[0].bytesused;
     }
-    return static_cast<int>(buf.index);
+    return static_cast<int>(v4l2Buf.index);
 }
 int run() {
     LOGD(kTag, "%s", __func__);
@@ -162,63 +162,63 @@ int run() {
         return -1;
     }
     LOGI(kTag, "    open camera in success.");
-    v4l2_capability cap = {};
+    v4l2_capability capability = {};
     // 内部调用：xioctl
-    V4L2_CHECK(VIDIOC_QUERYCAP, &cap);
+    V4L2_CHECK(VIDIOC_QUERYCAP, &capability);
 
-    LOGI(kTag, "    device %s: driver %s, card %s", kDevice, cap.driver, cap.card);
-    __u32 caseOne = cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE;
-    __u32 caseTwo = cap.capabilities & V4L2_CAP_STREAMING;
-    if (!caseOne || !caseTwo) {
+    LOGI(kTag, "    device %s: driver %s, card %s", kDevice, capability.driver, capability.card);
+    bool supportsMultiplane = capability.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE;
+    bool supportsStreaming  = capability.capabilities & V4L2_CAP_STREAMING;
+    if (!supportsMultiplane || !supportsStreaming) {
         LOGE(kTag, "    %s 不支持 Multiplanar 采集或者 streaming", kDevice);
         return -1;
     }
     // step 2======== config format
-    v4l2_format fmt            = {};
-    fmt.type                   = kBufType;
-    fmt.fmt.pix_mp.width       = kWidth;
-    fmt.fmt.pix_mp.height      = kHeight;
-    fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
-    fmt.fmt.pix_mp.field       = V4L2_FIELD_NONE;
-    fmt.fmt.pix_mp.num_planes  = 1; // 这个格式实际用了几个平面（几块独立内存）。
+    v4l2_format format            = {};
+    format.type                   = kBufType;
+    format.fmt.pix_mp.width       = kWidth;
+    format.fmt.pix_mp.height      = kHeight;
+    format.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+    format.fmt.pix_mp.field       = V4L2_FIELD_NONE;
+    format.fmt.pix_mp.num_planes  = 1; // 这个格式实际用了几个平面（几块独立内存）。
     // set format by manual
-    V4L2_CHECK(VIDIOC_S_FMT, &fmt);
+    V4L2_CHECK(VIDIOC_S_FMT, &format);
     // get again because the drive maybe change it
-    V4L2_CHECK(VIDIOC_G_FMT, &fmt);
-    const int width          = static_cast<int>(fmt.fmt.pix_mp.width);
-    const int height         = static_cast<int>(fmt.fmt.pix_mp.height);
-    const int bytesPerLine   = static_cast<int>(fmt.fmt.pix_mp.plane_fmt[0].bytesperline);
-    const uint32_t sizeImage = fmt.fmt.pix_mp.plane_fmt[0].sizeimage;
+    V4L2_CHECK(VIDIOC_G_FMT, &format);
+    const int width          = static_cast<int>(format.fmt.pix_mp.width);
+    const int height         = static_cast<int>(format.fmt.pix_mp.height);
+    const int bytesPerLine   = static_cast<int>(format.fmt.pix_mp.plane_fmt[0].bytesperline);
+    const uint32_t sizeImage = format.fmt.pix_mp.plane_fmt[0].sizeimage;
     LOGI(kTag, "    format: %dx%d NV12, planes %u, bytesperline %d, sizeimage %u", width, height,
-        fmt.fmt.pix_mp.num_planes, bytesPerLine, sizeImage);
+        format.fmt.pix_mp.num_planes, bytesPerLine, sizeImage);
 
-    if (fmt.fmt.pix_mp.pixelformat != V4L2_PIX_FMT_NV12 || fmt.fmt.pix_mp.num_planes != 1 || bytesPerLine <= 0) {
+    if (format.fmt.pix_mp.pixelformat != V4L2_PIX_FMT_NV12 || format.fmt.pix_mp.num_planes != 1 || bytesPerLine <= 0) {
         LOGE(kTag, "    驱动没有给 1 个 plane 的 NV12");
         return -1;
     }
     // step 3======== require 4 block buffer
-    v4l2_requestbuffers req = {};
-    req.count               = kBufCount;
-    req.type                = kBufType;
-    req.memory              = V4L2_MEMORY_MMAP;
-    V4L2_CHECK(VIDIOC_REQBUFS, &req);
-    if (req.count != kBufCount) {
-        LOGE(kTag, "     要 %d 块缓冲区，驱动给了 %u 块", kBufCount, req.count);
+    v4l2_requestbuffers requestBufs = {};
+    requestBufs.count               = kBufCount;
+    requestBufs.type                = kBufType;
+    requestBufs.memory              = V4L2_MEMORY_MMAP;
+    V4L2_CHECK(VIDIOC_REQBUFS, &requestBufs);
+    if (requestBufs.count != kBufCount) {
+        LOGE(kTag, "     要 %d 块缓冲区，驱动给了 %u 块", kBufCount, requestBufs.count);
         return -1;
     }
-    LOGI(kTag, "    request %d block buffer in success", req.count);
+    LOGI(kTag, "    request %d block buffer in success", requestBufs.count);
 
     // 4: config pre buffer
     for (int i = 0; i < kBufCount; ++i) {
         // 4.1
         v4l2_plane planes[1] = {};
-        v4l2_buffer buf      = {};
-        buf.type             = kBufType;
-        buf.memory           = V4L2_MEMORY_MMAP;
-        buf.index            = i;
-        buf.m.planes         = planes;
-        buf.length           = 1;
-        V4L2_CHECK(VIDIOC_QUERYBUF, &buf);
+        v4l2_buffer v4l2Buf  = {};
+        v4l2Buf.type         = kBufType;
+        v4l2Buf.memory       = V4L2_MEMORY_MMAP;
+        v4l2Buf.index        = i;
+        v4l2Buf.m.planes     = planes;
+        v4l2Buf.length       = 1;
+        V4L2_CHECK(VIDIOC_QUERYBUF, &v4l2Buf);
 
         // 4.2
         g_bufs[i].length = planes[0].length;
@@ -239,28 +239,28 @@ int run() {
         //
         // 它不做的事：不分配新内存、不复制数据。导出前后，摄像头写的、mmap 看到的、编码器读的，都是同一块内存。
         //
-        // 要填的字段（填表 → 交给驱动 → 驱动把结果写回 exp.fd）：
+        // 要填的字段（填表 → 交给驱动 → 驱动把结果写回 exportBuf.fd）：
         //   type  = kBufType  缓冲区类型，和 REQBUFS / QUERYBUF 填的一样（多平面采集）
         //   index = i         导出第几块（0 ～ kBufCount-1）
         //   plane = 0         导出这块缓冲区的第几个 plane。NV12 在这里只有 1 个 plane，所以是 0
         //   flags = O_CLOEXEC 新 fd 的属性：本程序以后如果 exec 别的程序，这个 fd 自动关掉，不会泄露给子程序
         // 驱动返回：
-        //   exp.fd            新的 dma_buf fd（实测 4 块分别是 12、13、14、15）
+        //   exportBuf.fd            新的 dma_buf fd（实测 4 块分别是 12、13、14、15）
         //
-        // 注意：这个 fd 是新打开的文件，用完要 close（clear_up() 里 close(g_buf.dmaFd)），否则 fd 泄漏
-        v4l2_exportbuffer exp = {};
-        exp.type              = kBufType;
-        exp.index             = i;
-        exp.plane             = 0;
-        exp.flags             = O_CLOEXEC;
-        V4L2_CHECK(VIDIOC_EXPBUF, &exp);
+        // 注意：这个 fd 是新打开的文件，用完要 close（release_resources() 里 close(cameraBuf.dmaFd)），否则 fd 泄漏
+        v4l2_exportbuffer exportBuf = {};
+        exportBuf.type              = kBufType;
+        exportBuf.index             = i;
+        exportBuf.plane             = 0;
+        exportBuf.flags             = O_CLOEXEC;
+        V4L2_CHECK(VIDIOC_EXPBUF, &exportBuf);
         // 中文：驱动返回的 dma-buf 文件描述符（输出参数）
-        g_bufs[i].dmaFd = exp.fd; // 存起来：4.4 交给 mpp_buffer_import，clear_up() 里 close
+        g_bufs[i].dmaFd = exportBuf.fd; // 存起来：4.4 交给 mpp_buffer_import，release_resources() 里 close
 
         // 4.4
         MppBufferInfo bufInfo = {};
         bufInfo.type          = MPP_BUFFER_TYPE_EXT_DMA;
-        bufInfo.fd            = exp.fd;
+        bufInfo.fd            = exportBuf.fd;
         bufInfo.size          = planes[0].length;
         bufInfo.index         = i;
         // 把外部内存（一般是 dma_buf fd）包装成一个 MppBuffer
@@ -283,7 +283,12 @@ int run() {
     // 为什么是循环：QBUF 一次只能交一块（表格里只填一个 index），4 块就调用 4 次，i 就是第几块（0～3）。
     //
     // 这个循环只在开始时做一次。之后主循环里每一帧都是：DQBUF 取一块 → encode → QBUF 还这一块，4 块一直转圈。
-    // 交得越少越容易丢帧：2026-10-21 实测只有 1 块 buffer 时，程序什么都不做也只收到 10fps（摄像头是 30fps）。
+    // 2026-10-22 实测（REQBUFS 4 块，STREAMON 前只 QBUF 其中 n 块，程序取到就马上还，不做别的）：
+    //   n = 0：STREAMON 照样返回成功（不报错！），但第一次 DQBUF 永远等不到，程序卡死在内核的 vb2_core_dqbuf 里
+    //   n = 1：10.3 fps   n = 2：20.0 fps   n = 4：29.7 fps（摄像头是 30fps）
+    //   → 一块都不交 = 卡死；交得越少，丢帧越多。所以 4 块要全部交出去
+    //   另外 QUERYBUF 看 flags：REQBUFS 刚做完是 0x2000（没有 QUEUED 位），QBUF 以后变成 0x2002（0x2 =
+    //   QUEUED，在驱动手里了）
     for (int i = 0; i < kBufCount; ++i) {
         if (!queue_buffer(i)) {
             return -1;
@@ -291,16 +296,16 @@ int run() {
     }
 
     // STREAMON：让摄像头开始拍（"开饭"）。从这时起，ISP 每 33ms 往驱动手里的一块空 buffer 写一帧，
-    // 写好的放进"已写好"队列，等 DQBUF 来取。对应的关闭是 clear_up() 里的 STREAMOFF。
+    // 写好的放进"已写好"队列，等 DQBUF 来取。对应的关闭是 release_resources() 里的 STREAMOFF。
     // 必须先 QBUF 再 STREAMON：顺序反了，开拍那一刻驱动手里没有空 buffer。
     //
-    // 表格只有一个数：type = 启动哪一种队列（多平面采集）。命令号是 _IOW('V', 18, int)（videodev2.h 第 5140 行），
-    // W = 只往驱动里写，驱动不往回填；但 ioctl 的第 3 个参数必须是地址，所以要先放进变量 type，再传 &type。
+    // 表格只有一个数：bufType = 启动哪一种队列（多平面采集）。命令号是 _IOW('V', 18, int)（videodev2.h 第 5140 行），
+    // W = 只往驱动里写，驱动不往回填；但 ioctl 的第 3 个参数必须是地址，所以要先放进变量 bufType，再传 &bufType。
     // 开拍时驱动会一路通知到摄像头芯片：dmesg 里能看到 "imx415 3-001a: s_stream: 1"，STREAMOFF 时是 "s_stream: 0"。
     // 常见失败：video31（没接摄像头的 ISP1）→ EPERM；相机 App 占着 video22 → EBUSY（在更早的 S_FMT / REQBUFS 就会报）。
-    v4l2_buf_type type = kBufType;
-    V4L2_CHECK(VIDIOC_STREAMON, &type);
-    g_streaming = true;
+    v4l2_buf_type bufType = kBufType;
+    V4L2_CHECK(VIDIOC_STREAMON, &bufType);
+    g_isStreaming = true;
 
     // 6:
     EncoderConfig cfg;
@@ -316,8 +321,8 @@ int run() {
 
     LOGI(kTag, "      encoder ready: %dx%d stride %dx%d", width, height, encoder.hor_stride(), encoder.ver_stride());
 
-    g_out = fopen(kOutputFilePath, "wb");
-    if (!g_out) {
+    g_outputFile = fopen(kOutputFilePath, "wb");
+    if (!g_outputFile) {
         LOGE(kTag, "      fopen %s: %s", kOutputFilePath, strerror(errno));
         return -1;
     }
@@ -326,16 +331,17 @@ int run() {
         LOGE(kTag, "      get_header in fail");
         return -1;
     }
-    if (fwrite(header.data(), 1, header.size(), g_out) != header.size()) { // 写不进去（比如磁盘满了）就别往下编了
+    if (fwrite(header.data(), 1, header.size(), g_outputFile)
+        != header.size()) { // 写不进去（比如磁盘满了）就别往下编了
         LOGE(kTag, "    fwrite header failed: %s", strerror(errno));
         return -1;
     }
     LOGI(kTag, "      header: %zu bytes", header.size());
 
-    // 7:  drop frame
-    for (int i = 0; i < kSkipFrames; ++i) {
-        int index = dequeue_buffer(nullptr);
-        if (index < 0 || !queue_buffer(index)) {
+    // 7:  drop 30 frames
+    for (int i = 0; i < kSkipFrameCount; ++i) {
+        int filledBufIndex = dequeue_buffer(nullptr);
+        if (filledBufIndex < 0 || !queue_buffer(filledBufIndex)) {
             return -1;
         }
     }
@@ -343,73 +349,74 @@ int run() {
     // 8: encode packet
     EncodedPacket packet;
     std::size_t totalBytes = header.size();
-    for (int i = 0; i < kFrames; ++i) {
+    for (int frameIndex = 0; frameIndex < totalRecordFrameCount; ++frameIndex) {
         uint32_t bytesUsed = 0;
-        int index          = dequeue_buffer(&bytesUsed);
+        int filledBufIndex = dequeue_buffer(&bytesUsed);
         // Note : ioctl 失败或序号越界返回 -1
-        if (index < 0) {
+        if (filledBufIndex < 0) {
             return -1;
         }
         // ⭐: zero-copy: 编码器直接读取摄像头刚写好的这块内存
-        if (!encoder.encode(g_bufs[index].mppBuf, false, packet)) {
-            queue_buffer(index);
+        if (!encoder.encode(g_bufs[filledBufIndex].mppBuf, false, packet)) {
+            queue_buffer(filledBufIndex);
             return -1;
         }
         // ⭐ encode() 返回时硬件已经读完这一帧，现在才能还给摄像头
-        if (!queue_buffer(index)) {
+        if (!queue_buffer(filledBufIndex)) {
             return -1;
         }
 
         if (!packet.data.empty()) {
-            if (fwrite(packet.data.data(), 1, packet.data.size(), g_out) != packet.data.size()) {
+            if (fwrite(packet.data.data(), 1, packet.data.size(), g_outputFile) != packet.data.size()) {
                 LOGE(kTag, "    fwrite packet failed: %s", strerror(errno));
                 return -1;
             }
             totalBytes += packet.data.size();
         }
-        if (i % 30 == 0) {
-            LOGI(kTag, "      frame %3d: buffer %d, in %u bytes, out %zu bytes%s", i, index, bytesUsed,
-                packet.data.size(), packet.isKeyFrame ? " (I)" : "");
+        if (frameIndex % 30 == 0) {
+            LOGI(kTag, "      frame %3d: buffer %d, in %u bytes, out %zu bytes%s", frameIndex, filledBufIndex,
+                bytesUsed, packet.data.size(), packet.isKeyFrame ? " (I)" : "");
         }
     }
-    // 9: set eos
+    
+    // 9: 我要录的帧数，已经达到了，set eos
     do {
         if (!encoder.encode(nullptr, true, packet)) {
             return -1;
         }
         if (!packet.data.empty()) {
-            if (fwrite(packet.data.data(), 1, packet.data.size(), g_out) != packet.data.size()) {
+            if (fwrite(packet.data.data(), 1, packet.data.size(), g_outputFile) != packet.data.size()) {
                 LOGE(kTag, "    fwrite packet failed: %s", strerror(errno));
                 return -1;
             }
             totalBytes += packet.data.size();
         }
 
-    } while (!packet.eos);
+    } while (!packet.isEos);
 
-    LOGI(kTag, "✅✅✅✅✅Done: %d frames, %zu bytes -> %s", kFrames, totalBytes, kOutputFilePath);
+    LOGI(kTag, "✅✅✅✅✅Done: %d frames, %zu bytes -> %s", totalRecordFrameCount, totalBytes, kOutputFilePath);
     return 0;
 }
 
-static void clear_up() {
-    if (g_streaming) {
-        v4l2_buf_type type = kBufType;
-        xioctl(g_videoFd, VIDIOC_STREAMOFF, &type);
-        g_streaming = false;
+static void release_resources() {
+    if (g_isStreaming) {
+        v4l2_buf_type bufType = kBufType;
+        xioctl(g_videoFd, VIDIOC_STREAMOFF, &bufType);
+        g_isStreaming = false;
     }
 
-    for (auto& g_buf : g_bufs) {
-        if (g_buf.mppBuf) {
-            mpp_buffer_put(g_buf.mppBuf);
-            g_buf.mppBuf = nullptr;
+    for (auto& cameraBuf : g_bufs) {
+        if (cameraBuf.mppBuf) {
+            mpp_buffer_put(cameraBuf.mppBuf);
+            cameraBuf.mppBuf = nullptr;
         }
-        if (g_buf.start != MAP_FAILED) {
-            munmap(g_buf.start, g_buf.length);
-            g_buf.start = MAP_FAILED;
+        if (cameraBuf.start != MAP_FAILED) {
+            munmap(cameraBuf.start, cameraBuf.length);
+            cameraBuf.start = MAP_FAILED;
         }
-        if (g_buf.dmaFd >= 0) {
-            close(g_buf.dmaFd);
-            g_buf.dmaFd = -1;
+        if (cameraBuf.dmaFd >= 0) {
+            close(cameraBuf.dmaFd);
+            cameraBuf.dmaFd = -1;
         }
     }
 
@@ -417,16 +424,16 @@ static void clear_up() {
         close(g_videoFd);
         g_videoFd = -1;
     }
-    if (g_out) {
-        fclose(g_out);
-        g_out = nullptr;
+    if (g_outputFile) {
+        fclose(g_outputFile);
+        g_outputFile = nullptr;
     }
 }
 
 int main() {
     int ret = 0;
-    getCameraInfo();
+    print_camera_info();
     ret = run();
-    clear_up();
+    release_resources();
     return ret;
 }

@@ -1,5 +1,5 @@
 /*
- * FindCamera：自动找出摄像头对应的 /dev/videoN，不用在代码里写死号码
+ * CameraFinder：自动找出摄像头对应的 /dev/videoN，不用在代码里写死号码
  *
  * 为什么需要它：
  *   板子上有两个 ISP，同名的 rkisp_mainpath 有两个（video22、video31），只有接了摄像头的那个能出图；
@@ -13,8 +13,8 @@
  * 详细说明见 doc/程序里怎么找到摄像头节点.md
  *
  * 用法：
- *   FindCamera finder;
- *   finder.printAllCameraInfo();                     // 只想看一眼：打印找到的所有摄像头
+ *   CameraFinder finder;
+ *   finder.print_all_camera_info();                     // 只想看一眼：打印找到的所有摄像头
  *
  *   std::vector<CameraNode> cameras;
  *   if (!finder.find(cameras)) return -1;            // 一个摄像头都没找到
@@ -35,12 +35,12 @@ struct CameraNode {
     std::string selfPath;     // ISP 副出口（小图，最宽 1920），例如 "/dev/video23"
 };
 
-class FindCamera {
+class CameraFinder {
 public:
     // 没有要特别初始化或释放的资源，让编译器自动生成。
-    // 只写 FindCamera(); 不写实现的话，链接时会报 undefined reference to `FindCamera::FindCamera()'
-    FindCamera()  = default;
-    ~FindCamera() = default;
+    // 只写 CameraFinder(); 不写实现的话，链接时会报 undefined reference to `CameraFinder::CameraFinder()'
+    CameraFinder()  = default;
+    ~CameraFinder() = default;
     /**
      * @brief 找出所有"已经接通到 ISP"的摄像头
      *
@@ -65,7 +65,7 @@ public:
      *
      * @note 只是给人看的，程序里要拿到节点去 open，请用 find()。
      */
-    void printAllCameraInfo();
+    void print_all_camera_info();
 
 private:
     // 图里的一个实体（只留我们用得到的字段）
