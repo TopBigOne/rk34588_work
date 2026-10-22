@@ -8,21 +8,26 @@
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <chrono>
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
+#include <sys/resource.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <vector>
 
 #define CHECK_CAMERA_INFO (0)
-const char* const kTag             = "day3_main"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
-static const char* kDevice         = "/dev/video22";
-static const int kWidth            = 1920;
-static const int kHeight           = 1080;
-static const int totalRecordFrameCount       = 500;
-static const int kSkipFrameCount   = 30;
-static const char* kOutputFilePath = "/userdata/av/cam_m3.h264";
-static const int kBufCount         = 4;
+const char* const kTag                 = "day3_main"; // 日志标签（LOGD / LOGI / LOGE 的第一个参数）
+static const char* kDevice             = "/dev/video22";
+static const int kWidth                = 1920;
+static const int kHeight               = 1080;
+static const int totalRecordFrameCount = 500;
+static const int kSkipFrameCount       = 30;
+static const char* kOutputFilePath     = "/userdata/av/cam_m3.h264";
+static const int kBufCount             = 4;
+// false = 拷贝版本（CPU 先 memcpy 到 g_copyBuf）
+// true = 零拷贝（编码器直接读摄像头的 buffer）；
+static bool kUseZeroCopy = true;
 // 多平面视频采集
 static const v4l2_buf_type kBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 
@@ -35,8 +40,41 @@ struct CameraBuffer {
 
 static int g_videoFd = -1;
 static CameraBuffer g_bufs[kBufCount];
-static bool g_isStreaming = false;
-static FILE* g_outputFile = nullptr;
+static bool g_isStreaming            = false;
+static FILE* g_outputFile            = nullptr;
+static MppBufferGroup g_copyBufGroup = nullptr; // copy 版本:用的本地内存池
+static MppBuffer g_copyBuf           = nullptr; // copy 版本：cpu 把画面copy到这里，编码器从这里读数据
+
+// ==== M6 测量用：主循环里每一步花了多少时间（毫秒，500 帧累加，最后除以帧数得到平均值） ====
+struct LoopTimingStats {
+    double dqbufWaitMs = 0; // DQBUF 等了多久：等摄像头拍好下一帧（30fps 时一帧约 33ms）
+    double copyMs      = 0; // 拷贝版本：sync_begin + memcpy + sync_end 花了多久（零拷贝版本一直是 0）
+    double encodeMs    = 0; // encode() 花了多久：送进编码器到拿回码流
+};
+static LoopTimingStats g_loopTimingStats;
+
+/**
+ * @brief 取当前时间，单位毫秒（steady_clock：只会往前走，不受改系统时间影响，适合量时间差）
+ * @return 从某个固定起点开始的毫秒数；只用来相减，单独看没有意义
+ */
+static double now_ms() {
+    using namespace std::chrono;
+    return duration<double, std::milli>(steady_clock::now().time_since_epoch()).count();
+}
+
+/**
+ * @brief 取本进程到现在为止一共用了多少 CPU 时间，单位秒（用户态 + 内核态）
+ * @return CPU 秒数。主循环前后各取一次，相减就是主循环用掉的 CPU 时间
+ * @note getrusage 统计的是整个进程（包括 MPP 内部线程）；除以经过的墙上时间就是 CPU 占用率，
+ *       100% = 用满一个 CPU 核（RK3588 有 8 个核，top 里最多能到 800%）
+ */
+static double process_cpu_seconds() {
+    rusage usage = {};
+    getrusage(RUSAGE_SELF, &usage);
+    const double userSeconds   = usage.ru_utime.tv_sec + usage.ru_utime.tv_usec / 1e6;
+    const double systemSeconds = usage.ru_stime.tv_sec + usage.ru_stime.tv_usec / 1e6;
+    return userSeconds + systemSeconds;
+}
 
 static int run();
 
@@ -152,6 +190,55 @@ int dequeue_buffer(uint32_t* bytesUsed) {
     }
     return static_cast<int>(v4l2Buf.index);
 }
+
+/**
+ * @brief 拷贝版本的一帧：CPU 先把摄像头的画面拷到 g_copyBuf，还掉摄像头的 buffer，再编码副本
+ *
+ * 流程（详见 doc/M6拷贝版本_CPU拷贝的5个步骤.md 第 ④ 节）：
+ *   第 1 步 sync_begin(g_copyBuf)     CPU 要开始写 g_copyBuf 了
+ *   第 2 步 memcpy                    摄像头的 buffer → g_copyBuf，一整帧 sizeImage 字节
+ *   第 3 步 sync_end(g_copyBuf)       把 CPU 缓存里的数据刷到内存，编码器才看得到
+ *   第 4 步 QBUF                      ⭐ 拷完马上还给摄像头，不用等 encode
+ *   第 5 步 encode(g_copyBuf)         编码副本，码流写进 encodedPacket
+ *
+ * @param[in]  encoder         已经 init 好的编码器。传引用：MppEncoder 禁止复制（拷贝构造函数是 delete 的）
+ * @param[out] encodedPacket   传出这一帧的码流。必须传引用：传值的话 encode 写进的是副本，调用方拿到的还是空的
+ * @param[in]  filledBufIndex  dequeue_buffer() 拿到的、摄像头写好画面的那块 buffer 的序号
+ * @param[in]  sizeImage       一帧 NV12 的实际大小（G_FMT 返回的 3,110,400），不是 buffer 长度 3,133,440
+ * @return 成功返回 true；QBUF 或 encode 失败返回 false
+ *
+ * @note 失败时不用再 QBUF：第 4 步已经把摄像头的 buffer 还了，再还一次驱动会报 EINVAL。
+ * @note 只用一块 g_copyBuf 就够：encode() 是阻塞的，返回时编码器已经读完，下一帧再写 g_copyBuf 是安全的。
+ */
+static bool encode_with_cpu_copy(
+    MppEncoder& encoder, EncodedPacket& encodedPacket, int filledBufIndex, uint32_t sizeImage) {
+    const double copyStartMs = now_ms(); // M6 测量：第 1～3 步（拷贝）花了多久
+
+    // 第 1 步：g_copyBuf 是 CACHABLE 的（CPU 读写走缓存），begin / end 要成对出现，把 CPU 的写操作包起来
+    mpp_buffer_sync_begin(g_copyBuf);
+
+    // 第 2 步：mpp_buffer_get_ptr()：取得 g_copyBuf 在本程序里 CPU 能直接读写的虚拟地址。
+    // 来源是 M2 时 mmap 出来的摄像头 buffer 地址（零拷贝版本用不到它）。
+    // 一次 memcpy 就够：编码器和摄像头的 stride 都是 1920×1080，两边内存排布完全相同，不用逐行拷
+    memcpy(mpp_buffer_get_ptr(g_copyBuf), g_bufs[filledBufIndex].start, sizeImage);
+
+    // 第 3 步：编码器是硬件，直接读内存、看不到 CPU 缓存；不调 sync_end，编码器可能读到旧数据（花屏、残影）
+    mpp_buffer_sync_end(g_copyBuf);
+
+    g_loopTimingStats.copyMs += now_ms() - copyStartMs;
+
+    // 第 4 步：⭐ 画面已经复制到 g_copyBuf 了，编码器读的是副本；摄像头再往原来那块写下一帧，也不影响副本
+    if (!queue_buffer(filledBufIndex)) {
+        return false;
+    }
+
+    // 第 5 步：编码副本
+    const double encodeStartMs = now_ms();
+    const bool isEncoded       = encoder.encode(g_copyBuf, false, encodedPacket);
+    g_loopTimingStats.encodeMs += now_ms() - encodeStartMs;
+    return isEncoded;
+}
+
 int run() {
     LOGD(kTag, "%s", __func__);
     // step 1======== open camera
@@ -319,6 +406,21 @@ int run() {
         return -1;
     }
 
+    if (!kUseZeroCopy) {
+        MPP_RET mmp_buf_result =
+            mpp_buffer_group_get_internal(&g_copyBufGroup, MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE);
+        if (mmp_buf_result != MPP_OK) {
+            LOGE(kTag, "      group_get_internal in error :%d", mmp_buf_result);
+            return -1;
+        }
+
+        mmp_buf_result = mpp_buffer_get(g_copyBufGroup, &g_copyBuf, sizeImage);
+        if (mmp_buf_result != MPP_OK) {
+            LOGE(kTag, "      mpp_buffer_get in error :%d", mmp_buf_result);
+            return -1;
+        }
+    }
+
     LOGI(kTag, "      encoder ready: %dx%d stride %dx%d", width, height, encoder.hor_stride(), encoder.ver_stride());
 
     g_outputFile = fopen(kOutputFilePath, "wb");
@@ -349,21 +451,37 @@ int run() {
     // 8: encode packet
     EncodedPacket packet;
     std::size_t totalBytes = header.size();
+    // M6 测量：主循环开始时记下墙上时间和 CPU 时间，结束时再记一次，相减
+    const double loopStartMs         = now_ms();
+    const double loopStartCpuSeconds = process_cpu_seconds();
     for (int frameIndex = 0; frameIndex < totalRecordFrameCount; ++frameIndex) {
-        uint32_t bytesUsed = 0;
-        int filledBufIndex = dequeue_buffer(&bytesUsed);
+        uint32_t bytesUsed       = 0;
+        const double dqbufStartMs = now_ms();
+        int filledBufIndex        = dequeue_buffer(&bytesUsed);
+        g_loopTimingStats.dqbufWaitMs += now_ms() - dqbufStartMs;
         // Note : ioctl 失败或序号越界返回 -1
         if (filledBufIndex < 0) {
             return -1;
         }
-        // ⭐: zero-copy: 编码器直接读取摄像头刚写好的这块内存
-        if (!encoder.encode(g_bufs[filledBufIndex].mppBuf, false, packet)) {
-            queue_buffer(filledBufIndex);
-            return -1;
-        }
-        // ⭐ encode() 返回时硬件已经读完这一帧，现在才能还给摄像头
-        if (!queue_buffer(filledBufIndex)) {
-            return -1;
+        if (kUseZeroCopy) {
+            // ==== 零拷贝版本：编码器直接读摄像头的 buffer ====
+            // ⭐: zero-copy: 编码器直接读取摄像头刚写好的这块内存
+            const double encodeStartMs = now_ms();
+            const bool isEncoded       = encoder.encode(g_bufs[filledBufIndex].mppBuf, false, packet);
+            g_loopTimingStats.encodeMs += now_ms() - encodeStartMs;
+            if (!isEncoded) {
+                queue_buffer(filledBufIndex);
+                return -1;
+            }
+            // ⭐ encode() 返回时硬件已经读完这一帧，现在才能还给摄像头
+            if (!queue_buffer(filledBufIndex)) {
+                return -1;
+            }
+        } else {
+            // ==== 拷贝版本：CPU 先把画面拷到 g_copyBuf，编码器读 g_copyBuf（5 个步骤见函数注释） ====
+            if (!encode_with_cpu_copy(encoder, packet, filledBufIndex, sizeImage)) {
+                return -1;
+            }
         }
 
         if (!packet.data.empty()) {
@@ -378,7 +496,19 @@ int run() {
                 bytesUsed, packet.data.size(), packet.isKeyFrame ? " (I)" : "");
         }
     }
-    
+
+    // M6 测量：打印主循环的汇总（平均每帧各步骤耗时、实际帧率、CPU 占用）
+    const double loopMs         = now_ms() - loopStartMs;
+    const double loopCpuSeconds = process_cpu_seconds() - loopStartCpuSeconds;
+    const double frameCount     = totalRecordFrameCount;
+    LOGI(kTag, "      [M6] mode %s: %d frames in %.2f s -> %.1f fps", kUseZeroCopy ? "zero-copy" : "cpu-copy",
+        totalRecordFrameCount, loopMs / 1000, frameCount * 1000 / loopMs);
+    LOGI(kTag, "      [M6] avg per frame: dqbuf wait %.2f ms, copy %.2f ms, encode %.2f ms",
+        g_loopTimingStats.dqbufWaitMs / frameCount, g_loopTimingStats.copyMs / frameCount,
+        g_loopTimingStats.encodeMs / frameCount);
+    LOGI(kTag, "      [M6] process CPU: %.2f s in %.2f s -> %.1f%% (100%% = one full core)", loopCpuSeconds,
+        loopMs / 1000, loopCpuSeconds * 100000 / loopMs);
+
     // 9: 我要录的帧数，已经达到了，set eos
     do {
         if (!encoder.encode(nullptr, true, packet)) {
@@ -418,6 +548,15 @@ static void release_resources() {
             close(cameraBuf.dmaFd);
             cameraBuf.dmaFd = -1;
         }
+    }
+
+    if (g_copyBuf != nullptr) {
+        mpp_buffer_put(g_copyBuf);
+        g_copyBuf = nullptr;
+    }
+    if (g_copyBufGroup != nullptr) {
+        mpp_buffer_group_put(g_copyBufGroup);
+        g_copyBufGroup = nullptr;
     }
 
     if (g_videoFd >= 0) {
