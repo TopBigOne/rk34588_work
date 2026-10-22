@@ -75,7 +75,7 @@ rk-isp3-config.h     rk-isp32-config.h  rk-ispp-config.h   rk-dma-heap.h ...
 | 头文件 | 谁的 | 我们用不用 |
 |---|---|---|
 | `linux/videodev2.h` | Linux 内核（标准 V4L2） | ✅ M2 代码 |
-| `linux/media.h` | Linux 内核（标准 Media Controller） | ✅ FindCamera |
+| `linux/media.h` | Linux 内核（标准 Media Controller） | ✅ CameraFinder |
 | `linux/rk-*.h` | Rockchip 私有扩展 | ❌ 不用 |
 | `rockchip/rk_mpi.h`、`rockchip/mpp_buffer.h` 等 | Rockchip MPP 库（不是内核的） | ✅ 编码器 |
 

@@ -1,6 +1,6 @@
 # FindCamera 输出的每个字段是什么
 
-> `FindCamera::printAllCameraInfo()` 在板子上打印出来的这几行，每一行是什么意思、解决了什么问题、怎么用。
+> `CameraFinder::print_all_camera_info()`（2026-10-22 以前叫 `FindCamera::printAllCameraInfo()`）在板子上打印出来的这几行，每一行是什么意思、解决了什么问题、怎么用。
 > 本文的数据都是 2026-10-17 在板子上实测的（IMX415 装在 MIPI CSI3）。
 > 相关：[程序里怎么找到摄像头节点.md](程序里怎么找到摄像头节点.md)（FindCamera 是怎么找的）、[v4l2-ctl和media-ctl用法.md](v4l2-ctl和media-ctl用法.md)（命令用法）
 

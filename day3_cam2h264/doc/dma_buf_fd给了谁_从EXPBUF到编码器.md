@@ -1,6 +1,6 @@
 # dma_buf fd 给了谁：从 VIDIOC_EXPBUF 到硬件编码器
 
-> 问题：`main.cpp` 里 `V4L2_CHECK(VIDIOC_EXPBUF, &exp);` 把第 i 块 buffer 换成了一个 dma_buf fd。**这个 fd 最后给谁用了？**
+> 问题：`main.cpp` 里 `V4L2_CHECK(VIDIOC_EXPBUF, &exportBuf);` 把第 i 块 buffer 换成了一个 dma_buf fd。**这个 fd 最后给谁用了？**
 > 答案：给了 **RK3588 的硬件编码器**（`rkvenc-core`）。中间经过你的程序、MPP、内核驱动转了 4 手，每一手都有源码，最后一步还在板子上抓到了内核的记录。
 > 本文的源码行号和实测数据都是 2026-10-21 核对的（IMX415 接在 MIPI CSI3，`/dev/video22`）。
 
@@ -38,7 +38,7 @@ dma_buf fd 也是一个号码，只是它代表的不是文件，而是**一块�
 
 | | 说明 |
 |---|---|
-| **做了** | 让摄像头驱动给第 i 块 buffer 发一把钥匙（新的 fd），写回 `exp.fd` |
+| **做了** | 让摄像头驱动给第 i 块 buffer 发一把钥匙（新的 fd），写回 `exportBuf.fd` |
 | **没做** | 没分配新内存（内存在 REQBUFS 时已经分好了），没复制任何数据 |
 
 导出前后，摄像头写的、mmap 看到的、编码器读的，都是**同一块物理内存**。
@@ -49,28 +49,28 @@ dma_buf fd 也是一个号码，只是它代表的不是文件，而是**一块�
 
 ### 第 ① 站：VIDIOC_EXPBUF —— 驱动发钥匙
 
-`src/main.cpp` 第 239～246 行：
+`src/main.cpp` 第 251～258 行：
 
 ```cpp
-v4l2_exportbuffer exp = {};
-exp.type              = kBufType;   // 多平面采集，和 REQBUFS 一样
-exp.index             = i;          // 第几块 buffer
-exp.plane             = 0;          // 第几个 plane（NV12 只有 1 个）
-exp.flags             = O_CLOEXEC;  // 新 fd 的属性
-V4L2_CHECK(VIDIOC_EXPBUF, &exp);
-g_bufs[i].dmaFd = exp.fd;           // 驱动写回来的钥匙
+v4l2_exportbuffer exportBuf = {};
+exportBuf.type              = kBufType;   // 多平面采集，和 REQBUFS 一样
+exportBuf.index             = i;          // 第几块 buffer
+exportBuf.plane             = 0;          // 第几个 plane（NV12 只有 1 个）
+exportBuf.flags             = O_CLOEXEC;  // 新 fd 的属性
+V4L2_CHECK(VIDIOC_EXPBUF, &exportBuf);
+g_bufs[i].dmaFd = exportBuf.fd;           // 驱动写回来的钥匙
 ```
 
 **实测**：4 块 buffer 拿到的 fd 是 12、13、14、15（日志 `buffer 0: length 3133440, dma_buf fd 12` 等）。
 
 ### 第 ② 站：mpp_buffer_import —— 钥匙包进 MppBuffer
 
-`src/main.cpp` 第 249～254 行：
+`src/main.cpp` 第 261～267 行：
 
 ```cpp
 MppBufferInfo bufInfo = {};
 bufInfo.type          = MPP_BUFFER_TYPE_EXT_DMA;  // 外面来的 dma_buf
-bufInfo.fd            = exp.fd;                   // ⭐ 钥匙交给 MPP
+bufInfo.fd            = exportBuf.fd;                   // ⭐ 钥匙交给 MPP
 bufInfo.size          = planes[0].length;         // 3,133,440
 bufInfo.index         = i;
 mpp_buffer_import(&g_bufs[i].mppBuf, &bufInfo);
@@ -98,7 +98,7 @@ static MPP_RET allocator_ext_dma_import(void *ctx, MppBufferInfo *info)
 
 **3a. 你的程序把 MppBuffer 送进去**
 
-`src/main.cpp` 第 320 行：`encoder.encode(g_bufs[index].mppBuf, false, packet)`
+`src/main.cpp` 第 360 行：`encoder.encode(g_bufs[filledBufIndex].mppBuf, false, packet)`
 
 `src/encoder/mpp_encoder.cpp` 第 154 行和第 159 行：
 
@@ -179,7 +179,7 @@ adb shell 'ls -l /proc/$(pidof day3_cam2h264)/fd'
 ```
 
 - fd 12～15 就是日志里打印的 `dma_buf fd`。它们指向的不是普通文件，而是 `/dmabuf:`，说明代表的是一块内存。
-- 12～15 的权限是 `lr-x`（只读），因为 `exp.flags` 只填了 `O_CLOEXEC`，没加 `O_RDWR`。编码器只读不写，只读就够了。MPP 自己分配的 18～27 是 `lrwx`（可读写）。
+- 12～15 的权限是 `lr-x`（只读），因为 `exportBuf.flags` 只填了 `O_CLOEXEC`，没加 `O_RDWR`。编码器只读不写，只读就够了。MPP 自己分配的 18～27 是 `lrwx`（可读写）。
 
 ### 4.2 内核的 dma_buf 记录：谁挂在这块内存上
 
@@ -212,7 +212,7 @@ Total 1 devices attached
 
 ### 4.3 程序退出后
 
-再看一次 `bufinfo`，`videobuf2_cma_sg` 的记录数是 **0**：4 块 buffer 都释放了。程序 `clear_up()` 里的 `mpp_buffer_put`、`close(dmaFd)`，加上内核在进程退出时的兜底回收，把钥匙都收回了。
+再看一次 `bufinfo`，`videobuf2_cma_sg` 的记录数是 **0**：4 块 buffer 都释放了。程序 `release_resources()` 里的 `mpp_buffer_put`、`close(dmaFd)`，加上内核在进程退出时的兜底回收，把钥匙都收回了。
 
 ### 4.4 自己试一试
 
@@ -235,13 +235,13 @@ adb shell 'cat /sys/kernel/debug/dma_buf/bufinfo' | grep -A3 videobuf2_cma_sg
 
 | 时刻 | 代码 | 发生了什么 |
 |---|---|---|
-| REQBUFS | `main.cpp` 第 192 行 | 摄像头驱动分配 4 块内存（还没有 fd） |
-| EXPBUF | 第 244 行 | 驱动发钥匙：fd 12～15 |
-| import | 第 254 行 | MPP 记下 fd，包成 MppBuffer |
-| 每一帧 encode | 第 320 行 | MPP 取出 fd → 内核 → 编码器挂上内存、读画面 |
-| `mpp_buffer_put` | 第 369 行 | MPP 不再引用这把钥匙 |
-| `munmap` | 第 373 行 | 程序的 CPU 地址也不要了 |
-| `close(dmaFd)` | 第 377 行 | 钥匙交回。所有人都不用了，内核才真正回收内存 |
+| REQBUFS | `main.cpp` 第 204 行 | 摄像头驱动分配 4 块内存（还没有 fd） |
+| EXPBUF | 第 256 行 | 驱动发钥匙：fd 12～15 |
+| import | 第 267 行 | MPP 记下 fd，包成 MppBuffer |
+| 每一帧 encode | 第 360 行 | MPP 取出 fd → 内核 → 编码器挂上内存、读画面 |
+| `mpp_buffer_put` | 第 409 行 | MPP 不再引用这把钥匙 |
+| `munmap` | 第 413 行 | 程序的 CPU 地址也不要了 |
+| `close(dmaFd)` | 第 417 行 | 钥匙交回。所有人都不用了，内核才真正回收内存 |
 
 释放顺序和申请顺序相反：后拿到的先还。
 

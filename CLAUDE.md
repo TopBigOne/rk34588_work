@@ -76,6 +76,40 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 | iep_test / iep2_test | 图像增强（去隔行扫描） |
 | vdpp_test | 视频显示后处理 |
 
+## 代码规范：名字要让入门者一眼看懂
+
+写代码、改代码、review 用户的代码时都按这份规范。完整版（每条的理由、反例、现有代码待改清单）见 `代码规范.md`。格式交给各工程的 `.clang-format`。
+
+**总原则**：读代码的是入门者。名字要说清**是什么、处于什么状态、单位是什么**，宁长勿缩。把一行代码念出来，要像一句话：`int filledBufIndex = dequeue_buffer(&bytesUsed);`
+
+| 类别 | 写法 | 例子 |
+|---|---|---|
+| 文件、目录 | `snake_case` | `mpp_encoder.cpp`、`src/encoder/` |
+| 类、结构体 | `PascalCase`，**名词** | `MppEncoder`、`EncoderConfig`、`CameraNode` |
+| 函数、方法 | `snake_case`，**动词开头** | `queue_buffer`、`get_header`、`read_frame` |
+| 局部变量、参数 | `camelCase` | `filledBufIndex`、`bytesUsed` |
+| 私有成员变量 | `camelCase_` | `encoderCtx_`、`cfg_` |
+| 结构体公开字段 | `camelCase` | `horStride`、`dmaFd` |
+| 常量 | `kPascalCase` | `kBufCount`、`kOutputFilePath` |
+| 全局变量（只在面条代码里） | `g_camelCase` | `g_videoFd` |
+| 宏 | `UPPER_SNAKE_CASE` | `V4L2_CHECK` |
+
+**必须遵守的规则**：
+- **带状态**：`filledBufIndex` 而不是 `index`；`encodedPacket` 而不是 `packet`
+- **带单位**：`timeoutMs`、`dqbufWaitUs`、`sizeBytes`、`fps`
+- **固定用词**：第几个用 `Index`，一共几个用 `Count`，字节数用 `Bytes` / `Size` / `Length`；不用 `idx`、`num`、`cnt`、`n`
+- **bool 用 `is` / `has` / `can` / `should` 开头**：`isStreaming`、`hasCamera`；不用否定名字（`notReady`）
+- **函数名说实话**：只打印不返回的叫 `print_xxx`，不叫 `get_xxx`；不用 `process`、`handle`、`do_work` 这类空泛的名字
+- **同一个东西全工程一个名字**：`struct v4l2_buffer` 变量统一叫 `v4l2Buf`；文件描述符以 `Fd` 结尾（`videoFd`、`dmaFd`）
+- **V4L2 / MPP 结构体变量用类型名去掉前缀**：`capability`、`format`、`requestBufs`、`exportBuf`、`v4l2Buf`、`bufInfo`；不用官方示例里的 `cap`、`fmt`、`req`、`exp`
+- **缩写只用白名单**：`fd`、`buf`（只在词组里）、`ctx`、`cfg`、`fps`、`ret`（只接返回码），以及 `MPP`、`V4L2`、`DMA`、`ISP`、`SPS`、`PPS`、`EOS`、`NV12`、`YUV`、`UV`；其他缩写写全称
+- **循环变量**：短循环、只数数时可以用 `i`；循环体长或 `i` 有含义时用 `frameIndex`、`bufIndex`
+- **禁止无意义的名字**：`tmp`、`temp`、`data1`、`flag`、`caseOne`、`a`、`b`
+
+**注释**：每个函数都写中文 Doxygen 注释（`@brief` / `@param` / `@return` / `@note`，一个都不能漏）；函数里面按流程写（`第 1 步 取`、`第 2 步 编`……），写"为什么"而不只是"是什么"；有实测的写上日期和数字。
+
+**改名的范围**：新写的代码直接按规范。已经提交的代码要改名，先跟用户确认；Day 1、Day 2 的代码不回头改，复制到新的一天时再顺手改。
+
 ## Git
 
 - md 文档、shell 脚本和代码分开提交
