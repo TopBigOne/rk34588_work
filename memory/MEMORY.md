@@ -6,3 +6,4 @@
 - [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
 - [Day 3 进度断点](project_day3_status.md) — 2026-10-15：板子没检测到 IMX415，用户计划 10/17 周六装摄像头
 - [关键文档和位置](reference_rk_work_docs.md) — 速查表、Day 2 文档、板子参考程序、会话记录 jsonl 路径
+- [聊天用简单英语](feedback_chat_in_simple_english.md) — 2026-10-22 起聊天用简单英语（新概念 1～3 水平），文档、注释、提交信息仍用中文
