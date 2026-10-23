@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="660" viewBox="0 0 1100 660" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="660" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker>
+  </defs>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">mmap 只认 fd：fd 背后是什么，指针就指向什么</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">mmap(NULL, 长度, 权限, 标志, fd, offset) = "把 fd 背后的东西，从 offset 开始的这一段，接到我的一段虚拟地址上"</text>
+
+  <!-- 表头 -->
+  <g font-size="14" font-weight="bold" fill="#222">
+    <rect x="20" y="80" width="250" height="40" fill="#f0f0f0" stroke="#bbb"/><text x="145" y="106" text-anchor="middle">mmap 的写法</text>
+    <rect x="270" y="80" width="260" height="40" fill="#f0f0f0" stroke="#bbb"/><text x="400" y="106" text-anchor="middle">fd 背后是谁</text>
+    <rect x="530" y="80" width="280" height="40" fill="#f0f0f0" stroke="#bbb"/><text x="670" y="106" text-anchor="middle">物理页从哪来</text>
+    <rect x="810" y="80" width="270" height="40" fill="#f0f0f0" stroke="#bbb"/><text x="945" y="106" text-anchor="middle">我们在哪用过</text>
+  </g>
+
+  <!-- 行 1 文件 -->
+  <g font-size="12">
+    <rect x="20" y="120" width="250" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="32" y="146" font-family="Menlo, monospace" fill="#222">mmap(…, MAP_SHARED,</text>
+    <text x="32" y="164" font-family="Menlo, monospace" fill="#222">     fileFd, 0)</text>
+    <rect x="270" y="120" width="260" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="282" y="146" fill="#222">文件系统：一个普通文件</text>
+    <text x="282" y="166" fill="#666">（hello.txt）</text>
+    <rect x="530" y="120" width="280" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="542" y="146" fill="#222">文件的内容先读进内存（页缓存），</text>
+    <text x="542" y="166" fill="#222">指针指向这些页；</text>
+    <text x="542" y="186" fill="#222">你改了，内核负责写回磁盘</text>
+    <rect x="810" y="120" width="270" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="822" y="146" fill="#222">实验 1：用指针把 hello 改成 HELLO，</text>
+    <text x="822" y="166" fill="#222">cat 出来文件真的变了</text>
+  </g>
+
+  <!-- 行 2 匿名 -->
+  <g font-size="12">
+    <rect x="20" y="220" width="250" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="32" y="246" font-family="Menlo, monospace" fill="#222">mmap(…, MAP_ANON,</text>
+    <text x="32" y="264" font-family="Menlo, monospace" fill="#222">     -1, 0)</text>
+    <text x="32" y="290" fill="#666">（不用 fd，传 -1）</text>
+    <rect x="270" y="220" width="260" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="282" y="246" fill="#222">谁也不是："匿名"内存</text>
+    <text x="282" y="266" fill="#666">就要一段新的空内存</text>
+    <rect x="530" y="220" width="280" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="542" y="246" fill="#222">第一次碰到某页时，</text>
+    <text x="542" y="266" fill="#222">内核随便找一个空的物理页，清零后给你</text>
+    <rect x="810" y="220" width="270" height="100" fill="#ffffff" stroke="#bbb"/>
+    <text x="822" y="246" fill="#222">实验 2：1 GB 只占 0 MB</text>
+    <text x="822" y="266" fill="#222">malloc 申请大块内存时，背后就是这个</text>
+    <text x="822" y="286" fill="#666">（cache 探针的选手 ①）</text>
+  </g>
+
+  <!-- 行 3 videoFd -->
+  <g font-size="12">
+    <rect x="20" y="320" width="250" height="100" fill="#fff8ee" stroke="#bbb"/>
+    <text x="32" y="346" font-family="Menlo, monospace" fill="#222">mmap(…, MAP_SHARED,</text>
+    <text x="32" y="364" font-family="Menlo, monospace" fill="#222">     videoFd, mem_offset)</text>
+    <rect x="270" y="320" width="260" height="100" fill="#fff8ee" stroke="#bbb"/>
+    <text x="282" y="346" fill="#222">摄像头驱动（/dev/video22）</text>
+    <text x="282" y="366" fill="#666">背后有 4 块 buffer，</text>
+    <text x="282" y="386" fill="#666">mem_offset 选第几块（门牌号）</text>
+    <rect x="530" y="320" width="280" height="100" fill="#fff8ee" stroke="#bbb"/>
+    <text x="542" y="346" fill="#222">REQBUFS 时驱动已经分好</text>
+    <text x="542" y="366" fill="#222">（videobuf2_cma_sg，实测）</text>
+    <text x="542" y="386" fill="#222">ISP 往里写画面</text>
+    <rect x="810" y="320" width="270" height="100" fill="#fff8ee" stroke="#bbb"/>
+    <text x="822" y="346" fill="#222">M2：g_bufs[i].start</text>
+    <text x="822" y="366" fill="#222">M6：memcpy 的来源</text>
+    <text x="822" y="386" fill="#666">（cache 探针的选手 ④）</text>
+  </g>
+
+  <!-- 行 4 dma_buf -->
+  <g font-size="12">
+    <rect x="20" y="420" width="250" height="100" fill="#e9f7ec" stroke="#bbb"/>
+    <text x="32" y="446" font-family="Menlo, monospace" fill="#222">mmap(…, MAP_SHARED,</text>
+    <text x="32" y="464" font-family="Menlo, monospace" fill="#222">     dmaBufFd, 0)</text>
+    <rect x="270" y="420" width="260" height="100" fill="#e9f7ec" stroke="#bbb"/>
+    <text x="282" y="446" fill="#222">一块 dma_buf（/dmabuf:）</text>
+    <text x="282" y="466" fill="#666">一个 fd 只代表一块，offset = 0</text>
+    <rect x="530" y="420" width="280" height="100" fill="#e9f7ec" stroke="#bbb"/>
+    <text x="542" y="446" fill="#222">dma_heap ALLOC 时分好</text>
+    <text x="542" y="466" fill="#222">（cached 或 uncached，看哪个堆）</text>
+    <rect x="810" y="420" width="270" height="100" fill="#e9f7ec" stroke="#bbb"/>
+    <text x="822" y="446" fill="#222">cache 探针：选手 ②③</text>
+    <text x="822" y="466" fill="#222">M6：mpp_buffer_get_ptr(g_copyBuf)</text>
+    <text x="822" y="486" fill="#666">（MPP 内部帮你 mmap 了）</text>
+  </g>
+
+  <!-- 底部 -->
+  <rect x="20" y="540" width="1060" height="105" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="40" y="566" font-size="14" font-weight="bold" fill="#5c4b00">为什么这么设计</text>
+  <text x="40" y="592" font-size="13" fill="#333">mmap 本身只管"在页表里添几行"。至于"这几行该指向哪些物理页"，它交给 fd 背后的那个驱动去回答。</text>
+  <text x="40" y="616" font-size="13" fill="#333">所以同一个 mmap 函数，能映射文件、空内存、摄像头 buffer、dma_buf……任何驱动只要实现了"回答物理页"的功能，就能被 mmap。</text>
+  <text x="40" y="638" font-size="13" fill="#333">反过来，dma_heap 分配器（heapFd）只会分内存，背后没有要映射的内容，所以 mmap 要传 allocData.fd，不能传 heapFd。</text>
+</svg>

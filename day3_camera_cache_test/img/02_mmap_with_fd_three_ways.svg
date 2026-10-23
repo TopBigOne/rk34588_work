@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="700" viewBox="0 0 1100 700" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="700" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">mmap(fd, offset) 是什么：把"fd 代表的东西"放进本进程的地址空间</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">fd 说"映射哪个东西"，offset 说"从这个东西的哪里开始"。同一个函数，fd 不同，映射到的东西就不同</text>
+
+  <!-- 列标题 -->
+  <rect x="20" y="80" width="340" height="44" rx="8" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="190" y="100" text-anchor="middle" font-size="15" font-weight="bold" fill="#1f6feb">A. dma_heap（本探针）</text>
+  <text x="190" y="118" text-anchor="middle" font-size="12" fill="#333">先要一块内存，再映射</text>
+  <rect x="380" y="80" width="340" height="44" rx="8" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="550" y="100" text-anchor="middle" font-size="15" font-weight="bold" fill="#c26a00">B. V4L2 MMAP（M2 的写法）</text>
+  <text x="550" y="118" text-anchor="middle" font-size="12" fill="#333">一个 videoFd，管着 4 块 buffer</text>
+  <rect x="740" y="80" width="340" height="44" rx="8" fill="#e9f7ec" stroke="#1a7f37"/>
+  <text x="910" y="100" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a7f37">C. V4L2 EXPBUF（M3 的写法）</text>
+  <text x="910" y="118" text-anchor="middle" font-size="12" fill="#333">给某一块 buffer 单独发一把钥匙</text>
+
+  <!-- A 列 -->
+  <rect x="20" y="140" width="340" height="330" rx="8" fill="#ffffff" stroke="#1f6feb"/>
+  <text x="35" y="166" font-size="13" font-family="Menlo, monospace" fill="#222">heapFd = open(</text>
+  <text x="35" y="184" font-size="13" font-family="Menlo, monospace" fill="#222">  "/dev/dma_heap/system")</text>
+  <text x="35" y="204" font-size="12" fill="#666">→ 打开"分配器"窗口</text>
+  <text x="35" y="232" font-size="13" font-family="Menlo, monospace" fill="#222">ioctl(heapFd, ALLOC,</text>
+  <text x="35" y="250" font-size="13" font-family="Menlo, monospace" fill="#222">      &amp;allocData)</text>
+  <text x="35" y="270" font-size="12" fill="#666">→ 分一块内存，新 fd 写回 allocData.fd</text>
+  <rect x="35" y="285" width="310" height="54" rx="6" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="45" y="306" font-size="13" font-family="Menlo, monospace" fill="#222">mmap(allocData.fd, offset 0)</text>
+  <text x="45" y="327" font-size="12" fill="#333">fd = 这一块内存，所以 offset 永远是 0</text>
+  <text x="35" y="362" font-size="13" font-weight="bold" fill="#222">一个 fd ↔ 一块内存</text>
+  <rect x="80" y="380" width="200" height="40" rx="5" fill="#c9efd2" stroke="#1a7f37"/>
+  <text x="180" y="405" text-anchor="middle" font-size="13" fill="#222">3 MB 内存</text>
+  <text x="190" y="452" text-anchor="middle" font-size="12" fill="#666">这块内存的钥匙：allocData.fd</text>
+
+  <!-- B 列 -->
+  <rect x="380" y="140" width="340" height="330" rx="8" fill="#ffffff" stroke="#c26a00"/>
+  <text x="395" y="166" font-size="13" font-family="Menlo, monospace" fill="#222">videoFd = open("/dev/video22")</text>
+  <text x="395" y="186" font-size="12" fill="#666">→ 打开摄像头这个"设备"</text>
+  <text x="395" y="214" font-size="13" font-family="Menlo, monospace" fill="#222">ioctl(videoFd, REQBUFS)</text>
+  <text x="395" y="234" font-size="12" fill="#666">→ 驱动分好 4 块 buffer（没有新 fd）</text>
+  <text x="395" y="258" font-size="13" font-family="Menlo, monospace" fill="#222">ioctl(videoFd, QUERYBUF, i)</text>
+  <text x="395" y="278" font-size="12" fill="#666">→ 驱动告诉你第 i 块的 mem_offset</text>
+  <rect x="395" y="285" width="310" height="54" rx="6" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="405" y="306" font-size="13" font-family="Menlo, monospace" fill="#222">mmap(videoFd, mem_offset)</text>
+  <text x="405" y="327" font-size="12" fill="#333">fd 是整个设备，offset 选第几块</text>
+  <text x="395" y="362" font-size="13" font-weight="bold" fill="#222">一个 fd ↔ 4 块，用 offset 区分</text>
+  <rect x="400" y="380" width="70" height="40" rx="5" fill="#c9efd2" stroke="#1a7f37"/>
+  <text x="435" y="405" text-anchor="middle" font-size="12" fill="#222">buf 0</text>
+  <rect x="478" y="380" width="70" height="40" rx="5" fill="#c9efd2" stroke="#1a7f37"/>
+  <text x="513" y="405" text-anchor="middle" font-size="12" fill="#222">buf 1</text>
+  <rect x="556" y="380" width="70" height="40" rx="5" fill="#c9efd2" stroke="#1a7f37"/>
+  <text x="591" y="405" text-anchor="middle" font-size="12" fill="#222">buf 2</text>
+  <rect x="634" y="380" width="70" height="40" rx="5" fill="#c9efd2" stroke="#1a7f37"/>
+  <text x="669" y="405" text-anchor="middle" font-size="12" fill="#222">buf 3</text>
+  <text x="550" y="442" text-anchor="middle" font-size="12" fill="#666">mem_offset 就像"门牌号"：</text>
+  <text x="550" y="460" text-anchor="middle" font-size="12" fill="#666">同一栋楼（videoFd），不同的房间</text>
+
+  <!-- C 列 -->
+  <rect x="740" y="140" width="340" height="330" rx="8" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="755" y="166" font-size="13" font-family="Menlo, monospace" fill="#222">ioctl(videoFd, EXPBUF, i)</text>
+  <text x="755" y="186" font-size="12" fill="#666">→ 给第 i 块单独开一个新 fd</text>
+  <text x="755" y="206" font-size="12" fill="#666">  写回 exportBuf.fd（dma_buf fd）</text>
+  <text x="755" y="234" font-size="12" fill="#333">这个 fd 和 A 里的 allocData.fd</text>
+  <text x="755" y="252" font-size="12" fill="#333">是同一种东西：一块内存的钥匙</text>
+  <text x="755" y="276" font-size="12" fill="#666">M3 把它交给 mpp_buffer_import</text>
+  <rect x="755" y="285" width="310" height="54" rx="6" fill="#e9f7ec" stroke="#1a7f37"/>
+  <text x="765" y="306" font-size="13" font-family="Menlo, monospace" fill="#222">mmap(exportBuf.fd, 0)  也可以</text>
+  <text x="765" y="327" font-size="12" fill="#333">（我们没这么做：CPU 用 B 的地址就够了）</text>
+  <text x="755" y="362" font-size="13" font-weight="bold" fill="#222">一个 fd ↔ 一块（第 i 块）</text>
+  <rect x="855" y="380" width="110" height="40" rx="5" fill="#c9efd2" stroke="#1a7f37"/>
+  <text x="910" y="405" text-anchor="middle" font-size="12" fill="#222">buf i</text>
+  <text x="910" y="442" text-anchor="middle" font-size="12" fill="#666">硬件（编码器、RGA）只认这种 fd，</text>
+  <text x="910" y="460" text-anchor="middle" font-size="12" fill="#666">不认 videoFd + offset</text>
+
+  <!-- 底部总结 -->
+  <rect x="20" y="490" width="1060" height="190" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="40" y="518" font-size="15" font-weight="bold" fill="#5c4b00">总结：fd 是"把手"，mmap 是"顺着把手把东西拉进我的地址空间"</text>
+  <text x="40" y="546" font-size="13" fill="#333">· Linux 里几乎所有东西都用 fd 代表：文件、设备（/dev/video22）、分配器（/dev/dma_heap/system）、一块内存（dma_buf）。</text>
+  <text x="40" y="572" font-size="13" fill="#333">· mmap 不认识"内存"，它只认 fd。你给它哪个 fd，它就去问那个 fd 背后的驱动："你这里从 offset 开始的这一段，放到哪块物理内存？"</text>
+  <text x="40" y="598" font-size="13" fill="#333">· 所以 A 里 mmap 必须传 allocData.fd（内存的钥匙），不能传 heapFd（那只是分配器，它背后没有要映射的内存）。</text>
+  <text x="40" y="624" font-size="13" fill="#333">· B 和 A 是同一个套路，只是 videoFd 背后有 4 块，所以多一个 offset 来选。</text>
+  <text x="40" y="650" font-size="13" fill="#333">· ioctl 和 mmap 的分工：ioctl = 让驱动"办事"（分内存、发钥匙、取帧）；mmap = 让驱动"把内存给我看"（拿到 CPU 地址）。</text>
+</svg>

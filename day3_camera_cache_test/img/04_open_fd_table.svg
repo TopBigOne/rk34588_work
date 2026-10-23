@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="600" viewBox="0 0 1100 600" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="600" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker>
+  </defs>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">open：拿到一个号码（fd），代表"内核里一个打开的东西"</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">Linux 一切皆文件：普通文件、摄像头、分配器、一块内存，都用 fd 代表。fd 本身只是 fd 表里的下标</text>
+
+  <!-- 代码 -->
+  <rect x="30" y="90" width="300" height="300" rx="10" fill="#f6f8fa" stroke="#888"/>
+  <text x="180" y="116" text-anchor="middle" font-size="15" font-weight="bold" fill="#222">你的代码</text>
+  <g font-size="12" font-family="Menlo, monospace" fill="#222">
+    <text x="45" y="150">open("hello.txt")</text>
+    <text x="45" y="168" fill="#666" font-family="PingFang SC, sans-serif">→ 返回 3</text>
+    <text x="45" y="205">open("/dev/video22")</text>
+    <text x="45" y="223" fill="#666" font-family="PingFang SC, sans-serif">→ 返回 4</text>
+    <text x="45" y="260">open("/dev/dma_heap/system")</text>
+    <text x="45" y="278" fill="#666" font-family="PingFang SC, sans-serif">→ 返回 5</text>
+    <text x="45" y="315">ioctl(5, DMA_HEAP_IOCTL_ALLOC)</text>
+    <text x="45" y="333" fill="#666" font-family="PingFang SC, sans-serif">→ 内核新开 6，写回 allocData.fd</text>
+  </g>
+  <text x="180" y="372" text-anchor="middle" font-size="12" fill="#999">（号码只是举例：从 3 开始，0/1/2 被占了）</text>
+
+  <!-- fd 表 -->
+  <rect x="370" y="90" width="230" height="300" rx="10" fill="#f3f8ff" stroke="#1f6feb" stroke-width="1.5"/>
+  <text x="485" y="116" text-anchor="middle" font-size="15" font-weight="bold" fill="#1f6feb">本进程的 fd 表</text>
+  <g font-size="13" fill="#222">
+    <rect x="390" y="130" width="190" height="30" fill="#eeeeee" stroke="#aaa"/><text x="400" y="150">0  键盘输入（stdin）</text>
+    <rect x="390" y="163" width="190" height="30" fill="#eeeeee" stroke="#aaa"/><text x="400" y="183">1  屏幕输出（stdout）</text>
+    <rect x="390" y="196" width="190" height="30" fill="#eeeeee" stroke="#aaa"/><text x="400" y="216">2  错误输出（stderr）</text>
+    <rect x="390" y="229" width="190" height="30" fill="#dce8ff" stroke="#1f6feb"/><text x="400" y="249">3  ─────────►</text>
+    <rect x="390" y="262" width="190" height="30" fill="#dce8ff" stroke="#1f6feb"/><text x="400" y="282">4  ─────────►</text>
+    <rect x="390" y="295" width="190" height="30" fill="#dce8ff" stroke="#1f6feb"/><text x="400" y="315">5  ─────────►</text>
+    <rect x="390" y="328" width="190" height="30" fill="#fff1d6" stroke="#c26a00"/><text x="400" y="348">6  ─────────►</text>
+  </g>
+  <text x="485" y="378" text-anchor="middle" font-size="12" fill="#666">close(fd) = 把这一格清空</text>
+
+  <!-- 内核里的东西 -->
+  <rect x="640" y="90" width="430" height="300" rx="10" fill="#fff8ee" stroke="#c26a00" stroke-width="1.5"/>
+  <text x="855" y="116" text-anchor="middle" font-size="15" font-weight="bold" fill="#c26a00">内核里"打开的东西"（每个背后有一个驱动）</text>
+  <g font-size="12" fill="#222">
+    <rect x="660" y="226" width="390" height="34" rx="5" fill="#ffffff" stroke="#888"/>
+    <text x="670" y="248">文件系统：hello.txt（磁盘上的文件）</text>
+    <rect x="660" y="262" width="390" height="34" rx="5" fill="#ffffff" stroke="#888"/>
+    <text x="670" y="284">摄像头驱动 rkisp：/dev/video22（管着 4 块 buffer）</text>
+    <rect x="660" y="298" width="390" height="34" rx="5" fill="#ffffff" stroke="#888"/>
+    <text x="670" y="320">dma_heap 分配器：只会分内存，自己不是内存</text>
+    <rect x="660" y="334" width="390" height="34" rx="5" fill="#fff1d6" stroke="#c26a00"/>
+    <text x="670" y="356">dma_buf 对象：一块 3 MB 的内存（/dmabuf:）</text>
+  </g>
+  <text x="855" y="150" text-anchor="middle" font-size="12" fill="#666">open 不干具体的活：只是建一个"打开记录"，</text>
+  <text x="855" y="170" text-anchor="middle" font-size="12" fill="#666">把它和对应的驱动挂上钩，再在 fd 表里给个号码。</text>
+  <text x="855" y="190" text-anchor="middle" font-size="12" fill="#666">以后对这个号码做的所有事，内核都转交给那个驱动。</text>
+
+  <path d="M580,244 L656,243" stroke="#555" stroke-width="1.8" fill="none" marker-end="url(#a)"/>
+  <path d="M580,277 L656,279" stroke="#555" stroke-width="1.8" fill="none" marker-end="url(#a)"/>
+  <path d="M580,310 L656,315" stroke="#555" stroke-width="1.8" fill="none" marker-end="url(#a)"/>
+  <path d="M580,343 L656,351" stroke="#c26a00" stroke-width="1.8" fill="none" marker-end="url(#a)"/>
+
+  <!-- 底部 -->
+  <rect x="30" y="410" width="1040" height="170" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="50" y="438" font-size="14" font-weight="bold" fill="#5c4b00">要点</text>
+  <text x="50" y="464" font-size="13" fill="#333">· fd 就是 fd 表里的下标。open 返回"最小的空位"：0、1、2 一启动就被占了，所以第一个 open 一般得到 3（实验 1 实测 fileFd = 3）。</text>
+  <text x="50" y="490" font-size="13" fill="#333">· 号码本身没有意义，有意义的是它指向什么。cache 探针的 print_fd_target() 读 /proc/self/fd/号码，就是在看"这一格指向谁"。</text>
+  <text x="50" y="516" font-size="13" fill="#333">· 不是只有 open 能产生 fd：dma_heap 的 ALLOC、V4L2 的 EXPBUF 这类 ioctl，也会在 fd 表里新开一格，把号码写回表格。</text>
+  <text x="50" y="542" font-size="13" fill="#333">· 打个比方：open = 去银行取号。号码本身没用，但以后办所有业务（read/write/ioctl/mmap）都要报这个号，</text>
+  <text x="50" y="564" font-size="13" fill="#333">  柜台（内核）按号码找到你的业务，交给负责的部门（驱动）去办。close = 还号。</text>
+</svg>

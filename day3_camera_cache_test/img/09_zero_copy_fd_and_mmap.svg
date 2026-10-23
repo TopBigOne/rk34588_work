@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="620" fill="#ffffff"/>
+  <defs>
+    <marker id="aB" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+    <marker id="aO" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+    <marker id="aG" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+  </defs>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">把 open、ioctl、mmap 串起来：零拷贝里谁用什么找到同一块内存</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">CPU 用"指针"（mmap 给的虚拟地址），硬件用"fd"（dma_buf，由内核告诉它物理页在哪）</text>
+
+  <!-- 三个使用者 -->
+  <rect x="40" y="90" width="280" height="150" rx="10" fill="#e8f0ff" stroke="#1f6feb" stroke-width="1.5"/>
+  <text x="180" y="116" text-anchor="middle" font-size="16" font-weight="bold" fill="#1f6feb">ISP（硬件）</text>
+  <text x="180" y="140" text-anchor="middle" font-size="12" fill="#333">摄像头驱动直接告诉它</text>
+  <text x="180" y="158" text-anchor="middle" font-size="12" fill="#333">"往这几个物理页写"</text>
+  <text x="180" y="190" text-anchor="middle" font-size="12" fill="#666">要它干活：</text>
+  <text x="180" y="208" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">ioctl(videoFd, STREAMON)</text>
+  <text x="180" y="226" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">ioctl(videoFd, QBUF)</text>
+
+  <rect x="410" y="90" width="280" height="150" rx="10" fill="#f6f8fa" stroke="#555" stroke-width="1.5"/>
+  <text x="550" y="116" text-anchor="middle" font-size="16" font-weight="bold" fill="#222">CPU（你的程序）</text>
+  <text x="550" y="140" text-anchor="middle" font-size="12" fill="#333">只会用指针</text>
+  <text x="550" y="166" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">start = mmap(videoFd, offset)</text>
+  <text x="550" y="192" text-anchor="middle" font-size="12" fill="#666">→ 页表里多了几行</text>
+  <text x="550" y="214" text-anchor="middle" font-size="12" fill="#666">start[i] 经页表 → 物理页</text>
+
+  <rect x="780" y="90" width="280" height="150" rx="10" fill="#e9f7ec" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="920" y="116" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">编码器（硬件）</text>
+  <text x="920" y="140" text-anchor="middle" font-size="12" fill="#333">不认 CPU 的虚拟地址，只认 fd</text>
+  <text x="920" y="166" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">dmaFd = ioctl(videoFd, EXPBUF)</text>
+  <text x="920" y="186" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">mpp_buffer_import(dmaFd)</text>
+  <text x="920" y="210" text-anchor="middle" font-size="12" fill="#666">→ MPP 把 fd 写进编码器寄存器，</text>
+  <text x="920" y="228" text-anchor="middle" font-size="12" fill="#666">内核换成物理页地址</text>
+
+  <!-- 物理内存 -->
+  <rect x="300" y="420" width="500" height="80" rx="10" fill="#c9efd2" stroke="#1a7f37" stroke-width="2.5"/>
+  <text x="550" y="452" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">同一块物理内存：一帧画面，3,133,440 字节</text>
+  <text x="550" y="478" text-anchor="middle" font-size="12" fill="#333">只有这一份。ISP 写、CPU 能看、编码器读，谁都不复制</text>
+
+  <path d="M180,240 C180,380 250,440 296,455" stroke="#1f6feb" stroke-width="2.5" fill="none" marker-end="url(#aB)"/>
+  <text x="120" y="400" font-size="12" fill="#1f6feb">写（DMA）</text>
+  <path d="M550,240 L550,416" stroke="#555" stroke-width="2.5" fill="none" marker-end="url(#aB)" stroke-dasharray="7,4"/>
+  <text x="558" y="400" font-size="12" fill="#555">经页表读（M6 memcpy 时）</text>
+  <path d="M920,240 C920,380 850,440 804,455" stroke="#1a7f37" stroke-width="2.5" fill="none" marker-end="url(#aG)"/>
+  <text x="935" y="400" font-size="12" fill="#1a7f37">读（DMA）</text>
+
+  <!-- 中间：内核 -->
+  <rect x="40" y="280" width="1020" height="90" rx="10" fill="#fff8ee" stroke="#f0c78a"/>
+  <text x="60" y="304" font-size="14" font-weight="bold" fill="#c26a00">内核：记账的地方</text>
+  <text x="60" y="330" font-size="12" fill="#333">· 摄像头驱动：4 块 buffer 各用了哪些物理页（REQBUFS 时分的，videobuf2_cma_sg）</text>
+  <text x="60" y="350" font-size="12" fill="#333">· 本进程的页表：start 这段虚拟地址 → 那些物理页（mmap 时填的）　· dma_buf 对象：dmaFd → 那些物理页（EXPBUF 时建的，bufinfo 实测挂着 rkvenc-core）</text>
+
+  <!-- 底部 -->
+  <rect x="40" y="520" width="1020" height="85" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="60" y="546" font-size="13" fill="#333"><tspan font-weight="bold" fill="#5c4b00">open</tspan> 拿到 videoFd（摄像头的把手）　<tspan font-weight="bold" fill="#5c4b00">ioctl</tspan> 让驱动办事：分 buffer、开拍、借还 buffer、发钥匙（EXPBUF）</text>
+  <text x="60" y="570" font-size="13" fill="#333"><tspan font-weight="bold" fill="#5c4b00">mmap</tspan> 给 CPU 开门（start 指针）　　<tspan font-weight="bold" fill="#5c4b00">dma_buf fd</tspan> 给硬件的钥匙</text>
+  <text x="60" y="594" font-size="13" fill="#333">零拷贝 = 门和钥匙都通向同一个房间。M6 拷贝版本多出来的 2 ms，就是 CPU 进门把整个房间搬一遍的代价。</text>
+</svg>

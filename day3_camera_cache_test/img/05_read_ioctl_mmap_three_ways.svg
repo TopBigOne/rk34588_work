@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="620" fill="#ffffff"/>
+  <defs>
+    <marker id="aB" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+    <marker id="aO" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+    <marker id="aG" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+  </defs>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">拿到 fd 以后，跟它打交道的 3 种方式</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">read/write 搬数据（有拷贝）；ioctl 让驱动办事（传一张表格）；mmap 直接看驱动的内存（没有拷贝）</text>
+
+  <!-- 三列标题 -->
+  <rect x="20" y="80" width="340" height="50" rx="8" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="190" y="102" text-anchor="middle" font-size="16" font-weight="bold" fill="#1f6feb">read / write：搬数据</text>
+  <text x="190" y="121" text-anchor="middle" font-size="12" fill="#333">比方：柜员把文件复印一份递给你</text>
+  <rect x="380" y="80" width="340" height="50" rx="8" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="550" y="102" text-anchor="middle" font-size="16" font-weight="bold" fill="#c26a00">ioctl：让驱动办一件事</text>
+  <text x="550" y="121" text-anchor="middle" font-size="12" fill="#333">比方：在窗口递一张业务申请单</text>
+  <rect x="740" y="80" width="340" height="50" rx="8" fill="#e9f7ec" stroke="#1a7f37"/>
+  <text x="910" y="102" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">mmap：直接看驱动的内存</text>
+  <text x="910" y="121" text-anchor="middle" font-size="12" fill="#333">比方：给你开一扇门，直接进库房</text>
+
+  <!-- 用户 / 内核分界 -->
+  <line x1="20" y1="300" x2="1080" y2="300" stroke="#999" stroke-width="1.5" stroke-dasharray="8,5"/>
+  <text x="1075" y="292" text-anchor="end" font-size="12" fill="#999">↑ 你的程序（用户态）</text>
+  <text x="1075" y="318" text-anchor="end" font-size="12" fill="#999">↓ 内核 + 驱动</text>
+
+  <!-- read/write -->
+  <rect x="50" y="160" width="130" height="70" rx="6" fill="#dce8ff" stroke="#1f6feb"/>
+  <text x="115" y="190" text-anchor="middle" font-size="13" fill="#222">你的 buffer</text>
+  <text x="115" y="210" text-anchor="middle" font-size="12" fill="#666">（数据的副本）</text>
+  <rect x="50" y="350" width="130" height="70" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+  <text x="115" y="380" text-anchor="middle" font-size="13" fill="#222">驱动 / 文件</text>
+  <text x="115" y="400" text-anchor="middle" font-size="12" fill="#666">里的数据（原件）</text>
+  <path d="M100,346 L100,234" stroke="#1f6feb" stroke-width="2.5" fill="none" marker-end="url(#aB)"/>
+  <text x="92" y="290" text-anchor="end" font-size="12" fill="#1f6feb">read</text>
+  <path d="M130,234 L130,346" stroke="#1f6feb" stroke-width="2.5" fill="none" marker-end="url(#aB)"/>
+  <text x="138" y="290" font-size="12" fill="#1f6feb">write</text>
+  <text x="200" y="180" font-size="12" fill="#333">CPU 一个字节一个字节</text>
+  <text x="200" y="198" font-size="12" fill="#333">从内核拷到你这里</text>
+  <text x="200" y="230" font-size="12" fill="#333">例子：</text>
+  <text x="200" y="248" font-size="12" font-family="Menlo, monospace" fill="#222">fwrite(packet → .h264)</text>
+  <text x="200" y="266" font-size="12" font-family="Menlo, monospace" fill="#222">Day 1 fread(YUV 文件)</text>
+  <text x="200" y="380" font-size="12" fill="#cf222e">一帧 3 MB 就要拷 3 MB</text>
+  <text x="200" y="398" font-size="12" fill="#cf222e">每秒 30 帧 = 93 MB/s</text>
+
+  <!-- ioctl -->
+  <rect x="410" y="160" width="280" height="110" rx="6" fill="#fff8ee" stroke="#c26a00"/>
+  <text x="550" y="184" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222">ioctl(fd, 命令号, &amp;表格)</text>
+  <text x="425" y="210" font-size="12" fill="#333">fd：找谁办（哪个驱动）</text>
+  <text x="425" y="230" font-size="12" fill="#333">命令号：办什么事（REQBUFS、DQBUF…）</text>
+  <text x="425" y="250" font-size="12" fill="#333">表格：进去填请求，回来驱动填结果</text>
+  <rect x="410" y="340" width="280" height="90" rx="6" fill="#ffffff" stroke="#c26a00"/>
+  <text x="550" y="366" text-anchor="middle" font-size="13" fill="#222">驱动按命令号办事</text>
+  <text x="550" y="388" text-anchor="middle" font-size="12" fill="#666">分 buffer、开始拍、取一帧、</text>
+  <text x="550" y="406" text-anchor="middle" font-size="12" fill="#666">分内存、发钥匙……</text>
+  <path d="M500,274 L500,336" stroke="#c26a00" stroke-width="2.5" fill="none" marker-end="url(#aO)"/>
+  <text x="492" y="310" text-anchor="end" font-size="12" fill="#c26a00">表格送进去</text>
+  <path d="M600,336 L600,274" stroke="#c26a00" stroke-width="2.5" fill="none" marker-end="url(#aO)"/>
+  <text x="608" y="310" font-size="12" fill="#c26a00">结果填回来</text>
+  <text x="550" y="458" text-anchor="middle" font-size="12" fill="#333">只传一张小表格（几十字节），不搬画面</text>
+
+  <!-- mmap -->
+  <rect x="770" y="160" width="280" height="110" rx="6" fill="#e9f7ec" stroke="#1a7f37"/>
+  <text x="910" y="186" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222">p = mmap(..., fd, offset)</text>
+  <text x="785" y="212" font-size="12" fill="#333">得到一个指针 p</text>
+  <text x="785" y="232" font-size="12" fill="#333">p[0]、p[1]… 直接就是驱动那块内存</text>
+  <text x="785" y="252" font-size="12" fill="#333">读写指针 = 读写原件</text>
+  <rect x="770" y="340" width="280" height="90" rx="6" fill="#c9efd2" stroke="#1a7f37" stroke-width="2"/>
+  <text x="910" y="370" text-anchor="middle" font-size="13" fill="#222">驱动的那块内存（原件）</text>
+  <text x="910" y="392" text-anchor="middle" font-size="12" fill="#666">只有这一份</text>
+  <path d="M910,274 L910,336" stroke="#1a7f37" stroke-width="3" fill="none" marker-end="url(#aG)"/>
+  <path d="M910,336 L910,274" stroke="#1a7f37" stroke-width="3" fill="none" marker-end="url(#aG)"/>
+  <text x="894" y="328" text-anchor="end" font-size="12" fill="#1a7f37">页表直通，没有拷贝</text>
+  <text x="910" y="458" text-anchor="middle" font-size="12" fill="#333">例子：M2 的 g_bufs[i].start、cache 探针的 cpuAddr</text>
+
+  <!-- 底部 -->
+  <rect x="20" y="480" width="1060" height="120" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="40" y="508" font-size="14" font-weight="bold" fill="#5c4b00">一个摄像头程序里，三种方式各管一段</text>
+  <text x="40" y="534" font-size="13" fill="#333">· ioctl：S_FMT 设格式、REQBUFS 要 buffer、QBUF / DQBUF 借还 buffer、STREAMON 开拍、EXPBUF 发钥匙（全是"办事"）</text>
+  <text x="40" y="558" font-size="13" fill="#333">· mmap：让 CPU 拿到摄像头 buffer 的指针（M2 存 NV12、M6 memcpy 时用）</text>
+  <text x="40" y="582" font-size="13" fill="#333">· read / write：只在最后把压缩好的 H.264 写进文件（fwrite），数据已经很小了，拷贝不心疼</text>
+</svg>

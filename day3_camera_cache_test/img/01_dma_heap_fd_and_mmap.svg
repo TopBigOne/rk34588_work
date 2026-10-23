@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="900" viewBox="0 0 1100 900" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="900" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+    <marker id="aB" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+    <marker id="aG" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+    <marker id="aO" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+    <marker id="aR" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">alloc_dma_heap() 的 3 步：heapFd、allocData.fd、mmap 是什么关系</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">heapFd 是"窗口"（分配器），allocData.fd 是"钥匙"（这块内存），mmap 是"用钥匙在你家开一扇门"（CPU 地址）</text>
+
+  <!-- 三层背景 -->
+  <rect x="20" y="80" width="1060" height="250" rx="10" fill="#f3f8ff" stroke="#9ec1f7"/>
+  <text x="36" y="104" font-size="15" font-weight="bold" fill="#1f6feb">你的程序（用户态进程）</text>
+  <rect x="20" y="345" width="1060" height="300" rx="10" fill="#fff8ee" stroke="#f0c78a"/>
+  <text x="590" y="372" font-size="15" font-weight="bold" fill="#c26a00">Linux 内核</text>
+  <rect x="20" y="660" width="1060" height="220" rx="10" fill="#f1fbf3" stroke="#9fd5ab"/>
+  <text x="36" y="684" font-size="15" font-weight="bold" fill="#1a7f37">物理内存（真正的 DDR 内存条）</text>
+
+  <!-- 程序里：fd 表 -->
+  <rect x="40" y="120" width="250" height="190" rx="8" fill="#ffffff" stroke="#1f6feb" stroke-width="1.5"/>
+  <text x="165" y="144" text-anchor="middle" font-size="14" font-weight="bold" fill="#222">本进程的 fd 表</text>
+  <text x="165" y="163" text-anchor="middle" font-size="12" fill="#666">（每个数字 = 一个打开的东西）</text>
+  <rect x="55" y="175" width="220" height="34" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="65" y="197" font-size="13" fill="#222">fd 3 = heapFd</text>
+  <text x="268" y="197" text-anchor="end" font-size="12" fill="#cf222e">③ 用完关掉</text>
+  <rect x="55" y="215" width="220" height="34" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="65" y="237" font-size="13" fill="#222">fd 4 = allocData.fd</text>
+  <text x="268" y="237" text-anchor="end" font-size="12" fill="#c26a00">一直留着</text>
+  <text x="165" y="275" text-anchor="middle" font-size="12" fill="#666">数字 3、4 只是举例，</text>
+  <text x="165" y="292" text-anchor="middle" font-size="12" fill="#666">实际值看程序打印</text>
+
+  <!-- 程序里：代码 -->
+  <rect x="320" y="120" width="440" height="190" rx="8" fill="#ffffff" stroke="#888"/>
+  <text x="335" y="144" font-size="13" font-weight="bold" fill="#222">代码（alloc_dma_heap）</text>
+  <text x="335" y="172" font-size="13" font-family="Menlo, monospace" fill="#1f6feb">① heapFd = open("/dev/dma_heap/system")</text>
+  <text x="335" y="200" font-size="13" font-family="Menlo, monospace" fill="#c26a00">② ioctl(heapFd, ALLOC, &amp;allocData)</text>
+  <text x="358" y="220" font-size="12" fill="#666">进去：allocData.len = 3110400</text>
+  <text x="358" y="238" font-size="12" fill="#666">回来：allocData.fd  = 4（内核填的）</text>
+  <text x="335" y="264" font-size="13" font-family="Menlo, monospace" fill="#cf222e">③ close(heapFd)</text>
+  <text x="335" y="292" font-size="13" font-family="Menlo, monospace" fill="#1a7f37">④ cpuAddr = mmap(allocData.fd)</text>
+
+  <!-- 程序里：虚拟地址 -->
+  <rect x="790" y="120" width="270" height="190" rx="8" fill="#ffffff" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="925" y="144" text-anchor="middle" font-size="14" font-weight="bold" fill="#222">本进程的地址空间</text>
+  <text x="925" y="163" text-anchor="middle" font-size="12" fill="#666">（CPU 用指针访问的地方）</text>
+  <rect x="820" y="180" width="210" height="60" fill="#dff5e3" stroke="#1a7f37"/>
+  <text x="925" y="205" text-anchor="middle" font-size="13" fill="#222">cpuAddr 开始的 3 MB</text>
+  <text x="925" y="226" text-anchor="middle" font-size="12" fill="#1a7f37">④ mmap 以后才有</text>
+  <text x="925" y="272" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222">⑤ memcpy(dst, cpuAddr, …)</text>
+  <text x="925" y="292" text-anchor="middle" font-size="12" fill="#666">CPU 直接读写</text>
+
+  <!-- 内核：分配器 -->
+  <rect x="40" y="390" width="270" height="110" rx="8" fill="#ffffff" stroke="#1f6feb" stroke-width="1.5"/>
+  <text x="175" y="416" text-anchor="middle" font-size="14" font-weight="bold" fill="#1f6feb">dma_heap "system" 分配器</text>
+  <text x="175" y="440" text-anchor="middle" font-size="12" fill="#333">= /dev/dma_heap/system 背后的东西</text>
+  <text x="175" y="462" text-anchor="middle" font-size="12" fill="#333">只会做一件事：分内存</text>
+  <text x="175" y="484" text-anchor="middle" font-size="12" fill="#333">它自己不是内存</text>
+
+  <!-- 内核：dma_buf 对象 -->
+  <rect x="380" y="390" width="330" height="140" rx="8" fill="#ffffff" stroke="#c26a00" stroke-width="2"/>
+  <text x="545" y="416" text-anchor="middle" font-size="14" font-weight="bold" fill="#c26a00">dma_buf 对象（② 时新建）</text>
+  <text x="545" y="440" text-anchor="middle" font-size="12" fill="#333">内核里代表"这一块内存"的记录：</text>
+  <text x="545" y="462" text-anchor="middle" font-size="12" fill="#333">· 大小 3,112,960 字节（760 页）</text>
+  <text x="545" y="482" text-anchor="middle" font-size="12" fill="#333">· 用的是哪些物理页</text>
+  <text x="545" y="502" text-anchor="middle" font-size="12" fill="#333">· cached 还是 uncached</text>
+  <text x="545" y="522" text-anchor="middle" font-size="12" fill="#c26a00">fd 4 指向它（就是 /dmabuf:…）</text>
+
+  <!-- 内核：页表 -->
+  <rect x="770" y="390" width="290" height="140" rx="8" fill="#ffffff" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="915" y="416" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a7f37">页表（④ mmap 时填）</text>
+  <text x="915" y="440" text-anchor="middle" font-size="12" fill="#333">记录：</text>
+  <text x="915" y="462" text-anchor="middle" font-size="12" fill="#333">"cpuAddr 这段虚拟地址</text>
+  <text x="915" y="482" text-anchor="middle" font-size="12" fill="#333">对应 dma_buf 的哪些物理页"</text>
+  <text x="915" y="508" text-anchor="middle" font-size="12" fill="#1a7f37">CPU 访问时硬件自动查表</text>
+
+  <!-- 物理内存 -->
+  <rect x="380" y="710" width="330" height="80" rx="6" fill="#c9efd2" stroke="#1a7f37" stroke-width="2"/>
+  <text x="545" y="742" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a7f37">760 个物理页（每页 4 KB）</text>
+  <text x="545" y="766" text-anchor="middle" font-size="12" fill="#333">② 时内核真正分出来的内存</text>
+  <rect x="100" y="720" width="220" height="60" rx="6" fill="#eeeeee" stroke="#aaa"/>
+  <text x="210" y="746" text-anchor="middle" font-size="12" fill="#666">别人的内存</text>
+  <text x="210" y="764" text-anchor="middle" font-size="12" fill="#666">（其他程序、内核）</text>
+  <rect x="770" y="720" width="220" height="60" rx="6" fill="#eeeeee" stroke="#aaa"/>
+  <text x="880" y="746" text-anchor="middle" font-size="12" fill="#666">别人的内存</text>
+  <text x="545" y="830" text-anchor="middle" font-size="13" fill="#333">同一块物理内存，硬件（编码器、RGA）可以拿 fd 去用，CPU 可以拿 cpuAddr 去用 → 这就是"零拷贝"能成立的基础</text>
+
+  <!-- 箭头 ① open -->
+  <path d="M55,192 L30,192 L30,445 L36,445" stroke="#1f6feb" stroke-width="2.5" fill="none" marker-end="url(#aB)"/>
+  <text x="40" y="378" font-size="12" fill="#1f6feb">① fd 3 指向分配器</text>
+
+  <!-- 箭头 ② ioctl：从 heapFd 到分配器到 dma_buf -->
+  <path d="M310,445 L376,445" stroke="#c26a00" stroke-width="2.5" fill="none" marker-end="url(#aO)"/>
+  <text x="343" y="436" text-anchor="middle" font-size="12" fill="#c26a00">② 分配</text>
+  <path d="M545,530 L545,706" stroke="#c26a00" stroke-width="2.5" fill="none" marker-end="url(#aO)" stroke-dasharray="7,4"/>
+  <text x="553" y="690" font-size="12" fill="#c26a00">② 占用这些物理页</text>
+  <path d="M275,232 C340,232 360,330 470,386" stroke="#c26a00" stroke-width="2.5" fill="none" marker-end="url(#aO)"/>
+  <text x="372" y="322" font-size="12" fill="#c26a00">② 新 fd 4 指向 dma_buf</text>
+
+  <!-- 箭头 ③ close -->
+  <text x="22" y="322" font-size="20" fill="#cf222e" font-weight="bold">✕</text>
+  <text x="44" y="320" font-size="12" fill="#cf222e">③ close 后这条线断开</text>
+
+  <!-- 箭头 ④ mmap -->
+  <path d="M710,460 L766,460" stroke="#1a7f37" stroke-width="2.5" fill="none" marker-end="url(#aG)"/>
+  <text x="738" y="451" text-anchor="middle" font-size="12" fill="#1a7f37">④</text>
+  <path d="M1045,386 L1045,212 L1034,212" stroke="#1a7f37" stroke-width="2.5" fill="none" marker-end="url(#aG)"/>
+  <text x="1037" y="372" text-anchor="end" font-size="12" fill="#1a7f37">④ 返回 cpuAddr</text>
+  <path d="M960,530 C960,640 760,700 714,735" stroke="#1a7f37" stroke-width="2.5" fill="none" marker-end="url(#aG)"/>
+  <text x="1060" y="705" text-anchor="end" font-size="12" fill="#1a7f37">⑤ CPU 读 cpuAddr → 查页表 → 读物理页</text>
+  <!-- 内核里的说明 -->
+  <rect x="40" y="545" width="1020" height="85" rx="8" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="55" y="570" font-size="13" fill="#5c4b00">为什么要两个 fd：heapFd 是"分配器"（问它要内存的窗口），allocData.fd 是"分到的那块内存"。一个窗口可以分出很多块，</text>
+  <text x="55" y="592" font-size="13" fill="#5c4b00">每块都有自己的 fd。所以 ③ close(heapFd) 只是离开窗口，内存还在，因为 fd 4 还指着 dma_buf 对象。</text>
+  <text x="55" y="614" font-size="13" fill="#5c4b00">为什么 mmap 要传 fd：mmap 的意思是"把这个 fd 代表的东西放进我的地址空间"。传 fd 4，内核就知道要映射的是这块 dma_buf。</text>
+
+</svg>

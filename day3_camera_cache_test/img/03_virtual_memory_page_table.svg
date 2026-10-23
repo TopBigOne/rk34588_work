@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="640" fill="#ffffff"/>
+  <defs>
+    <marker id="aB" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+    <marker id="aO" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+  </defs>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">前提：程序里的指针都是"虚拟地址"，靠页表找到真实的物理内存</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">每个程序住在自己的"虚拟小区"，门牌号自己编；内核手里的页表记着"哪个门牌号 → 内存条上哪个房间"</text>
+
+  <!-- 程序 A -->
+  <rect x="30" y="90" width="260" height="400" rx="10" fill="#f3f8ff" stroke="#1f6feb" stroke-width="1.5"/>
+  <text x="160" y="118" text-anchor="middle" font-size="15" font-weight="bold" fill="#1f6feb">程序 A 的虚拟地址空间</text>
+  <text x="160" y="138" text-anchor="middle" font-size="12" fill="#666">（指针能用的范围）</text>
+  <rect x="60" y="160" width="200" height="50" fill="#dce8ff" stroke="#1f6feb"/>
+  <text x="70" y="182" font-size="12" font-family="Menlo, monospace" fill="#222">0x1000</text>
+  <text x="70" y="200" font-size="12" fill="#333">代码（程序本身）</text>
+  <rect x="60" y="225" width="200" height="50" fill="#dce8ff" stroke="#1f6feb"/>
+  <text x="70" y="247" font-size="12" font-family="Menlo, monospace" fill="#222">0x5000</text>
+  <text x="70" y="265" font-size="12" fill="#333">malloc 的数据</text>
+  <rect x="60" y="290" width="200" height="60" fill="#ffffff" stroke="#bbb" stroke-dasharray="4,3"/>
+  <text x="160" y="325" text-anchor="middle" font-size="12" fill="#999">没用到的地址（不占内存）</text>
+  <rect x="60" y="365" width="200" height="50" fill="#dce8ff" stroke="#1f6feb"/>
+  <text x="70" y="387" font-size="12" font-family="Menlo, monospace" fill="#222">0x7f00_0000</text>
+  <text x="70" y="405" font-size="12" fill="#333">mmap 出来的一段</text>
+  <text x="160" y="450" text-anchor="middle" font-size="12" fill="#666">char* p = 0x5000;</text>
+  <text x="160" y="470" text-anchor="middle" font-size="12" fill="#666">*p = 1;  ← CPU 拿到的是虚拟地址</text>
+
+  <!-- 页表 -->
+  <rect x="380" y="90" width="340" height="400" rx="10" fill="#fff8ee" stroke="#c26a00" stroke-width="1.5"/>
+  <text x="550" y="118" text-anchor="middle" font-size="15" font-weight="bold" fill="#c26a00">页表（内核维护，每个程序一本）</text>
+  <text x="550" y="138" text-anchor="middle" font-size="12" fill="#666">按"页"记账：一页 = 4 KB（板子）/ 16 KB（这台 Mac）</text>
+  <rect x="400" y="160" width="300" height="30" fill="#ffe9c7" stroke="#c26a00"/>
+  <text x="415" y="180" font-size="13" font-weight="bold" fill="#222">虚拟页</text>
+  <text x="600" y="180" font-size="13" font-weight="bold" fill="#222">→ 物理页</text>
+  <rect x="400" y="195" width="300" height="30" fill="#ffffff" stroke="#e0b070"/>
+  <text x="415" y="215" font-size="13" font-family="Menlo, monospace" fill="#222">0x1000</text>
+  <text x="600" y="215" font-size="13" fill="#222">→ 第 2 号</text>
+  <rect x="400" y="230" width="300" height="30" fill="#ffffff" stroke="#e0b070"/>
+  <text x="415" y="250" font-size="13" font-family="Menlo, monospace" fill="#222">0x5000</text>
+  <text x="600" y="250" font-size="13" fill="#222">→ 第 7 号</text>
+  <rect x="400" y="265" width="300" height="30" fill="#ffffff" stroke="#e0b070"/>
+  <text x="415" y="285" font-size="13" font-family="Menlo, monospace" fill="#222">0x7f00_0000</text>
+  <text x="600" y="285" font-size="13" fill="#222">→ 第 9 号</text>
+  <rect x="400" y="300" width="300" height="30" fill="#ffffff" stroke="#e0b070" stroke-dasharray="4,3"/>
+  <text x="415" y="320" font-size="13" font-family="Menlo, monospace" fill="#999">其他地址</text>
+  <text x="600" y="320" font-size="13" fill="#999">→ 没有（访问就崩溃）</text>
+  <text x="550" y="370" text-anchor="middle" font-size="13" fill="#333">CPU 每次访问内存，硬件（MMU）自动查这本表</text>
+  <text x="550" y="392" text-anchor="middle" font-size="13" fill="#333">查到了：去对应的物理页读写</text>
+  <text x="550" y="414" text-anchor="middle" font-size="13" fill="#333">查不到：Segmentation fault（段错误）</text>
+  <text x="550" y="452" text-anchor="middle" font-size="13" font-weight="bold" fill="#c26a00">⭐ mmap 做的事 = 在这本表里添几行</text>
+  <text x="550" y="474" text-anchor="middle" font-size="12" fill="#666">munmap = 把这几行删掉</text>
+
+  <!-- 物理内存 -->
+  <rect x="810" y="90" width="260" height="400" rx="10" fill="#f1fbf3" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="940" y="118" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a7f37">物理内存（内存条）</text>
+  <text x="940" y="138" text-anchor="middle" font-size="12" fill="#666">只有一份，所有程序共用</text>
+  <g font-size="12" fill="#222">
+    <rect x="840" y="155" width="200" height="26" fill="#eeeeee" stroke="#aaa"/><text x="850" y="173">第 1 号页</text>
+    <rect x="840" y="185" width="200" height="26" fill="#c9efd2" stroke="#1a7f37"/><text x="850" y="203">第 2 号页（A 的代码）</text>
+    <rect x="840" y="215" width="200" height="26" fill="#eeeeee" stroke="#aaa"/><text x="850" y="233">第 3 号页（B 的）</text>
+    <rect x="840" y="245" width="200" height="26" fill="#eeeeee" stroke="#aaa"/><text x="850" y="263">……</text>
+    <rect x="840" y="275" width="200" height="26" fill="#c9efd2" stroke="#1a7f37"/><text x="850" y="293">第 7 号页（A 的数据）</text>
+    <rect x="840" y="305" width="200" height="26" fill="#eeeeee" stroke="#aaa"/><text x="850" y="323">第 8 号页（内核的）</text>
+    <rect x="840" y="335" width="200" height="26" fill="#c9efd2" stroke="#1a7f37"/><text x="850" y="353">第 9 号页（A mmap 的）</text>
+    <rect x="840" y="365" width="200" height="26" fill="#eeeeee" stroke="#aaa"/><text x="850" y="383">……</text>
+  </g>
+  <text x="940" y="430" text-anchor="middle" font-size="12" fill="#666">程序 B 也可以有门牌号 0x5000，</text>
+  <text x="940" y="450" text-anchor="middle" font-size="12" fill="#666">但它的页表指向别的物理页，</text>
+  <text x="940" y="470" text-anchor="middle" font-size="12" fill="#666">所以两个程序互不干扰</text>
+
+  <!-- 箭头 -->
+  <path d="M260,185 L396,210" stroke="#1f6feb" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M260,250 L396,245" stroke="#1f6feb" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M260,390 L396,282" stroke="#1f6feb" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M700,210 L836,198" stroke="#c26a00" stroke-width="2" fill="none" marker-end="url(#aO)"/>
+  <path d="M700,245 L836,288" stroke="#c26a00" stroke-width="2" fill="none" marker-end="url(#aO)"/>
+  <path d="M700,280 L836,348" stroke="#c26a00" stroke-width="2" fill="none" marker-end="url(#aO)"/>
+
+  <!-- 底部 -->
+  <rect x="30" y="510" width="1040" height="110" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="50" y="538" font-size="14" font-weight="bold" fill="#5c4b00">打个比方</text>
+  <text x="50" y="564" font-size="13" fill="#333">虚拟地址 = 你自己小区里的门牌号；页表 = 物业手里的对照表；物理页 = 城市里真实的房子。</text>
+  <text x="50" y="588" font-size="13" fill="#333">你只管按门牌号找人，物业（MMU 硬件）自动帮你翻译成真实地址。没登记的门牌号，物业找不到，就报"段错误"。</text>
+  <text x="50" y="610" font-size="13" fill="#333">硬件（ISP、编码器）不住在你的小区里，它们不认你的门牌号，所以要给它们 dma_buf fd，由内核告诉它们真实的房子在哪。</text>
+</svg>

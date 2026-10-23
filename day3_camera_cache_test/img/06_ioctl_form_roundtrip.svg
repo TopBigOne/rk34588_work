@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="760" fill="#ffffff"/>
+  <defs>
+    <marker id="aO" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+    <marker id="aG" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+  </defs>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">ioctl(fd, 命令号, &amp;表格)：一次"递单子 → 办事 → 取回执"</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">以 VIDIOC_DQBUF（取一帧）为例。调用链是 2026-10-22 程序卡在 DQBUF 时，从 /proc/&lt;pid&gt;/stack 抓到的真实内核函数</text>
+
+  <!-- 上半：用户态 -->
+  <rect x="20" y="80" width="1060" height="200" rx="10" fill="#f3f8ff" stroke="#9ec1f7"/>
+  <text x="36" y="104" font-size="15" font-weight="bold" fill="#1f6feb">你的程序</text>
+  <rect x="40" y="118" width="420" height="148" rx="8" fill="#ffffff" stroke="#1f6feb"/>
+  <g font-size="12" font-family="Menlo, monospace" fill="#222">
+    <text x="55" y="142">v4l2_buffer v4l2Buf = {};</text>
+    <text x="55" y="162">v4l2Buf.type   = MPLANE;   <tspan fill="#1f6feb">// 进去：填请求</tspan></text>
+    <text x="55" y="182">v4l2Buf.memory = MMAP;</text>
+    <text x="55" y="206" font-weight="bold">ioctl(videoFd, VIDIOC_DQBUF, &amp;v4l2Buf);</text>
+    <text x="55" y="230">v4l2Buf.index      <tspan fill="#1a7f37">// 回来：驱动填的 2</tspan></text>
+    <text x="55" y="250">v4l2Buf.sequence   <tspan fill="#1a7f37">// 回来：第几帧</tspan></text>
+  </g>
+  <rect x="500" y="118" width="560" height="148" rx="8" fill="#ffffff" stroke="#c26a00"/>
+  <text x="515" y="142" font-size="13" font-weight="bold" fill="#c26a00">命令号也不神秘：一个 32 位的数，里面装了 4 样东西</text>
+  <text x="515" y="166" font-size="12" font-family="Menlo, monospace" fill="#222">#define VIDIOC_DQBUF _IOWR('V', 17, struct v4l2_buffer)</text>
+  <text x="515" y="186" font-size="12" fill="#666">（videodev2.h 第 5130 行）实测打印 = 0xc0585611：</text>
+  <g font-size="12">
+    <rect x="515" y="198" width="120" height="56" fill="#fff1d6" stroke="#c26a00"/>
+    <text x="575" y="218" text-anchor="middle" font-family="Menlo, monospace" fill="#222">c0…</text>
+    <text x="575" y="236" text-anchor="middle" fill="#333">方向：读+写</text>
+    <text x="575" y="250" text-anchor="middle" fill="#666">（WR）</text>
+    <rect x="645" y="198" width="120" height="56" fill="#fff1d6" stroke="#c26a00"/>
+    <text x="705" y="218" text-anchor="middle" font-family="Menlo, monospace" fill="#222">…058…</text>
+    <text x="705" y="236" text-anchor="middle" fill="#333">表格大小</text>
+    <text x="705" y="250" text-anchor="middle" fill="#666">0x58 = 88 字节</text>
+    <rect x="775" y="198" width="120" height="56" fill="#fff1d6" stroke="#c26a00"/>
+    <text x="835" y="218" text-anchor="middle" font-family="Menlo, monospace" fill="#222">…56…</text>
+    <text x="835" y="236" text-anchor="middle" fill="#333">类别 'V'</text>
+    <text x="835" y="250" text-anchor="middle" fill="#666">视频设备</text>
+    <rect x="905" y="198" width="140" height="56" fill="#fff1d6" stroke="#c26a00"/>
+    <text x="975" y="218" text-anchor="middle" font-family="Menlo, monospace" fill="#222">…11</text>
+    <text x="975" y="236" text-anchor="middle" fill="#333">编号 17</text>
+    <text x="975" y="250" text-anchor="middle" fill="#666">= DQBUF</text>
+  </g>
+
+  <!-- 分界 -->
+  <line x1="20" y1="300" x2="1080" y2="300" stroke="#999" stroke-width="1.5" stroke-dasharray="8,5"/>
+  <text x="550" y="294" text-anchor="middle" font-size="12" fill="#999">—— 系统调用：从用户态进入内核 ——</text>
+
+  <!-- 下半：内核 -->
+  <rect x="20" y="310" width="1060" height="300" rx="10" fill="#fff8ee" stroke="#f0c78a"/>
+  <text x="36" y="334" font-size="15" font-weight="bold" fill="#c26a00">内核（从上往下一层层转交）</text>
+  <g font-size="12">
+    <rect x="60" y="350" width="460" height="44" rx="6" fill="#ffffff" stroke="#c26a00"/>
+    <text x="75" y="370" font-family="Menlo, monospace" fill="#222">video_ioctl2 → video_usercopy</text>
+    <text x="75" y="387" fill="#333">① 按命令号里的"大小 88"，把你的表格<tspan font-weight="bold">复制进内核</tspan>（copy_from_user）</text>
+    <rect x="60" y="410" width="460" height="44" rx="6" fill="#ffffff" stroke="#c26a00"/>
+    <text x="75" y="430" font-family="Menlo, monospace" fill="#222">__video_do_ioctl → v4l_dqbuf</text>
+    <text x="75" y="447" fill="#333">② 按命令号里的"编号 17"，找到处理 DQBUF 的函数</text>
+    <rect x="60" y="470" width="460" height="44" rx="6" fill="#ffffff" stroke="#c26a00"/>
+    <text x="75" y="490" font-family="Menlo, monospace" fill="#222">vb2_ioctl_dqbuf → vb2_dqbuf → vb2_core_dqbuf</text>
+    <text x="75" y="507" fill="#333">③ 真正办事：从"已写好"队列里拿一块，没有就等着</text>
+    <rect x="60" y="530" width="460" height="44" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+    <text x="75" y="550" font-family="Menlo, monospace" fill="#222">video_usercopy（回程）</text>
+    <text x="75" y="567" fill="#333">④ 把填好结果的表格<tspan font-weight="bold">复制回你的程序</tspan>（copy_to_user）</text>
+  </g>
+
+  <rect x="560" y="350" width="500" height="224" rx="8" fill="#ffffff" stroke="#bbb"/>
+  <text x="575" y="374" font-size="13" font-weight="bold" fill="#222">要点</text>
+  <text x="575" y="400" font-size="12" fill="#333">· 表格只有 88 字节，来回复制两次也不费事。</text>
+  <text x="575" y="420" font-size="12" fill="#333">  画面（3 MB）不在表格里，表格只告诉你"第几块"。</text>
+  <text x="575" y="446" font-size="12" fill="#333">· 表格要复制，是因为内核不能直接信任、直接使用</text>
+  <text x="575" y="466" font-size="12" fill="#333">  你程序里的地址（那是你的虚拟地址）。</text>
+  <text x="575" y="492" font-size="12" fill="#333">· 同一个 ioctl 函数，fd 不同，就转交给不同的驱动：</text>
+  <text x="575" y="512" font-size="12" fill="#333">  videoFd → 摄像头驱动；heapFd → dma_heap；</text>
+  <text x="575" y="532" font-size="12" fill="#333">  /dev/mpp_service → 编码器驱动（MPP 内部在用）。</text>
+  <text x="575" y="558" font-size="12" fill="#333">· 命令号里带"类别 + 编号"，驱动靠它分辨要办什么事。</text>
+
+  <!-- 底部比方 -->
+  <rect x="20" y="625" width="1060" height="120" rx="10" fill="#fffdf6" stroke="#e0c000" stroke-dasharray="5,3"/>
+  <text x="40" y="652" font-size="14" font-weight="bold" fill="#5c4b00">打个比方：银行窗口办业务</text>
+  <text x="40" y="678" font-size="13" fill="#333">fd = 你取的号（决定哪个窗口接待你）；命令号 = 业务编号（"取一帧"是 17 号业务）；表格 = 申请单。</text>
+  <text x="40" y="702" font-size="13" fill="#333">柜员先把申请单复印一份留在柜台里（copy_from_user），按业务编号办完，在复印件上填好结果，再复印一份还给你（copy_to_user）。</text>
+  <text x="40" y="726" font-size="13" fill="#333">"取一帧"这个业务，柜员手里没有写好的帧，就让你在窗口等着，这就是 DQBUF 会阻塞、忘了 QBUF 会卡死的原因。</text>
+</svg>
