@@ -112,6 +112,7 @@
 | [面试会问的问题.md](doc/面试会问的问题.md) | 面试会问的 6 个问题（零拷贝、stride、为什么 4 个 buffer、忘了 QBUF、侧装旋转、编码跟不上），每题 30 秒版 + 展开讲；丢帧实测：1 块 buffer 只有 10fps、每帧处理 50 ms → 20fps |
 | [dma_buf_fd给了谁_从EXPBUF到编码器.md](doc/dma_buf_fd给了谁_从EXPBUF到编码器.md) | EXPBUF 导出的 fd 走过的 4 站：EXPBUF → mpp_buffer_import（EXT_DMA 只检查 fd）→ MPP 把 fd 写进 VEPU580 输入地址寄存器（UV 偏移 = hor_stride × ver_stride）→ 内核换成硬件地址；板子实测 `/proc/pid/fd` 和 dma_buf bufinfo：摄像头的 4 块 buffer 上挂着 `rkvenc-core` |
 | [M6拷贝版本_CPU拷贝的5个步骤.md](doc/M6拷贝版本_CPU拷贝的5个步骤.md) | M6 拷贝版本怎么写：① kUseZeroCopy 开关 ② 内存池和副本 ③ 申请（DRM + CACHABLE，实测来自 system 堆）④ sync_begin → memcpy → sync_end → 提前 QBUF → encode 副本 ⑤ 释放；两个版本 buffer 时间线；实测：拷贝版本仍 30fps、编码器不再挂在摄像头 buffer 上 |
+| [open_ioctl_mmap是什么.md](../day3_camera_cache_test/doc/open_ioctl_mmap是什么.md) | （在 day3_camera_cache_test 工程里）open / ioctl / mmap 从头讲：虚拟地址和页表、fd 表、三种打交道方式、ioctl 命令号拆解和内核调用链、mmap 的 6 个参数、懒分配和缺页（Mac 实测 1 GB 只占 0 MB）、fd 背后是谁指针就指向谁、零拷贝里谁用什么找到同一块内存；9 张图 |
 
 ### 写代码时对照着看
 
