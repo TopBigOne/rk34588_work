@@ -15,12 +15,15 @@
 #include <unistd.h>
 
 static const char* TAG                 = "DAY3_MMAP";
+// M1--start
 static const char* kTestFilePath       = "/tmp/day3_mmap_test.bin";
 static const size_t kMallocSizeBytes   = 4 * 1024 * 1024;
 static const size_t kTestFileSizeBytes = 4096;
+// M1--end
+
 
 static bool create_test_file() {
-    LOGD(TAG, "print_whole_maps()");
+    LOGD(TAG, "create_test_file()");
     // 0644：新建文件的权限（只在 O_CREAT 真的新建文件时用到）。
     //   开头的 0 表示这是八进制数；后面 3 个数字依次是：文件主人 / 同组的人 / 其他人。
     //   每个数字 = 读 4 + 写 2 + 执行 1 加起来：6 = 读 + 写，4 = 只读。
@@ -66,6 +69,7 @@ static int run_m1_maps() {
         free(mallocAddr);
         return 1;
     }
+    LOGI(TAG, " 文件创建成功，然后把这个文件，用mmap映射2次，但2次的flags不同");
     const int fileFd      = open(kTestFilePath, O_RDWR | O_CLOEXEC);
     void* fileAddrShared  = mmap(nullptr, kTestFileSizeBytes, PROT_READ | PROT_WRITE, MAP_SHARED, fileFd, 0);
     void* fileAddrPrivate = mmap(nullptr, kTestFileSizeBytes, PROT_READ | PROT_WRITE, MAP_PRIVATE, fileFd, 0);
