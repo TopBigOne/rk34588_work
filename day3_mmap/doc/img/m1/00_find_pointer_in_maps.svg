@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="760" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">"到 maps 里查指针是谁"：拿指针的值，一行一行比，看落在哪一行的范围里</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">规则只有一条：起始 ≤ 指针 &lt; 结束，就是这一行。这一行最后的路径，就是这个指针"属于谁"</text>
+
+  <!-- 指针 -->
+  <rect x="20" y="86" width="330" height="96" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/>
+  <text x="185" y="114" text-anchor="middle" font-size="14" fill="#333">程序打印出来的指针</text>
+  <text x="185" y="146" text-anchor="middle" font-size="18" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">mallocAddr</text>
+  <text x="185" y="172" text-anchor="middle" font-size="18" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">= 0x7fb75c2010</text>
+
+  <text x="380" y="106" font-size="14" fill="#333">去掉 0x，就是 maps 里的写法：</text>
+  <text x="380" y="134" font-size="20" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">7fb75c2010</text>
+  <text x="380" y="162" font-size="13" fill="#666">maps 每行开头是"起始-结束"，都是 10 位十六进制。位数一样，</text>
+  <text x="380" y="180" font-size="13" fill="#666">就能像比普通数字一样，从左往右一位一位比大小（a&lt;b&lt;c&lt;d&lt;e&lt;f 比 9 大）</text>
+
+  <!-- 表头 -->
+  <text x="40" y="226" font-size="14" font-weight="bold" fill="#333">maps 里的行（节选，从上往下看）</text>
+  <text x="560" y="226" font-size="14" font-weight="bold" fill="#333">7fb75c2010 在这一行的范围里吗？</text>
+
+  <!-- 行 1 -->
+  <rect x="20" y="240" width="1060" height="56" rx="6" fill="#ffffff" stroke="#ccc"/>
+  <text x="35" y="274" font-size="15" font-family="Menlo, monospace" fill="#333">556dd93000-556dd96000 r-xp ... day3_mmap</text>
+  <text x="560" y="266" font-size="14" fill="#cf222e">✗ 不在：结束 556dd96000 比它小</text>
+  <text x="560" y="286" font-size="12" fill="#666">（第一位 5 &lt; 7，整个范围都在它前面）</text>
+
+  <!-- 行 2 -->
+  <rect x="20" y="304" width="1060" height="56" rx="6" fill="#ffffff" stroke="#ccc"/>
+  <text x="35" y="338" font-size="15" font-family="Menlo, monospace" fill="#333">558cb92000-558cbb3000 rw-p ... [heap]</text>
+  <text x="560" y="330" font-size="14" fill="#cf222e">✗ 不在：结束 558cbb3000 比它小</text>
+  <text x="560" y="350" font-size="12" fill="#666">（所以大块 malloc 不在 [heap] 里）</text>
+
+  <!-- 行 3 命中 -->
+  <rect x="20" y="368" width="1060" height="110" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/>
+  <text x="35" y="402" font-size="15" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">7fb75c2000-7fb79c3000 rw-p 00000000 00:00 0</text>
+  <text x="560" y="394" font-size="14" font-weight="bold" fill="#1a7f37">✓ 在！就是这一行</text>
+  <text x="560" y="418" font-size="13" font-family="Menlo, monospace" fill="#333">起始 7fb75c2000 ≤ 7fb75c2010</text>
+  <text x="560" y="438" font-size="12" fill="#666">　（前 8 位一样，最后 00 &lt; 10）</text>
+  <text x="560" y="460" font-size="13" font-family="Menlo, monospace" fill="#333">　　 7fb75c2010 &lt; 7fb79c3000 结束</text>
+  <text x="35" y="430" font-size="13" fill="#333">路径那一列是空的 → 结论：mallocAddr 指向的是</text>
+  <text x="35" y="452" font-size="13" fill="#333">一块"不属于任何文件"的匿名内存，大小 4 MB + 4 KB</text>
+
+  <!-- 行 4 -->
+  <rect x="20" y="486" width="1060" height="56" rx="6" fill="#ffffff" stroke="#ccc"/>
+  <text x="35" y="520" font-size="15" font-family="Menlo, monospace" fill="#333">7fb79c3000-7fb7b0e000 r-xp ... libc.so.6</text>
+  <text x="560" y="512" font-size="14" fill="#cf222e">✗ 不在：起始 7fb79c3000 比它大</text>
+  <text x="560" y="532" font-size="12" fill="#666">（后面的行起始只会更大，不用再看了）</text>
+
+  <!-- 另一个例子 -->
+  <rect x="20" y="566" width="1060" height="176" rx="8" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="40" y="594" font-size="15" font-weight="bold" fill="#c26a00">再查一个：sharedFileAddr = 0x7fb7d64000</text>
+  <text x="40" y="624" font-size="14" font-family="Menlo, monospace" fill="#333">7fb7d63000-7fb7d64000 rw-p 00000000 00:11 63  /tmp/day3_mmap_test.bin</text>
+  <text x="790" y="624" font-size="13" fill="#cf222e">✗ 结束 = 它，"&lt; 结束"不成立</text>
+  <text x="40" y="654" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#c26a00">7fb7d64000-7fb7d65000 rw-s 00000000 00:11 63  /tmp/day3_mmap_test.bin</text>
+  <text x="790" y="654" font-size="13" font-weight="bold" fill="#1a7f37">✓ 起始 = 它，就是这一行</text>
+  <text x="40" y="688" font-size="13" fill="#333">结论：sharedFileAddr 指向的是文件 /tmp/day3_mmap_test.bin 的内容（偏移 0 开始，1 页），而且是 s（共享）。</text>
+  <text x="40" y="712" font-size="13" fill="#333">mmap 返回的地址总是正好等于某一行的起始（mmap 按页分配）；malloc 的指针会在起始后面一点（多了记账头）。</text>
+  <text x="40" y="732" font-size="12" fill="#666">程序里的 print_maps_line_containing() 就是把这个"一行一行比"的过程写成代码，不用你用眼睛找。</text>
+</svg>

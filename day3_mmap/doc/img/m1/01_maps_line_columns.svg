@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="640" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">/proc/self/maps 的一行：6 列，各说一件事</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">例子是 M1 实测里 sharedFileAddr 那一行（2026-10-29，RK3588）</text>
+
+  <!-- 6 个列 -->
+  <rect x="20" y="85" width="270" height="46" rx="6" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="155" y="114" text-anchor="middle" font-size="16" font-family="Menlo, monospace" fill="#1f6feb">7fb7d64000-7fb7d65000</text>
+  <rect x="300" y="85" width="90" height="46" rx="6" fill="#ffe8e8" stroke="#cf222e"/>
+  <text x="345" y="114" text-anchor="middle" font-size="16" font-family="Menlo, monospace" fill="#cf222e">rw-s</text>
+  <rect x="400" y="85" width="120" height="46" rx="6" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="460" y="114" text-anchor="middle" font-size="16" font-family="Menlo, monospace" fill="#c26a00">00000000</text>
+  <rect x="530" y="85" width="90" height="46" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="575" y="114" text-anchor="middle" font-size="16" font-family="Menlo, monospace" fill="#8250df">00:11</text>
+  <rect x="630" y="85" width="70" height="46" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="665" y="114" text-anchor="middle" font-size="16" font-family="Menlo, monospace" fill="#8250df">63</text>
+  <rect x="710" y="85" width="370" height="46" rx="6" fill="#e9f7ec" stroke="#1a7f37"/>
+  <text x="895" y="114" text-anchor="middle" font-size="16" font-family="Menlo, monospace" fill="#1a7f37">/tmp/day3_mmap_test.bin</text>
+
+  <!-- 说明 -->
+  <rect x="20" y="150" width="270" height="150" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+  <text x="35" y="174" font-size="15" font-weight="bold" fill="#1f6feb">① 地址范围</text>
+  <text x="35" y="198" font-size="13" fill="#333">这一段占了哪些虚拟地址</text>
+  <text x="35" y="220" font-size="13" fill="#333">起始 ≤ 地址 &lt; 结束 就算在里面</text>
+  <text x="35" y="246" font-size="13" fill="#333">大小 = 结束 − 起始</text>
+  <text x="35" y="268" font-size="13" font-family="Menlo, monospace" fill="#333">= 0x1000 = 4096 字节</text>
+  <text x="35" y="290" font-size="13" fill="#333">= 1 页</text>
+
+  <rect x="300" y="150" width="220" height="150" rx="6" fill="#ffffff" stroke="#cf222e"/>
+  <text x="315" y="174" font-size="15" font-weight="bold" fill="#cf222e">② 权限</text>
+  <text x="315" y="198" font-size="13" fill="#333">能不能读、写、执行，</text>
+  <text x="315" y="220" font-size="13" fill="#333">是共享还是私有</text>
+  <text x="315" y="246" font-size="13" fill="#333">4 个字母，见下面</text>
+
+  <rect x="530" y="150" width="170" height="150" rx="6" fill="#ffffff" stroke="#8250df"/>
+  <text x="545" y="174" font-size="15" font-weight="bold" fill="#8250df">④⑤ 设备号、inode</text>
+  <text x="545" y="198" font-size="13" fill="#333">文件在哪个盘、</text>
+  <text x="545" y="220" font-size="13" fill="#333">盘上第几号</text>
+  <text x="545" y="246" font-size="13" fill="#333">两个都一样</text>
+  <text x="545" y="268" font-size="13" fill="#333">= 同一个文件</text>
+  <text x="545" y="290" font-size="13" fill="#333">00:00 0 = 不是文件</text>
+
+  <rect x="710" y="150" width="370" height="150" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="725" y="174" font-size="15" font-weight="bold" fill="#1a7f37">⑥ 路径：这一段属于谁</text>
+  <text x="725" y="198" font-size="13" fill="#333">文件路径　= 映射的是这个文件</text>
+  <text x="725" y="222" font-size="13" fill="#333">空　　　　= 匿名内存（大块 malloc）</text>
+  <text x="725" y="246" font-size="13" fill="#333">[heap] [stack] [vdso] [vvar]</text>
+  <text x="725" y="268" font-size="13" fill="#333">　　　　　= 内核起的特殊名字</text>
+  <text x="725" y="290" font-size="13" fill="#333">/dev/video22 = 摄像头（第 2 步会看到）</text>
+
+  <!-- 偏移说明单独放 -->
+  <rect x="300" y="315" width="400" height="66" rx="6" fill="#ffffff" stroke="#c26a00"/>
+  <text x="315" y="339" font-size="15" font-weight="bold" fill="#c26a00">③ 文件偏移</text>
+  <text x="315" y="363" font-size="13" fill="#333">这一段从文件的第几个字节开始 = mmap 的最后一个参数</text>
+  <line x1="460" y1="131" x2="460" y2="315" stroke="#c26a00" stroke-dasharray="4,3"/>
+
+  <!-- 权限 4 个字母 -->
+  <text x="20" y="420" font-size="17" font-weight="bold" fill="#222">权限列的 4 个字母（每个位置只能是两种之一）</text>
+  <rect x="20" y="436" width="250" height="110" rx="8" fill="#ffe8e8" stroke="#cf222e"/>
+  <text x="145" y="470" text-anchor="middle" font-size="30" font-family="Menlo, monospace" font-weight="bold" fill="#cf222e">r / -</text>
+  <text x="145" y="500" text-anchor="middle" font-size="14" fill="#333">第 1 位：能不能读</text>
+  <text x="145" y="524" text-anchor="middle" font-size="12" fill="#666">PROT_READ</text>
+
+  <rect x="285" y="436" width="250" height="110" rx="8" fill="#ffe8e8" stroke="#cf222e"/>
+  <text x="410" y="470" text-anchor="middle" font-size="30" font-family="Menlo, monospace" font-weight="bold" fill="#cf222e">w / -</text>
+  <text x="410" y="500" text-anchor="middle" font-size="14" fill="#333">第 2 位：能不能写</text>
+  <text x="410" y="524" text-anchor="middle" font-size="12" fill="#666">PROT_WRITE</text>
+
+  <rect x="550" y="436" width="250" height="110" rx="8" fill="#ffe8e8" stroke="#cf222e"/>
+  <text x="675" y="470" text-anchor="middle" font-size="30" font-family="Menlo, monospace" font-weight="bold" fill="#cf222e">x / -</text>
+  <text x="675" y="500" text-anchor="middle" font-size="14" fill="#333">第 3 位：能不能当代码执行</text>
+  <text x="675" y="524" text-anchor="middle" font-size="12" fill="#666">PROT_EXEC</text>
+
+  <rect x="815" y="436" width="265" height="110" rx="8" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="947" y="470" text-anchor="middle" font-size="30" font-family="Menlo, monospace" font-weight="bold" fill="#9a6700">s / p</text>
+  <text x="947" y="500" text-anchor="middle" font-size="14" fill="#333">第 4 位：共享 还是 私有</text>
+  <text x="947" y="524" text-anchor="middle" font-size="12" fill="#666">MAP_SHARED / MAP_PRIVATE</text>
+
+  <text x="20" y="580" font-size="14" fill="#333">例子：</text>
+  <text x="70" y="580" font-size="14" font-family="Menlo, monospace" fill="#333">rw-s</text>
+  <text x="120" y="580" font-size="14" fill="#333">= 能读、能写、不能执行、共享　　</text>
+  <text x="400" y="580" font-size="14" font-family="Menlo, monospace" fill="#333">r-xp</text>
+  <text x="450" y="580" font-size="14" fill="#333">= 代码　　</text>
+  <text x="540" y="580" font-size="14" font-family="Menlo, monospace" fill="#333">---p</text>
+  <text x="590" y="580" font-size="14" fill="#333">= 什么都不能做（碰一下就段错误）</text>
+  <text x="20" y="612" font-size="13" fill="#666">mmap 时传的 PROT_xxx 和 MAP_xxx，原样出现在这一列里</text>
+</svg>

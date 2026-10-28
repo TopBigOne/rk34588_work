@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="640" fill="#ffffff"/>
+  <defs>
+    <marker id="b" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+    <marker id="o" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">s 和 p 的区别：往里写的时候才看得出来（写时复制）</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">板子实测（2026-10-29）：一个 4 KB 文件内容是 AAAA…，同时 MAP_SHARED 和 MAP_PRIVATE 各映射一次</text>
+
+  <!-- 左：写之前 -->
+  <text x="270" y="100" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">① 刚映射完：两个指针看到的是同一页</text>
+  <rect x="40" y="120" width="200" height="50" rx="6" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="140" y="151" text-anchor="middle" font-size="14" font-family="Menlo, monospace" fill="#1f6feb">sharedAddr (s)</text>
+  <rect x="300" y="120" width="200" height="50" rx="6" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="400" y="151" text-anchor="middle" font-size="14" font-family="Menlo, monospace" fill="#c26a00">privateAddr (p)</text>
+  <rect x="150" y="240" width="240" height="70" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+  <text x="270" y="268" text-anchor="middle" font-size="14" fill="#1a7f37">文件的那一页（内存里）</text>
+  <text x="270" y="294" text-anchor="middle" font-size="16" font-family="Menlo, monospace" font-weight="bold" fill="#222">A A A A …</text>
+  <line x1="140" y1="170" x2="220" y2="236" stroke="#1f6feb" stroke-width="2" marker-end="url(#b)"/>
+  <line x1="400" y1="170" x2="320" y2="236" stroke="#c26a00" stroke-width="2" marker-end="url(#o)"/>
+  <text x="270" y="340" text-anchor="middle" font-size="13" fill="#333">p 那边先不复制，只是"借看"，</text>
+  <text x="270" y="360" text-anchor="middle" font-size="13" fill="#333">并且偷偷标成"一写就要复制"</text>
+
+  <!-- 右：写之后 -->
+  <text x="810" y="100" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">② privateAddr[0] = 'B' 以后：p 有了自己的副本</text>
+  <rect x="580" y="120" width="200" height="50" rx="6" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="680" y="151" text-anchor="middle" font-size="14" font-family="Menlo, monospace" fill="#1f6feb">sharedAddr (s)</text>
+  <rect x="840" y="120" width="200" height="50" rx="6" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="940" y="151" text-anchor="middle" font-size="14" font-family="Menlo, monospace" fill="#c26a00">privateAddr (p)</text>
+  <rect x="570" y="240" width="220" height="70" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+  <text x="680" y="268" text-anchor="middle" font-size="14" fill="#1a7f37">文件的那一页</text>
+  <text x="680" y="294" text-anchor="middle" font-size="16" font-family="Menlo, monospace" font-weight="bold" fill="#222">A A A A …</text>
+  <rect x="830" y="240" width="220" height="70" rx="6" fill="#fff1d6" stroke="#c26a00" stroke-width="2"/>
+  <text x="940" y="268" text-anchor="middle" font-size="14" fill="#c26a00">p 自己的副本（新的一页）</text>
+  <text x="940" y="294" text-anchor="middle" font-size="16" font-family="Menlo, monospace" font-weight="bold" fill="#222">B A A A …</text>
+  <line x1="680" y1="170" x2="680" y2="236" stroke="#1f6feb" stroke-width="2" marker-end="url(#b)"/>
+  <line x1="940" y1="170" x2="940" y2="236" stroke="#c26a00" stroke-width="2" marker-end="url(#o)"/>
+  <text x="810" y="340" text-anchor="middle" font-size="13" fill="#333">第一次写 p：内核复制一页给 p，再写进副本。</text>
+  <text x="810" y="360" text-anchor="middle" font-size="13" fill="#333">文件没变，s 也看不到这个 B</text>
+
+  <!-- 实测表 -->
+  <rect x="40" y="390" width="1020" height="230" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="60" y="418" font-size="15" font-weight="bold" fill="#222">板子实测（每一步之后，用 read() 读文件开头 4 个字节）</text>
+  <g font-size="13" font-family="Menlo, monospace" fill="#333">
+    <text x="60" y="450">操作</text><text x="360" y="450">文件</text><text x="500" y="450">shared 看到</text><text x="680" y="450">private 看到</text>
+    <line x1="60" y1="458" x2="1040" y2="458" stroke="#ccc"/>
+    <text x="60" y="482">刚映射</text><text x="360" y="482">AAAA</text><text x="500" y="482">A A</text><text x="680" y="482">A A</text>
+    <text x="60" y="508">private[0] = 'B'</text><text x="360" y="508">AAAA</text><text x="500" y="508">A A</text><text x="680" y="508" font-weight="bold" fill="#c26a00">B A</text>
+    <text x="60" y="534">shared[1] = 'C'</text><text x="360" y="534" font-weight="bold" fill="#1f6feb">ACAA</text><text x="500" y="534">A C</text><text x="680" y="534">B A</text>
+    <text x="60" y="560">shared[0] = 'D'</text><text x="360" y="560" font-weight="bold" fill="#1f6feb">DCAA</text><text x="500" y="560">D C</text><text x="680" y="560">B A</text>
+  </g>
+  <text x="840" y="482" font-size="12" fill="#666">（看前 2 个字节）</text>
+  <text x="840" y="508" font-size="12" fill="#c26a00">p 改的只在副本里</text>
+  <text x="840" y="534" font-size="12" fill="#1f6feb">s 改的直接进文件</text>
+  <text x="840" y="560" font-size="12" fill="#666">p 已经"分家"，看不到</text>
+  <text x="60" y="600" font-size="13" fill="#333">所以：摄像头 buffer、dma_buf 要和硬件共用一块内存，都必须用 MAP_SHARED（s）；用 p 的话，一写就成了自己的副本，硬件看不到。</text>
+</svg>

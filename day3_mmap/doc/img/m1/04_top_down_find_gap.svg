@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="860" viewBox="0 0 1100 860" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="860" fill="#ffffff"/>
+  <defs>
+    <marker id="g" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">为什么后 mmap 的地址反而小？内核从高往低，找第一个够大的空位</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">放大 7fb7d54000～7fb7d67000 这一小段（每格 1 页 = 4 KB），从上到下 = 地址从低到高</text>
+
+  <!-- 三列标题 -->
+  <text x="190" y="96" text-anchor="middle" font-size="15" font-weight="bold" fill="#333">A. mmap 文件之前</text>
+  <text x="550" y="96" text-anchor="middle" font-size="15" font-weight="bold" fill="#333">B. mmap SHARED 之后</text>
+  <text x="910" y="96" text-anchor="middle" font-size="15" font-weight="bold" fill="#333">C. mmap PRIVATE 之后</text>
+
+  <!-- 地址刻度（左） -->
+  <g font-size="11" font-family="Menlo, monospace" fill="#666" text-anchor="end">
+    <text x="88" y="124">7fb7d54000</text>
+    <text x="88" y="232">7fb7d57000</text>
+    <text x="88" y="304">7fb7d59000</text>
+    <text x="88" y="448">7fb7d5d000</text>
+    <text x="88" y="736">7fb7d65000</text>
+  </g>
+
+  <!-- 每页 36px，从 y=110 开始。行：54,55,56 anon；57,58 空；59..5c anon；5d..64 空(8页)；65,66 anon -->
+  <!-- 列 A -->
+  <g transform="translate(100,0)">
+    <rect x="0" y="110" width="180" height="108" fill="#f6f8fa" stroke="#999"/><text x="90" y="168" text-anchor="middle" font-size="12" fill="#555">匿名（3 页）</text>
+    <rect x="0" y="218" width="180" height="72" fill="#ffffff" stroke="#bbb" stroke-dasharray="4,3"/><text x="90" y="258" text-anchor="middle" font-size="12" fill="#999">空位 2 页</text>
+    <rect x="0" y="290" width="180" height="144" fill="#f6f8fa" stroke="#999"/><text x="90" y="366" text-anchor="middle" font-size="12" fill="#555">匿名（4 页）</text>
+    <rect x="0" y="434" width="180" height="288" fill="#ffffff" stroke="#c26a00" stroke-width="2" stroke-dasharray="6,4"/>
+    <text x="90" y="570" text-anchor="middle" font-size="13" font-weight="bold" fill="#c26a00">空位 8 页（32 KB）</text>
+    <text x="90" y="592" text-anchor="middle" font-size="12" fill="#c26a00">最靠高地址的空位</text>
+    <rect x="0" y="722" width="180" height="22" fill="#f6f8fa" stroke="#999"/><text x="90" y="738" text-anchor="middle" font-size="11" fill="#555">匿名 →</text>
+  </g>
+
+  <!-- 列 B -->
+  <g transform="translate(460,0)">
+    <rect x="0" y="110" width="180" height="108" fill="#f6f8fa" stroke="#999"/><text x="90" y="168" text-anchor="middle" font-size="12" fill="#555">匿名（3 页）</text>
+    <rect x="0" y="218" width="180" height="72" fill="#ffffff" stroke="#bbb" stroke-dasharray="4,3"/><text x="90" y="258" text-anchor="middle" font-size="12" fill="#999">空位 2 页</text>
+    <rect x="0" y="290" width="180" height="144" fill="#f6f8fa" stroke="#999"/><text x="90" y="366" text-anchor="middle" font-size="12" fill="#555">匿名（4 页）</text>
+    <rect x="0" y="434" width="180" height="252" fill="#ffffff" stroke="#bbb" stroke-dasharray="4,3"/><text x="90" y="564" text-anchor="middle" font-size="12" fill="#999">空位 7 页</text>
+    <rect x="0" y="686" width="180" height="36" fill="#fff1d6" stroke="#c26a00" stroke-width="2"/><text x="90" y="709" text-anchor="middle" font-size="12" font-weight="bold" fill="#c26a00">SHARED 7fb7d64000</text>
+    <rect x="0" y="722" width="180" height="22" fill="#f6f8fa" stroke="#999"/><text x="90" y="738" text-anchor="middle" font-size="11" fill="#555">匿名 →</text>
+  </g>
+  <text x="660" y="696" font-size="12" fill="#c26a00">要 1 页：从空位的</text>
+  <text x="660" y="714" font-size="12" fill="#c26a00">最高处拿</text>
+
+  <!-- 列 C -->
+  <g transform="translate(820,0)">
+    <rect x="0" y="110" width="180" height="108" fill="#f6f8fa" stroke="#999"/><text x="90" y="168" text-anchor="middle" font-size="12" fill="#555">匿名（3 页）</text>
+    <rect x="0" y="218" width="180" height="72" fill="#ffffff" stroke="#bbb" stroke-dasharray="4,3"/><text x="90" y="258" text-anchor="middle" font-size="12" fill="#999">空位 2 页</text>
+    <rect x="0" y="290" width="180" height="144" fill="#f6f8fa" stroke="#999"/><text x="90" y="366" text-anchor="middle" font-size="12" fill="#555">匿名（4 页）</text>
+    <rect x="0" y="434" width="180" height="216" fill="#ffffff" stroke="#bbb" stroke-dasharray="4,3"/><text x="90" y="546" text-anchor="middle" font-size="12" fill="#999">空位 6 页（还空着）</text>
+    <rect x="0" y="650" width="180" height="36" fill="#fff1d6" stroke="#c26a00" stroke-width="2"/><text x="90" y="673" text-anchor="middle" font-size="12" font-weight="bold" fill="#c26a00">PRIVATE 7fb7d63000</text>
+    <rect x="0" y="686" width="180" height="36" fill="#fff1d6" stroke="#c26a00" stroke-width="2"/><text x="90" y="709" text-anchor="middle" font-size="12" font-weight="bold" fill="#c26a00">SHARED 7fb7d64000</text>
+    <rect x="0" y="722" width="180" height="22" fill="#f6f8fa" stroke="#999"/><text x="90" y="738" text-anchor="middle" font-size="11" fill="#555">匿名 →</text>
+  </g>
+
+  <!-- 箭头 A→B→C -->
+  <line x1="292" y1="600" x2="452" y2="600" stroke="#c26a00" stroke-width="2" marker-end="url(#g)"/>
+  <line x1="652" y1="600" x2="812" y2="600" stroke="#c26a00" stroke-width="2" marker-end="url(#g)"/>
+
+  <rect x="40" y="768" width="1020" height="76" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="60" y="794" font-size="13" fill="#333">4 MB 的 malloc 比这两次 mmap 更早：它要 1025 页（4 MB + 4 KB），这一段里最大的空位才 8 页，放不下 →</text>
+  <text x="60" y="818" font-size="13" fill="#333">继续往低地址找，一直到 libc 下面才有足够大的空地，正好贴着 libc 放：</text>
+  <text x="590" y="818" font-size="13" font-family="Menlo, monospace" fill="#333">7fb75c2000 + 0x401000 = 7fb79c3000 = libc 起始</text>
+</svg>

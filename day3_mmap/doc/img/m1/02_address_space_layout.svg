@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="980" viewBox="0 0 1100 980" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="980" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+    <marker id="g" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c26a00"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">M1 第 1 步：day3_mmap 进程的整个地址空间（31 行分成 9 组）</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">从上到下 = 地址从低到高（和 maps 的顺序一样）。块的高度不按比例：两片空地其实比所有块加起来大得多</text>
+
+  <text x="200" y="88" text-anchor="end" font-size="13" fill="#666">起始地址</text>
+  <text x="385" y="88" text-anchor="middle" font-size="14" font-weight="bold" fill="#666">↑ 低地址</text>
+
+  <!-- ① 程序 -->
+  <text x="200" y="124" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">556dd93000</text>
+  <rect x="210" y="100" width="350" height="58" rx="6" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="225" y="123" font-size="14" font-weight="bold" fill="#1f6feb">① 程序自己 /tmp/CLion/run/day3_mmap</text>
+  <text x="225" y="145" font-size="12" fill="#333">3 行：r-x 代码 / r-- RELRO / rw- 全局变量</text>
+
+  <!-- ② heap -->
+  <text x="200" y="190" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">558cb92000</text>
+  <rect x="210" y="168" width="350" height="44" rx="6" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="225" y="195" font-size="14" font-weight="bold" fill="#0969da">② [heap]　132 KB，小块 malloc 在这里</text>
+  <line x1="580" y1="178" x2="580" y2="214" stroke="#0969da" stroke-width="2" marker-end="url(#a)"/>
+  <text x="592" y="200" font-size="13" fill="#0969da">不够了往高地址长（brk）</text>
+
+  <!-- 空地 -->
+  <rect x="210" y="222" width="350" height="70" rx="6" fill="#f6f8fa" stroke="#999" stroke-dasharray="6,4"/>
+  <text x="385" y="262" text-anchor="middle" font-size="14" fill="#666">空着：约 169 GB</text>
+
+  <!-- mmap 区 -->
+  <text x="200" y="326" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb75c2000</text>
+  <rect x="210" y="302" width="350" height="56" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/>
+  <text x="225" y="325" font-size="14" font-weight="bold" fill="#1a7f37">③ 你的 malloc(4 MB)　rw-p，路径为空</text>
+  <text x="225" y="346" font-size="12" fill="#333">mallocAddr = 0x7fb75c2010（多 16 字节记账头）</text>
+
+  <text x="200" y="390" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb79c3000</text>
+  <rect x="210" y="368" width="350" height="44" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="225" y="395" font-size="14" font-weight="bold" fill="#8250df">④ libc.so.6（3 行）</text>
+
+  <text x="200" y="436" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7b14000</text>
+  <rect x="210" y="420" width="350" height="26" rx="4" fill="#f6f8fa" stroke="#999"/>
+  <text x="225" y="438" font-size="12" fill="#555">⑤ 匿名小块（libc 的全局变量 .bss）</text>
+
+  <text x="200" y="476" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7b20000</text>
+  <rect x="210" y="454" width="350" height="44" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="225" y="481" font-size="14" font-weight="bold" fill="#8250df">④ libgcc_s.so.1（4 行，有一段 ---p 空隙）</text>
+
+  <text x="200" y="526" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7b5a000</text>
+  <rect x="210" y="506" width="350" height="38" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="225" y="530" font-size="14" font-weight="bold" fill="#8250df">④ libm.so.6（3 行）</text>
+
+  <text x="200" y="574" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7bd0000</text>
+  <rect x="210" y="552" width="350" height="44" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="225" y="579" font-size="14" font-weight="bold" fill="#8250df">④ libstdc++.so.6.0.28（4 行）</text>
+
+  <text x="200" y="620" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7d54000</text>
+  <rect x="210" y="604" width="350" height="26" rx="4" fill="#f6f8fa" stroke="#999"/>
+  <text x="225" y="622" font-size="12" fill="#555">⑤ 匿名小块 × 2</text>
+
+  <text x="200" y="660" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7d63000</text>
+  <rect x="210" y="638" width="350" height="58" rx="6" fill="#fff1d6" stroke="#c26a00" stroke-width="3"/>
+  <text x="225" y="661" font-size="14" font-weight="bold" fill="#c26a00">⑥ 你的测试文件（2 行，各 4 KB）</text>
+  <text x="225" y="683" font-size="12" fill="#333">…63000 PRIVATE（p）　|　…64000 SHARED（s）</text>
+
+  <text x="200" y="720" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7d65000</text>
+  <rect x="210" y="704" width="350" height="26" rx="4" fill="#f6f8fa" stroke="#999"/>
+  <text x="225" y="722" font-size="12" fill="#555">⑤ 匿名小块</text>
+
+  <text x="200" y="760" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7d67000</text>
+  <rect x="210" y="738" width="350" height="40" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="225" y="763" font-size="14" font-weight="bold" fill="#9a6700">⑦ [vvar] [vdso]　内核放进来的</text>
+
+  <text x="200" y="808" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fb7d6a000</text>
+  <rect x="210" y="786" width="350" height="44" rx="6" fill="#f3e8ff" stroke="#8250df"/>
+  <text x="225" y="813" font-size="14" font-weight="bold" fill="#8250df">⑧ ld-linux-aarch64.so.1（3 行）</text>
+
+  <!-- mmap 区括号 -->
+  <path d="M572,302 L586,302 L586,830 L572,830" fill="none" stroke="#c26a00" stroke-width="2"/>
+  <text x="600" y="330" font-size="16" font-weight="bold" fill="#c26a00">mmap 区</text>
+  <text x="600" y="354" font-size="13" fill="#333">③～⑧ 都是 mmap 出来的：</text>
+  <text x="600" y="376" font-size="13" fill="#333">库是 ld-linux 启动时 mmap 的，③⑥ 是你 mmap 的</text>
+  <line x1="620" y1="800" x2="620" y2="410" stroke="#c26a00" stroke-width="3" marker-end="url(#g)"/>
+  <text x="636" y="560" font-size="14" font-weight="bold" fill="#c26a00">内核找空位的方向：</text>
+  <text x="636" y="584" font-size="14" font-weight="bold" fill="#c26a00">从高地址往低地址</text>
+  <text x="636" y="612" font-size="13" fill="#333">找到第一个够大的空位就用</text>
+  <text x="636" y="640" font-size="13" fill="#333">→ ⑥ 只要 4 KB，高地址那边的小空位就放得下</text>
+  <text x="636" y="662" font-size="13" fill="#333">→ ③ 要 4 MB，小空位都放不下，一直往低地址找</text>
+  <text x="636" y="684" font-size="13" fill="#333">　 （图里是往上），最后贴着 libc 放</text>
+  <text x="636" y="712" font-size="12" fill="#666">（详见图 4）</text>
+
+  <!-- 空地 2 -->
+  <rect x="210" y="840" width="350" height="46" rx="6" fill="#f6f8fa" stroke="#999" stroke-dasharray="6,4"/>
+  <text x="385" y="868" text-anchor="middle" font-size="14" fill="#666">空着：约 270 MB</text>
+
+  <!-- ⑨ stack -->
+  <text x="200" y="918" text-anchor="end" font-size="13" font-family="Menlo, monospace" fill="#333">7fc8bc4000</text>
+  <rect x="210" y="896" width="350" height="44" rx="6" fill="#ffe8e8" stroke="#cf222e"/>
+  <text x="225" y="923" font-size="14" font-weight="bold" fill="#cf222e">⑨ [stack]　132 KB，局部变量在这里</text>
+  <line x1="580" y1="930" x2="580" y2="894" stroke="#cf222e" stroke-width="2" marker-end="url(#a)"/>
+  <text x="592" y="918" font-size="13" fill="#cf222e">不够了往低地址长</text>
+
+  <text x="385" y="966" text-anchor="middle" font-size="14" font-weight="bold" fill="#666">↓ 高地址</text>
+</svg>

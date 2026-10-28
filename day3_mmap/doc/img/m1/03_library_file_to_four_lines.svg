@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="720" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">一个库文件，为什么在 maps 里变成 4 行：以 libgcc_s.so.1 为例</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">左：硬盘上的文件（readelf -l 实测）。右：mmap 进来以后 maps 里的 4 行（M1 实测）。ld-linux 把文件的不同部分分别 mmap，权限各不相同</text>
+
+  <!-- 左：文件 -->
+  <text x="190" y="98" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">libgcc_s.so.1 文件（130 KB）</text>
+  <text x="40" y="128" font-size="12" font-family="Menlo, monospace" fill="#666">偏移 0x00000</text>
+  <rect x="40" y="136" width="300" height="150" rx="6" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="190" y="190" text-anchor="middle" font-size="15" font-weight="bold" fill="#1f6feb">第 1 段：只读的东西</text>
+  <text x="190" y="214" text-anchor="middle" font-size="13" fill="#333">代码 .text、字符串常量 .rodata</text>
+  <text x="190" y="236" text-anchor="middle" font-size="13" fill="#333">readelf：LOAD  R E</text>
+  <text x="40" y="304" font-size="12" font-family="Menlo, monospace" fill="#666">偏移 0x10c68（第 1 段结束）</text>
+  <rect x="40" y="312" width="300" height="60" rx="6" fill="#f6f8fa" stroke="#999" stroke-dasharray="5,4"/>
+  <text x="190" y="347" text-anchor="middle" font-size="13" fill="#666">文件里的其他内容（不映射）</text>
+  <text x="40" y="390" font-size="12" font-family="Menlo, monospace" fill="#666">偏移 0x1fda8</text>
+  <rect x="40" y="398" width="300" height="46" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="190" y="418" text-anchor="middle" font-size="13" font-weight="bold" fill="#9a6700">第 2 段前半：RELRO（.got 等）</text>
+  <text x="190" y="436" text-anchor="middle" font-size="12" fill="#333">启动时填一次，然后改成只读</text>
+  <rect x="40" y="448" width="300" height="46" rx="6" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="190" y="468" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a7f37">第 2 段后半：全局变量 .data .bss</text>
+  <text x="190" y="486" text-anchor="middle" font-size="12" fill="#333">readelf：LOAD  RW</text>
+
+  <!-- 右：maps -->
+  <text x="830" y="98" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">maps 里的 4 行</text>
+
+  <rect x="580" y="120" width="500" height="80" rx="6" fill="#e8f0ff" stroke="#1f6feb"/>
+  <text x="595" y="144" font-size="13" font-family="Menlo, monospace" fill="#222">7fb7b20000-7fb7b31000 r-xp 00000000</text>
+  <text x="595" y="168" font-size="13" fill="#1f6feb">代码：能读、能执行，不能写　（0x11000 = 68 KB）</text>
+  <text x="595" y="190" font-size="12" fill="#666">偏移 0 → 从文件开头映射</text>
+
+  <rect x="580" y="214" width="500" height="138" rx="6" fill="#f6f8fa" stroke="#cf222e" stroke-width="2"/>
+  <text x="595" y="238" font-size="13" font-family="Menlo, monospace" fill="#222">7fb7b31000-7fb7b4f000 ---p 00011000</text>
+  <text x="595" y="262" font-size="13" font-weight="bold" fill="#cf222e">空隙：什么都不能做　（0x1e000 = 120 KB）</text>
+  <text x="595" y="286" font-size="12" fill="#333">链接器按 64 KB 对齐（readelf 的 Align = 0x10000），</text>
+  <text x="595" y="306" font-size="12" fill="#333">把第 2 段推到了 0x2fda8，两段之间就空出这一截。</text>
+  <text x="595" y="326" font-size="12" fill="#333">ld-linux 把它设成 ---：指针跑到这里，立刻段错误，</text>
+  <text x="595" y="344" font-size="12" fill="#333">不会悄悄读到乱数据。</text>
+
+  <rect x="580" y="366" width="500" height="66" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="595" y="390" font-size="13" font-family="Menlo, monospace" fill="#222">7fb7b4f000-7fb7b50000 r--p 0001f000</text>
+  <text x="595" y="414" font-size="13" fill="#9a6700">RELRO：只读（1 页）</text>
+
+  <rect x="580" y="446" width="500" height="66" rx="6" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="595" y="470" font-size="13" font-family="Menlo, monospace" fill="#222">7fb7b50000-7fb7b51000 rw-p 00020000</text>
+  <text x="595" y="494" font-size="13" fill="#1a7f37">全局变量：能读、能写，不能执行（1 页）</text>
+
+  <!-- 箭头 -->
+  <line x1="340" y1="200" x2="575" y2="160" stroke="#1f6feb" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="340" y1="421" x2="575" y2="399" stroke="#9a6700" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="340" y1="471" x2="575" y2="479" stroke="#1a7f37" stroke-width="2" marker-end="url(#a)"/>
+  <text x="458" y="300" text-anchor="middle" font-size="12" fill="#cf222e">空隙不来自文件内容</text>
+
+  <!-- 底部 -->
+  <rect x="40" y="540" width="1040" height="160" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="60" y="568" font-size="15" font-weight="bold" fill="#222">要点</text>
+  <text x="60" y="596" font-size="13" fill="#333">1. 偏移列：0x1f000、0x20000 是文件里的位置（0x1fda8 往下取整到页）。文件被"切开"映射，每一刀对应一行。</text>
+  <text x="60" y="622" font-size="13" fill="#333">2. 能写的不能执行（rw-），能执行的不能写（r-x）：这是安全规则，防止往内存里写一段代码再跳过去执行。</text>
+  <text x="60" y="648" font-size="13" fill="#333">3. 你的程序 day3_mmap 是同一个套路，只是按 4 KB 对齐（Align = 0x1000），没有空隙，所以只有 3 行：</text>
+  <text x="60" y="672" font-size="12" font-family="Menlo, monospace" fill="#333">   r-xp 偏移 0（代码 + 字符串）　r--p 偏移 0x2000（RELRO）　rw-p 偏移 0x3000（全局变量）</text>
+</svg>
