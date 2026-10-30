@@ -11,9 +11,23 @@ project(day3_mmap)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 代码目录（main.cpp 只负责按参数选实验、调用）：
+#   src/main.cpp          ./day3_mmap m1 | m2
+#   src/experiments/      每个实验一个文件：m1_maps、m2_two_pointers
+#   src/camera/           打开摄像头、申请并 mmap 4 块 buffer（M1 M2 用）
+#   src/dma_heap/         从 dma heap 申请 dma_buf（M1 第 3 步、M3 用）
+#   src/common/           日志 log.h、到 /proc/self/maps 里查指针 maps_printer
 add_executable(day3_mmap
-        main.cpp
-        log.h
+        src/main.cpp
+        src/common/log.h
+        src/common/maps_printer.cpp
+        src/camera/camera_buffers.cpp
+        src/dma_heap/dma_heap_buffer.cpp
+        src/experiments/m1_maps.cpp
+        src/experiments/m2_two_pointers.cpp
 )
+
+# 头文件搜索目录加上 src/：所有 #include 都写成相对 src/ 的路径，比如 #include "camera/camera_buffers.h"
+target_include_directories(day3_mmap PRIVATE src)
 
 target_compile_options(day3_mmap PRIVATE -Wall -Wextra)
