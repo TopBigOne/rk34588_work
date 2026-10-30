@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="960" viewBox="0 0 1100 960" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="960" fill="#ffffff"/>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">v4l2_format 里套了哪些结构体（共 3 层），每个是干什么的</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">大小是板子实测 sizeof（2026-10-30）。右边"本板"一栏：RK3588 上 30 个 video 节点实际用了哪个（G_FMT 实测）</text>
+
+  <!-- 第 1 层 -->
+  <rect x="20" y="88" width="240" height="60" rx="8" fill="#222" stroke="#222"/>
+  <text x="140" y="114" text-anchor="middle" font-size="15" font-family="Menlo, monospace" font-weight="bold" fill="#fff">struct v4l2_format</text>
+  <text x="140" y="136" text-anchor="middle" font-size="13" fill="#ddd">208 字节（第 1 层）</text>
+
+  <line x1="60" y1="148" x2="60" y2="270" stroke="#444" stroke-width="2"/>
+  <line x1="60" y1="190" x2="80" y2="190" stroke="#444" stroke-width="2"/>
+  <rect x="80" y="170" width="180" height="40" rx="6" fill="#ffe8e8" stroke="#cf222e" stroke-width="2"/>
+  <text x="170" y="195" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#cf222e">__u32 type（4B）</text>
+  <line x1="60" y1="270" x2="80" y2="270" stroke="#444" stroke-width="2"/>
+  <rect x="80" y="240" width="180" height="60" rx="6" fill="#ffffff" stroke="#444" stroke-width="2"/>
+  <text x="170" y="264" text-anchor="middle" font-size="13" font-family="Menlo, monospace" font-weight="bold" fill="#222">union fmt（200B）</text>
+  <text x="170" y="286" text-anchor="middle" font-size="12" fill="#666">8 选 1，由 type 决定</text>
+  <text x="80" y="330" font-size="12" fill="#cf222e">type 决定 fmt 用哪一行 →</text>
+  <text x="80" y="350" font-size="12" fill="#666">（对应关系见图 2）</text>
+
+  <!-- 竖线连到 8 行 -->
+  <line x1="260" y1="270" x2="285" y2="270" stroke="#444" stroke-width="2"/>
+  <line x1="285" y1="110" x2="285" y2="822" stroke="#444" stroke-width="2"/>
+
+  <!-- 表头 -->
+  <g font-size="13" font-weight="bold" fill="#333">
+    <text x="300" y="98">第 2 层：fmt 的成员</text>
+    <text x="640" y="98">里面再套的（第 3 层）</text>
+    <text x="930" y="98">本板</text>
+  </g>
+
+  <!-- 1 pix -->
+  <line x1="285" y1="140" x2="300" y2="140" stroke="#444"/>
+  <rect x="300" y="112" width="780" height="56" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+  <rect x="300" y="112" width="8" height="56" fill="#1a7f37"/>
+  <text x="318" y="135" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">pix</text>
+  <text x="360" y="135" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_pix_format　48B</text>
+  <text x="318" y="157" font-size="12" fill="#1a7f37">【视频图像·单平面】宽高、格式、每行字节数</text>
+  <text x="640" y="146" font-size="12" fill="#999">没有，12 个 __u32 平铺</text>
+  <text x="930" y="146" font-size="12" fill="#999">没有节点用</text>
+
+  <!-- 2 pix_mp -->
+  <line x1="285" y1="226" x2="300" y2="226" stroke="#444"/>
+  <rect x="300" y="178" width="780" height="96" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/>
+  <rect x="300" y="178" width="8" height="96" fill="#1a7f37"/>
+  <text x="318" y="201" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">pix_mp ⭐</text>
+  <text x="318" y="222" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_pix_format_mplane　192B</text>
+  <text x="318" y="244" font-size="12" fill="#1a7f37">【视频图像·多平面】</text>
+  <text x="318" y="264" font-size="12" fill="#333">宽、高、像素格式、平面数……</text>
+  <rect x="630" y="192" width="285" height="70" rx="4" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="640" y="212" font-size="12" font-family="Menlo, monospace" fill="#1a7f37">plane_fmt[8]：每个平面一个</text>
+  <text x="640" y="232" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_plane_pix_format 20B</text>
+  <text x="640" y="252" font-size="11" fill="#666">sizeimage、bytesperline、保留</text>
+  <text x="930" y="212" font-size="12" font-weight="bold" fill="#1a7f37">video22（我们的）</text>
+  <text x="930" y="232" font-size="12" fill="#333">rkisp、rkcif、hdmirx</text>
+  <text x="930" y="252" font-size="12" fill="#333">共 26 个节点</text>
+
+  <!-- 3 win -->
+  <line x1="285" y1="340" x2="300" y2="340" stroke="#444"/>
+  <rect x="300" y="284" width="780" height="112" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+  <rect x="300" y="284" width="8" height="112" fill="#1f6feb"/>
+  <text x="318" y="307" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#1f6feb">win</text>
+  <text x="360" y="307" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_window　56B</text>
+  <text x="318" y="329" font-size="12" fill="#1f6feb">【视频叠加 overlay】让硬件把画面</text>
+  <text x="318" y="349" font-size="12" fill="#1f6feb">直接叠到显存的某个窗口里</text>
+  <text x="318" y="371" font-size="11" fill="#666">（老电视卡的玩法，现在几乎不用）</text>
+  <text x="640" y="306" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_rect w：窗口位置和大小</text>
+  <text x="652" y="324" font-size="11" fill="#666">left、top、width、height（16B）</text>
+  <text x="640" y="346" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_clip *clips：遮挡区链表</text>
+  <text x="652" y="364" font-size="11" fill="#666">每个 = v4l2_rect c + *next</text>
+  <text x="640" y="386" font-size="12" font-family="Menlo, monospace" fill="#333">void *bitmap：遮挡位图</text>
+  <text x="930" y="346" font-size="12" fill="#999">没有节点用</text>
+
+  <!-- 4 vbi -->
+  <line x1="285" y1="432" x2="300" y2="432" stroke="#444"/>
+  <rect x="300" y="406" width="780" height="54" rx="6" fill="#ffffff" stroke="#c26a00"/>
+  <rect x="300" y="406" width="8" height="54" fill="#c26a00"/>
+  <text x="318" y="429" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#c26a00">vbi</text>
+  <text x="360" y="429" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_vbi_format　44B</text>
+  <text x="318" y="450" font-size="12" fill="#c26a00">【电视信号里夹带的数据】原始采样（图文电视、隐藏字幕）</text>
+  <text x="640" y="438" font-size="12" fill="#999"></text>
+  <text x="930" y="438" font-size="12" fill="#999">没有节点用</text>
+
+  <!-- 5 sliced -->
+  <line x1="285" y1="496" x2="300" y2="496" stroke="#444"/>
+  <rect x="300" y="470" width="780" height="54" rx="6" fill="#ffffff" stroke="#c26a00"/>
+  <rect x="300" y="470" width="8" height="54" fill="#c26a00"/>
+  <text x="318" y="493" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#c26a00">sliced</text>
+  <text x="380" y="493" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_sliced_vbi_format　112B</text>
+  <text x="318" y="514" font-size="12" fill="#c26a00">【同上，已经解码好的】哪几行夹带了什么服务</text>
+  <text x="930" y="502" font-size="12" fill="#999">没有节点用</text>
+
+  <!-- 6 sdr -->
+  <line x1="285" y1="560" x2="300" y2="560" stroke="#444"/>
+  <rect x="300" y="534" width="780" height="54" rx="6" fill="#ffffff" stroke="#8250df"/>
+  <rect x="300" y="534" width="8" height="54" fill="#8250df"/>
+  <text x="318" y="557" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#8250df">sdr</text>
+  <text x="360" y="557" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_sdr_format　32B</text>
+  <text x="318" y="578" font-size="12" fill="#8250df">【软件无线电】收音机 / 射频的 I/Q 采样（不是声音，是无线电波）</text>
+  <text x="930" y="566" font-size="12" fill="#999">没有节点用</text>
+
+  <!-- 7 meta -->
+  <line x1="285" y1="634" x2="300" y2="634" stroke="#444"/>
+  <rect x="300" y="598" width="780" height="72" rx="6" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+  <rect x="300" y="598" width="8" height="72" fill="#9a6700"/>
+  <text x="318" y="621" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#9a6700">meta</text>
+  <text x="370" y="621" font-size="12" font-family="Menlo, monospace" fill="#333">v4l2_meta_format　8B</text>
+  <text x="318" y="642" font-size="12" fill="#9a6700">【元数据】不是画面，是和画面有关的数据：</text>
+  <text x="318" y="661" font-size="12" fill="#9a6700">ISP 的 3A 统计（亮度、颜色分布）、ISP 参数</text>
+  <text x="640" y="634" font-size="11" fill="#999"></text>
+  <text x="930" y="622" font-size="12" font-weight="bold" fill="#9a6700">video29/38 统计</text>
+  <text x="930" y="642" font-size="12" font-weight="bold" fill="#9a6700">video30/39 参数</text>
+  <text x="930" y="662" font-size="11" fill="#666">给 rkaiq（3A）用</text>
+
+  <!-- 8 raw -->
+  <line x1="285" y1="702" x2="300" y2="702" stroke="#444"/>
+  <rect x="300" y="680" width="780" height="44" rx="6" fill="#f6f8fa" stroke="#999"/>
+  <rect x="300" y="680" width="8" height="44" fill="#999"/>
+  <text x="318" y="707" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#555">raw_data[200]</text>
+  <text x="460" y="707" font-size="12" fill="#666">【占位】把 union 撑到 200 字节，以后加新格式结构体大小不变</text>
+
+  <!-- 还有 OUTPUT 方向 -->
+  <text x="300" y="750" font-size="12" fill="#666">每一行都有"采集（CAPTURE）"和"输出（OUTPUT）"两个方向，共用同一个成员。比如 video26 是 VIDEO_OUTPUT_MPLANE，也用 pix_mp。</text>
+
+  <!-- 音频 -->
+  <rect x="20" y="772" width="1060" height="170" rx="10" fill="#ffffff" stroke="#cf222e" stroke-width="2" stroke-dasharray="8,5"/>
+  <text x="40" y="800" font-size="16" font-weight="bold" fill="#cf222e">音频参数？不在 v4l2_format 里，这 8 个成员全是"画面"或"数据"</text>
+  <text x="40" y="828" font-size="13" fill="#333">1. V4L2 = Video for Linux（视频）。v4l2_format 只描述"一帧数据长什么样"，没有采样率、声道这类声音的参数。</text>
+  <text x="40" y="852" font-size="13" fill="#333">2. VBI、SDR 名字听起来像声音，其实都不是：VBI 是电视画面上方看不见的几行里夹带的文字；SDR 是无线电波的采样。</text>
+  <text x="40" y="876" font-size="13" fill="#333">3. V4L2 里和音频有关的只有 VIDIOC_G_AUDIO / S_AUDIO + struct v4l2_audio（52B）：给电视卡"选哪一路声音输入"，不传声音数据。</text>
+  <text x="40" y="900" font-size="13" fill="#333">4. 真正录音、放音走的是另一套系统 ALSA（/dev/snd/…），见 day3_cam2h264/doc/板载麦克风录音_ALSA.md。</text>
+  <text x="40" y="926" font-size="12" fill="#666">所以：做摄像头 → 编码，只跟 type + pix_mp（+ 里面的 plane_fmt[0]）打交道；其他成员知道"是干什么的、不归我们管"就够了。</text>
+</svg>

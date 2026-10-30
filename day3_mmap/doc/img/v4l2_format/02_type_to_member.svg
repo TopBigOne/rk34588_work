@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="700" viewBox="0 0 1100 700" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="700" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#888"/></marker>
+    <marker id="g" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="13" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 z" fill="#1a7f37"/></marker>
+    <marker id="y" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="13" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 z" fill="#9a6700"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">type 填几，fmt 就用哪个成员（enum v4l2_buf_type，14 个值）</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">粗线 = 本板有节点在用（G_FMT 实测）。CAPTURE = 设备给你数据（采集），OUTPUT = 你给设备数据（输出）</text>
+
+  <g font-size="13" font-family="Menlo, monospace">
+    <!-- 左边 14 个 type，每行 40px，从 y=100 -->
+    <text x="30" y="110" fill="#555"> 1 VIDEO_CAPTURE</text>
+    <text x="30" y="150" fill="#555"> 2 VIDEO_OUTPUT</text>
+    <text x="30" y="190" fill="#555"> 3 VIDEO_OVERLAY</text>
+    <text x="30" y="230" fill="#555"> 4 VBI_CAPTURE</text>
+    <text x="30" y="270" fill="#555"> 5 VBI_OUTPUT</text>
+    <text x="30" y="310" fill="#555"> 6 SLICED_VBI_CAPTURE</text>
+    <text x="30" y="350" fill="#555"> 7 SLICED_VBI_OUTPUT</text>
+    <text x="30" y="390" fill="#555"> 8 VIDEO_OUTPUT_OVERLAY</text>
+    <text x="30" y="430" font-weight="bold" fill="#1a7f37"> 9 VIDEO_CAPTURE_MPLANE</text>
+    <text x="30" y="470" font-weight="bold" fill="#1a7f37">10 VIDEO_OUTPUT_MPLANE</text>
+    <text x="30" y="510" fill="#555">11 SDR_CAPTURE</text>
+    <text x="30" y="550" fill="#555">12 SDR_OUTPUT</text>
+    <text x="30" y="590" font-weight="bold" fill="#9a6700">13 META_CAPTURE</text>
+    <text x="30" y="630" font-weight="bold" fill="#9a6700">14 META_OUTPUT</text>
+  </g>
+
+  <!-- 右边成员 -->
+  <g font-size="14" font-family="Menlo, monospace" font-weight="bold">
+    <rect x="560" y="110" width="140" height="44" rx="6" fill="#ffffff" stroke="#1a7f37"/><text x="630" y="138" text-anchor="middle" fill="#1a7f37">pix</text>
+    <rect x="560" y="180" width="140" height="44" rx="6" fill="#ffffff" stroke="#1f6feb"/><text x="630" y="208" text-anchor="middle" fill="#1f6feb">win</text>
+    <rect x="560" y="236" width="140" height="44" rx="6" fill="#ffffff" stroke="#c26a00"/><text x="630" y="264" text-anchor="middle" fill="#c26a00">vbi</text>
+    <rect x="560" y="306" width="140" height="44" rx="6" fill="#ffffff" stroke="#c26a00"/><text x="630" y="334" text-anchor="middle" fill="#c26a00">sliced</text>
+    <rect x="560" y="428" width="140" height="44" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/><text x="630" y="456" text-anchor="middle" fill="#1a7f37">pix_mp</text>
+    <rect x="560" y="506" width="140" height="44" rx="6" fill="#ffffff" stroke="#8250df"/><text x="630" y="534" text-anchor="middle" fill="#8250df">sdr</text>
+    <rect x="560" y="586" width="140" height="44" rx="6" fill="#fff8c5" stroke="#9a6700" stroke-width="3"/><text x="630" y="614" text-anchor="middle" fill="#9a6700">meta</text>
+  </g>
+
+  <!-- 连线 -->
+  <g stroke="#888" stroke-width="1.5" fill="none" marker-end="url(#a)">
+    <line x1="300" y1="106" x2="556" y2="128"/>
+    <line x1="300" y1="146" x2="556" y2="138"/>
+    <line x1="300" y1="186" x2="556" y2="198"/>
+    <line x1="300" y1="386" x2="556" y2="210"/>
+    <line x1="300" y1="226" x2="556" y2="254"/>
+    <line x1="300" y1="266" x2="556" y2="264"/>
+    <line x1="300" y1="306" x2="556" y2="324"/>
+    <line x1="300" y1="346" x2="556" y2="334"/>
+    <line x1="300" y1="506" x2="556" y2="524"/>
+    <line x1="300" y1="546" x2="556" y2="534"/>
+  </g>
+  <g stroke="#1a7f37" stroke-width="3" fill="none" marker-end="url(#g)">
+    <line x1="300" y1="426" x2="554" y2="446"/>
+    <line x1="300" y1="466" x2="554" y2="456"/>
+  </g>
+  <g stroke="#9a6700" stroke-width="3" fill="none" marker-end="url(#y)">
+    <line x1="300" y1="586" x2="554" y2="604"/>
+    <line x1="300" y1="626" x2="554" y2="614"/>
+  </g>
+
+  <!-- 右侧说明 -->
+  <g font-size="12" fill="#333">
+    <text x="720" y="128">普通 USB 摄像头（UVC）用</text>
+    <text x="720" y="146" fill="#666">本板没有</text>
+    <text x="720" y="198">3（采集叠加）和 8（输出叠加）都用 win</text>
+    <text x="720" y="216" fill="#666">本板没有</text>
+    <text x="720" y="262" fill="#666">电视信号里的数据，本板没有</text>
+    <text x="720" y="332" fill="#666">同上</text>
+    <text x="720" y="440" font-weight="bold" fill="#1a7f37">9：video22 等 20 个采集节点（我们用这个）</text>
+    <text x="720" y="458" font-weight="bold" fill="#1a7f37">10：video26～28、35～37（rkisp_rawrd，</text>
+    <text x="720" y="476" fill="#1a7f37">　 把 RAW 图喂回 ISP）</text>
+    <text x="720" y="532" fill="#666">无线电，本板没有</text>
+    <text x="720" y="600" font-weight="bold" fill="#9a6700">13：video29/38 rkisp-statistics（RK1S）</text>
+    <text x="720" y="618" font-weight="bold" fill="#9a6700">14：video30/39 rkisp-input-params（RK1P）</text>
+  </g>
+  <text x="30" y="672" font-size="13" fill="#cf222e">规则：type 和成员必须对得上。video22 只认 9，填 1（VIDEO_CAPTURE）实测返回 EINVAL。</text>
+</svg>

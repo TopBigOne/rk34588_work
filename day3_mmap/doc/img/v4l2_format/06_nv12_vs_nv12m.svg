@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="660" viewBox="0 0 1100 660" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="660" fill="#ffffff"/>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">"平面"是什么：NV12（1 块内存）和 NV12M（2 块内存）</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">同样是 1920×1080 的 NV12 画面，数据一样多，区别只是放在一块内存里，还是分成两块。数字是板子实测</text>
+
+  <!-- 左：NV12 -->
+  <text x="270" y="98" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a7f37">V4L2_PIX_FMT_NV12　num_planes = 1 ← 我们用这个</text>
+  <rect x="60" y="116" width="420" height="300" rx="6" fill="#ffffff" stroke="#1a7f37" stroke-width="3"/>
+  <rect x="70" y="126" width="400" height="190" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="270" y="210" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">Y（亮度）</text>
+  <text x="270" y="234" text-anchor="middle" font-size="13" fill="#333">1920 × 1080 = 2,073,600 字节</text>
+  <rect x="70" y="316" width="400" height="90" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="270" y="356" text-anchor="middle" font-size="16" font-weight="bold" fill="#c26a00">UV（颜色，交错）</text>
+  <text x="270" y="380" text-anchor="middle" font-size="13" fill="#333">1920 × 540 = 1,036,800 字节</text>
+  <text x="270" y="440" text-anchor="middle" font-size="13" fill="#333">一块连续内存：UV 紧跟在 Y 后面</text>
+  <text x="270" y="464" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#1a7f37">plane_fmt[0].sizeimage = 3,110,400</text>
+  <text x="270" y="488" text-anchor="middle" font-size="13" fill="#333">→ 每块 buffer：1 次 mmap、1 个 dma_buf fd</text>
+
+  <!-- 右：NV12M -->
+  <text x="830" y="98" text-anchor="middle" font-size="17" font-weight="bold" fill="#8250df">V4L2_PIX_FMT_NV12M　num_planes = 2</text>
+  <rect x="620" y="116" width="420" height="200" rx="6" fill="#ffffff" stroke="#8250df" stroke-width="2"/>
+  <rect x="630" y="126" width="400" height="180" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="830" y="206" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">Y</text>
+  <text x="830" y="230" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#333">plane_fmt[0]: 2,073,600</text>
+  <text x="830" y="334" text-anchor="middle" font-size="12" fill="#8250df">↕ 两块之间不一定挨着，可以在内存任何地方</text>
+  <rect x="620" y="346" width="420" height="100" rx="6" fill="#ffffff" stroke="#8250df" stroke-width="2"/>
+  <rect x="630" y="356" width="400" height="80" fill="#fff1d6" stroke="#c26a00"/>
+  <text x="830" y="390" text-anchor="middle" font-size="16" font-weight="bold" fill="#c26a00">UV</text>
+  <text x="830" y="414" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#333">plane_fmt[1]: 1,036,800</text>
+  <text x="830" y="476" text-anchor="middle" font-size="13" fill="#333">→ 每块 buffer：2 次 mmap、2 个 dma_buf fd</text>
+  <text x="830" y="500" text-anchor="middle" font-size="12" fill="#666">（名字里的 M = Multi-plane，fourcc 显示为 NM12）</text>
+
+  <rect x="20" y="526" width="1060" height="118" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="40" y="552" font-size="15" font-weight="bold" fill="#222">为什么选 NV12（1 个平面）</text>
+  <text x="40" y="578" font-size="13" fill="#333">1. video22 两种都支持（ENUM_FMT 实测列出了 NV12 和 NM12），但 MPP 编码器要的是"Y 和 UV 在同一块内存里，UV 紧跟在 Y 后面"。</text>
+  <text x="40" y="602" font-size="13" fill="#333">2. 一块 buffer 只对应 1 个 dma_buf fd，mpp_buffer_import 一次就行；NV12M 要处理 2 个 fd，麻烦。</text>
+  <text x="40" y="626" font-size="13" fill="#333">3. 注意：type 用的是 MPLANE（多平面 API），格式却是 1 个平面。MPLANE 是"接口"，num_planes 才是"实际几块"，两件事别混。</text>
+</svg>

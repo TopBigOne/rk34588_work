@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="660" viewBox="0 0 1100 660" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="660" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">REQBUFS 的三条规矩：count 有上限、填 0 是释放、队列只认一个 fd</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">全部是 video22 实测（2026-10-30）</text>
+
+  <!-- 1. count -->
+  <rect x="20" y="84" width="520" height="250" rx="8" fill="#ffffff" stroke="#9a6700" stroke-width="2"/>
+  <text x="40" y="112" font-size="16" font-weight="bold" fill="#9a6700">① count：要几块，给几块（最多 64）</text>
+  <g font-size="13" font-family="Menlo, monospace" fill="#333">
+    <text x="50" y="144">要  1 → 给  1</text>
+    <text x="50" y="166">要  2 → 给  2</text>
+    <text x="50" y="188">要  3 → 给  3</text>
+    <text x="50" y="210">要  4 → 给  4   ← 我们用</text>
+    <text x="50" y="232">要 32 → 给 32</text>
+    <text x="50" y="254">要 64 → 给 64</text>
+    <text x="50" y="276" font-weight="bold" fill="#cf222e">要100 → 给 64   ← 被压了</text>
+  </g>
+  <text x="40" y="306" font-size="12" fill="#666">64 = VIDEO_MAX_FRAME（videodev2.h 定义的上限）。</text>
+  <text x="40" y="324" font-size="12" fill="#666">别的驱动可能有下限（比如要求至少 3 块），所以一定要读回 count。</text>
+
+  <!-- 2. count 0 -->
+  <rect x="560" y="84" width="520" height="250" rx="8" fill="#ffffff" stroke="#1a7f37" stroke-width="2"/>
+  <text x="580" y="112" font-size="16" font-weight="bold" fill="#1a7f37">② count = 0：把 buffer 全部还给驱动</text>
+  <text x="580" y="144" font-size="13" fill="#333">REQBUFS(0) 是"释放"的意思，没有单独的 FREEBUFS。</text>
+  <text x="580" y="168" font-size="13" fill="#333">实测：</text>
+  <g font-size="12" fill="#333">
+    <text x="596" y="192">• 没分配过也可以调，返回 0，不报错</text>
+    <text x="596" y="214">• 已分配 4 块 → 调 REQBUFS(6)：直接换成 6 块</text>
+    <text x="596" y="236">• buffer 还 mmap 着，REQBUFS(0) 也成功</text>
+    <text x="610" y="256" fill="#666">原因：capabilities 里有 ORPHANED_BUFS 位：</text>
+    <text x="610" y="276" fill="#666">队列先放手，等你 munmap 了内存才真正还回去</text>
+  </g>
+  <text x="580" y="306" font-size="12" fill="#cf222e">好习惯：先 munmap，再 REQBUFS(0)，再 close。</text>
+  <text x="580" y="324" font-size="12" fill="#666">不调 REQBUFS(0) 直接 close，驱动也会释放。</text>
+
+  <!-- 3. owner -->
+  <rect x="20" y="350" width="1060" height="292" rx="8" fill="#ffffff" stroke="#cf222e" stroke-width="2"/>
+  <text x="40" y="378" font-size="16" font-weight="bold" fill="#cf222e">③ 队列只认第一个 REQBUFS 的那个 fd（"谁申请谁拥有"）</text>
+
+  <rect x="60" y="398" width="200" height="56" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="160" y="422" text-anchor="middle" font-size="13" font-weight="bold" fill="#9a6700">fd1 = open(video22)</text>
+  <text x="160" y="442" text-anchor="middle" font-size="12" fill="#333">REQBUFS(4) ✓</text>
+  <rect x="60" y="500" width="200" height="56" rx="6" fill="#ffffff" stroke="#999"/>
+  <text x="160" y="524" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">fd2 = open(video22)</text>
+  <text x="160" y="544" text-anchor="middle" font-size="12" fill="#333">同一个程序再开一次</text>
+
+  <rect x="400" y="430" width="230" height="96" rx="8" fill="#f3e8ff" stroke="#8250df" stroke-width="2"/>
+  <text x="515" y="458" text-anchor="middle" font-size="14" font-weight="bold" fill="#8250df">video22 的队列</text>
+  <text x="515" y="482" text-anchor="middle" font-size="13" fill="#333">4 块 buffer</text>
+  <text x="515" y="504" text-anchor="middle" font-size="13" font-weight="bold" fill="#9a6700">主人：fd1</text>
+
+  <line x1="262" y1="426" x2="396" y2="462" stroke="#9a6700" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="262" y1="528" x2="396" y2="500" stroke="#999" stroke-width="2" marker-end="url(#a)" stroke-dasharray="5,4"/>
+
+  <g font-size="13">
+    <text x="660" y="420" font-weight="bold" fill="#333">fd2 试着做：</text>
+    <text x="660" y="448" fill="#cf222e">REQBUFS(4) → -1 EBUSY（Device or resource busy）</text>
+    <text x="660" y="474" fill="#cf222e">REQBUFS(0) → -1 EBUSY（连释放都不行）</text>
+    <text x="660" y="500" fill="#1a7f37">G_FMT　　 → 成功（只读的查询可以）</text>
+    <text x="660" y="532" font-weight="bold" fill="#333">fd1 REQBUFS(0) 释放以后：</text>
+    <text x="660" y="558" fill="#1a7f37">fd2 REQBUFS(4) → 成功，fd2 成了新主人</text>
+  </g>
+  <text x="40" y="594" font-size="13" fill="#333">这就是"相机 App 开着时，我们的程序 REQBUFS 报 EBUSY"的原因：队列被它的 fd 占着。</text>
+  <text x="40" y="620" font-size="13" fill="#333">查谁占着：adb shell 'fuser /dev/video22'。之后的 QBUF、DQBUF、STREAMON 也必须用主人 fd（day3_cam2h264 里就是同一个 g_videoFd）。</text>
+</svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="640" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">VIDIOC_S_FMT：填表 → 交表 → 看回执（同一个 format 变量，进去一次，出来一次）</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">数字是板子实测（2026-10-30，/dev/video22，IMX415）</text>
+
+  <!-- ① 填表 -->
+  <rect x="20" y="84" width="330" height="400" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+  <text x="185" y="112" text-anchor="middle" font-size="17" font-weight="bold" fill="#9a6700">① 你填表</text>
+  <text x="185" y="134" text-anchor="middle" font-size="12" fill="#666">v4l2_format format = {};  先全部清零</text>
+  <g font-size="13" font-family="Menlo, monospace" fill="#222">
+    <text x="36" y="168">type        = MPLANE (9)</text>
+    <text x="36" y="196">width       = 1920</text>
+    <text x="36" y="224">height      = 1080</text>
+    <text x="36" y="252">pixelformat = NV12</text>
+    <text x="36" y="280">field       = NONE (1)</text>
+    <text x="36" y="308">num_planes  = 1</text>
+    <text x="36" y="350" fill="#999">bytesperline = 0</text>
+    <text x="36" y="378" fill="#999">sizeimage    = 0</text>
+    <text x="36" y="406" fill="#999">quantization = 0</text>
+  </g>
+  <text x="36" y="444" font-size="12" fill="#666">上面 6 个是"我想要什么"；</text>
+  <text x="36" y="464" font-size="12" fill="#666">灰色这几个不用填，填了驱动也会改</text>
+
+  <!-- ② 交表 -->
+  <line x1="352" y1="270" x2="418" y2="270" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="420" y="160" width="260" height="230" rx="8" fill="#f3e8ff" stroke="#8250df" stroke-width="2"/>
+  <text x="550" y="190" text-anchor="middle" font-size="17" font-weight="bold" fill="#8250df">② 交给驱动</text>
+  <text x="550" y="218" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">ioctl(videoFd,</text>
+  <text x="550" y="236" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222">  VIDIOC_S_FMT, &amp;format)</text>
+  <text x="440" y="270" font-size="12" fill="#333">驱动（rkisp）做 3 件事：</text>
+  <text x="440" y="292" font-size="12" fill="#333">1. 检查：这个格式我支不支持？</text>
+  <text x="440" y="312" font-size="12" fill="#333">　 不支持 → 返回 -1（EINVAL）</text>
+  <text x="440" y="334" font-size="12" fill="#333">2. 调整：改成我能做到的最接近值</text>
+  <text x="440" y="356" font-size="12" fill="#333">3. 生效，并把结果写回 format</text>
+  <line x1="682" y1="270" x2="748" y2="270" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ③ 回执 -->
+  <rect x="750" y="84" width="330" height="400" rx="8" fill="#e8f0ff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="915" y="112" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f6feb">③ 看回执（同一个 format）</text>
+  <text x="915" y="134" text-anchor="middle" font-size="12" fill="#666">ioctl 返回 0 以后再读</text>
+  <g font-size="13" font-family="Menlo, monospace" fill="#222">
+    <text x="766" y="168">type        = MPLANE (9)</text>
+    <text x="766" y="196">width       = 1920</text>
+    <text x="766" y="224">height      = 1080</text>
+    <text x="766" y="252">pixelformat = NV12</text>
+    <text x="766" y="280">field       = NONE (1)</text>
+    <text x="766" y="308">num_planes  = 1</text>
+    <text x="766" y="350" font-weight="bold" fill="#1f6feb">bytesperline = 1920</text>
+    <text x="766" y="378" font-weight="bold" fill="#1f6feb">sizeimage    = 3110400</text>
+    <text x="766" y="406" font-weight="bold" fill="#1f6feb">quantization = 1 (FULL)</text>
+  </g>
+  <text x="766" y="444" font-size="12" fill="#666">蓝色 = 驱动算好写回来的。</text>
+  <text x="766" y="464" font-size="12" fill="#666">后面 REQBUFS、mmap、编码都以回执为准</text>
+
+  <!-- 底部：驱动会改你的要求 -->
+  <rect x="20" y="504" width="1060" height="120" rx="8" fill="#ffffff" stroke="#cf222e"/>
+  <text x="40" y="530" font-size="15" font-weight="bold" fill="#cf222e">回执不一定等于你填的（实测，用 VIDIOC_TRY_FMT 试的）</text>
+  <g font-size="13" fill="#333">
+    <text x="40" y="558">要 1000×500 NV12</text><text x="300" y="558">→ 宽高照给，bytesperline 被改成 1008（补到 16 的倍数）</text>
+    <text x="40" y="582">要 8000×6000 NV12</text><text x="300" y="582">→ 宽被改成 4672（这个节点最大就这么宽）</text>
+    <text x="40" y="606">要 num_planes = 0</text><text x="300" y="606">→ 被改成 1（NV12 就是 1 个平面）　　　要 MJPG → 直接报错 EINVAL（不支持）</text>
+  </g>
+</svg>

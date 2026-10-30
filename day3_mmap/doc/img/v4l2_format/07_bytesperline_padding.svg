@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="640" fill="#ffffff"/>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">bytesperline（行跨度 / stride）：一行在内存里实际占多少字节</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">实测：要 1000×500 NV12，驱动给 bytesperline = 1008。每行 1000 字节有用，后面补 8 字节空的，凑成 16 的倍数</text>
+
+  <!-- 内存行 -->
+  <text x="40" y="100" font-size="15" font-weight="bold" fill="#333">Y 平面在内存里（每行一条，从上往下是地址从低到高）</text>
+  <g font-size="12" font-family="Menlo, monospace" fill="#666" text-anchor="end">
+    <text x="118" y="136">0</text>
+    <text x="118" y="176">1008</text>
+    <text x="118" y="216">2016</text>
+    <text x="118" y="256">3024</text>
+  </g>
+  <text x="118" y="290" text-anchor="end" font-size="12" fill="#666">……</text>
+
+  <g>
+    <rect x="130" y="116" width="800" height="32" fill="#dafbe1" stroke="#1a7f37"/><rect x="930" y="116" width="40" height="32" fill="#f6f8fa" stroke="#999" stroke-dasharray="3,2"/>
+    <rect x="130" y="156" width="800" height="32" fill="#dafbe1" stroke="#1a7f37"/><rect x="930" y="156" width="40" height="32" fill="#f6f8fa" stroke="#999" stroke-dasharray="3,2"/>
+    <rect x="130" y="196" width="800" height="32" fill="#dafbe1" stroke="#1a7f37"/><rect x="930" y="196" width="40" height="32" fill="#f6f8fa" stroke="#999" stroke-dasharray="3,2"/>
+    <rect x="130" y="236" width="800" height="32" fill="#dafbe1" stroke="#1a7f37"/><rect x="930" y="236" width="40" height="32" fill="#f6f8fa" stroke="#999" stroke-dasharray="3,2"/>
+  </g>
+  <g font-size="13" fill="#1a7f37" text-anchor="middle">
+    <text x="530" y="137">第 0 行：1000 个像素 = 1000 字节（width）</text>
+    <text x="530" y="177">第 1 行</text>
+    <text x="530" y="217">第 2 行</text>
+    <text x="530" y="257">第 3 行</text>
+  </g>
+  <text x="950" y="137" text-anchor="middle" font-size="11" fill="#666">8 空</text>
+  <text x="985" y="137" font-size="12" fill="#666">← 填充</text>
+
+  <!-- 宽度标注 -->
+  <line x1="130" y1="306" x2="930" y2="306" stroke="#1a7f37" stroke-width="2"/>
+  <text x="530" y="326" text-anchor="middle" font-size="13" fill="#1a7f37">width = 1000（有用的）</text>
+  <line x1="130" y1="342" x2="970" y2="342" stroke="#1f6feb" stroke-width="2"/>
+  <text x="550" y="362" text-anchor="middle" font-size="13" font-weight="bold" fill="#1f6feb">bytesperline = 1008（第 N 行从 N × 1008 开始）</text>
+
+  <!-- 公式与实测 -->
+  <rect x="40" y="386" width="1020" height="236" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="60" y="414" font-size="15" font-weight="bold" fill="#222">规则和实测（video22，NV12，2026-10-30）</text>
+  <text x="60" y="442" font-size="13" fill="#333">sizeimage = bytesperline × (Y 的行数 + UV 的行数)，UV 的行数 = height ÷ 2（向下取整）</text>
+  <g font-size="13" font-family="Menlo, monospace" fill="#333">
+    <text x="60" y="474">要的宽×高</text>
+    <text x="190" y="474">bytesperline</text>
+    <text x="320" y="474">sizeimage</text>
+    <text x="440" y="474">验算</text>
+    <text x="60" y="504">1920×1080</text>
+    <text x="190" y="504">1920</text>
+    <text x="320" y="504">3110400</text>
+    <text x="440" y="504">1920 × (1080 + 540) = 3,110,400</text>
+    <text x="780" y="504" font-family="PingFang SC, sans-serif" fill="#666">正好是 16 的倍数，不用补</text>
+    <text x="60" y="528">1280×720</text>
+    <text x="190" y="528">1280</text>
+    <text x="320" y="528">1382400</text>
+    <text x="440" y="528">1280 × (720 + 360) = 1,382,400</text>
+    <text x="60" y="552">1000×500</text>
+    <text x="190" y="552">1008</text>
+    <text x="320" y="552">756000</text>
+    <text x="440" y="552">1008 × (500 + 250) = 756,000</text>
+    <text x="780" y="552" font-family="PingFang SC, sans-serif" fill="#666">补 8 字节</text>
+    <text x="60" y="576">1001×501</text>
+    <text x="190" y="576">1008</text>
+    <text x="320" y="576">757008</text>
+    <text x="440" y="576">1008 × (501 + 250) = 757,008</text>
+    <text x="780" y="576" font-family="PingFang SC, sans-serif" fill="#666">501÷2 向下取整 = 250</text>
+    <line x1="60" y1="482" x2="1040" y2="482" stroke="#ccc"/>
+  </g>
+  <text x="60" y="606" font-size="13" fill="#cf222e">所以：找第 N 行要用 N × bytesperline，算一帧多大要用 sizeimage，都不能自己拿 width、height 去乘。给 MPP 时 hor_stride = bytesperline。</text>
+</svg>

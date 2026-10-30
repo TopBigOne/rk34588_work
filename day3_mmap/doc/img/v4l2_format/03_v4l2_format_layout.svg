@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="720" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">struct v4l2_format 长什么样：一个 type + 一块 200 字节的"多用途区"</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">板子实测（2026-10-30）：sizeof = 208 字节，fmt 从第 8 字节开始。宽度不按比例</text>
+
+  <!-- 第 1 层：整体 -->
+  <text x="20" y="100" font-size="15" font-weight="bold" fill="#333">整个结构体（208 字节）</text>
+  <rect x="20" y="112" width="150" height="56" rx="4" fill="#ffe8e8" stroke="#cf222e" stroke-width="2"/>
+  <text x="95" y="136" text-anchor="middle" font-size="15" font-family="Menlo, monospace" font-weight="bold" fill="#cf222e">type</text>
+  <text x="95" y="156" text-anchor="middle" font-size="12" fill="#333">字节 0～3</text>
+  <rect x="170" y="112" width="90" height="56" fill="#f6f8fa" stroke="#999" stroke-dasharray="4,3"/>
+  <text x="215" y="136" text-anchor="middle" font-size="12" fill="#666">空 4 字节</text>
+  <text x="215" y="156" text-anchor="middle" font-size="12" fill="#666">4～7</text>
+  <rect x="260" y="112" width="820" height="56" rx="4" fill="#e8f0ff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="670" y="136" text-anchor="middle" font-size="15" font-family="Menlo, monospace" font-weight="bold" fill="#1f6feb">fmt（union，200 字节）</text>
+  <text x="670" y="156" text-anchor="middle" font-size="12" fill="#333">字节 8～207</text>
+
+  <text x="20" y="196" font-size="13" fill="#333">type 说"这是哪种数据流"，决定 fmt 这 200 字节按哪种结构去读。</text>
+  <text x="20" y="218" font-size="13" fill="#666">中间空 4 字节：fmt 里有的成员带指针（8 字节），所以 fmt 要从 8 的倍数开始（对齐）。</text>
+
+  <!-- 第 2 层：union 的几种读法 -->
+  <text x="20" y="262" font-size="15" font-weight="bold" fill="#333">同一块 fmt，按 type 选一种读法（union = 几个成员共用同一块地方）</text>
+  <line x1="670" y1="168" x2="670" y2="240" stroke="#1f6feb" stroke-dasharray="4,3"/>
+
+  <rect x="260" y="276" width="200" height="44" rx="4" fill="#f6f8fa" stroke="#999"/>
+  <text x="270" y="296" font-size="13" font-family="Menlo, monospace" fill="#555">fmt.pix（48 字节）</text>
+  <text x="270" y="313" font-size="11" fill="#666">type = VIDEO_CAPTURE (1)</text>
+  <text x="480" y="303" font-size="12" fill="#666">单平面，老 USB 摄像头用。video22 不认（实测 EINVAL）</text>
+
+  <rect x="260" y="330" width="787" height="50" rx="4" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/>
+  <text x="275" y="352" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">fmt.pix_mp（192 字节）← 我们用这个</text>
+  <text x="275" y="371" font-size="12" fill="#333">type = VIDEO_CAPTURE_MPLANE (9)：多平面，RK3588 的 rkisp 采集节点都用它</text>
+
+  <rect x="260" y="390" width="820" height="40" rx="4" fill="#f6f8fa" stroke="#999"/>
+  <text x="275" y="415" font-size="13" font-family="Menlo, monospace" fill="#555">fmt.raw_data[200]</text>
+  <text x="470" y="415" font-size="12" fill="#666">不是给你用的：它最长，作用是把 union 撑到 200 字节，以后加新格式结构体大小也不变</text>
+  <text x="275" y="447" font-size="12" fill="#666">（还有 win、vbi、sliced、sdr、meta 几种读法，和摄像头采集无关）</text>
+
+  <!-- 第 3 层：pix_mp 内部 -->
+  <text x="20" y="490" font-size="15" font-weight="bold" fill="#333">放大 fmt.pix_mp：192 字节里装了什么（括号里是在 pix_mp 里的偏移）</text>
+  <line x1="300" y1="455" x2="300" y2="500" stroke="#1a7f37" stroke-dasharray="4,3"/>
+
+  <g font-size="12" text-anchor="middle">
+    <rect x="20" y="506" width="78" height="62" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="59" y="530" font-family="Menlo, monospace" fill="#9a6700">width</text><text x="59" y="550" fill="#666">(0) 4B</text>
+    <rect x="98" y="506" width="78" height="62" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="137" y="530" font-family="Menlo, monospace" fill="#9a6700">height</text><text x="137" y="550" fill="#666">(4) 4B</text>
+    <rect x="176" y="506" width="100" height="62" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="226" y="530" font-family="Menlo, monospace" fill="#9a6700">pixelformat</text><text x="226" y="550" fill="#666">(8) 4B</text>
+    <rect x="276" y="506" width="66" height="62" fill="#f6f8fa" stroke="#999"/>
+    <text x="309" y="530" font-family="Menlo, monospace" fill="#555">field</text><text x="309" y="550" fill="#666">(12)</text>
+    <rect x="342" y="506" width="90" height="62" fill="#f6f8fa" stroke="#999"/>
+    <text x="387" y="530" font-family="Menlo, monospace" fill="#555">colorspace</text><text x="387" y="550" fill="#666">(16)</text>
+    <rect x="432" y="506" width="400" height="62" fill="#e8f0ff" stroke="#1f6feb" stroke-width="2"/>
+    <text x="632" y="528" font-family="Menlo, monospace" font-weight="bold" fill="#1f6feb">plane_fmt[8]（20～179，160 字节）</text>
+    <text x="632" y="548" fill="#333">8 个平面，每个 20B：sizeimage + bytesperline + 保留</text>
+    <text x="632" y="562" fill="#666">NV12 只用 plane_fmt[0]</text>
+    <rect x="832" y="506" width="88" height="62" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="876" y="530" font-family="Menlo, monospace" fill="#9a6700">num_planes</text><text x="876" y="550" fill="#666">(180) 1B</text>
+    <rect x="920" y="506" width="160" height="62" fill="#f6f8fa" stroke="#999"/>
+    <text x="1000" y="526" font-family="Menlo, monospace" fill="#555">flags ycbcr_enc</text>
+    <text x="1000" y="542" font-family="Menlo, monospace" fill="#555">quantization xfer</text>
+    <text x="1000" y="560" fill="#666">(181～184) + 保留 7B</text>
+  </g>
+
+  <rect x="20" y="590" width="1060" height="110" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="40" y="616" font-size="13" fill="#333">黄色 = 你要填的（width、height、pixelformat、num_planes）；蓝色 = 驱动写回给你的（每个平面的 bytesperline、sizeimage）；</text>
+  <text x="40" y="638" font-size="13" fill="#333">灰色 = 一般不用管，驱动会填。</text>
+  <text x="40" y="664" font-size="13" fill="#333">208 字节这个大小也藏在 ioctl 命令号里：VIDIOC_S_FMT = <tspan font-family="Menlo, monospace">0xc0<tspan font-weight="bold" fill="#cf222e">d0</tspan>5605</tspan>，其中 0xd0 = 208（实测）。</text>
+  <text x="40" y="686" font-size="12" fill="#666">命令号的拆法见 day3_camera_cache_test/doc/open_ioctl_mmap是什么.md（ioctl 命令号那一节）</text>
+</svg>

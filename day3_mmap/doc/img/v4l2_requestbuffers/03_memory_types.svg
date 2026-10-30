@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="600" viewBox="0 0 1100 600" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="600" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">memory 填什么：内存由谁分配，摄像头往哪里写</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">video22 三种都支持（实测 REQBUFS 都成功，capabilities 里 MMAP / USERPTR / DMABUF 三位都是 1）</text>
+
+  <!-- 三列 -->
+  <g>
+    <rect x="20" y="84" width="340" height="360" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="3"/>
+    <text x="190" y="112" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a7f37">1 MMAP ← 我们用</text>
+    <text x="190" y="136" text-anchor="middle" font-size="13" fill="#333">驱动分配，你借过来看</text>
+    <rect x="60" y="160" width="260" height="60" rx="6" fill="#ffffff" stroke="#8250df"/>
+    <text x="190" y="186" text-anchor="middle" font-size="13" font-weight="bold" fill="#8250df">驱动：REQBUFS 时分配 4 块</text>
+    <text x="190" y="206" text-anchor="middle" font-size="12" fill="#666">（图 2）</text>
+    <line x1="190" y1="220" x2="190" y2="262" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+    <text x="200" y="246" font-size="12" fill="#333">QUERYBUF + mmap</text>
+    <rect x="60" y="266" width="260" height="56" rx="6" fill="#ffffff" stroke="#9a6700"/>
+    <text x="190" y="292" text-anchor="middle" font-size="13" font-weight="bold" fill="#9a6700">程序：拿到 CPU 指针</text>
+    <text x="190" y="312" text-anchor="middle" font-size="12" fill="#666">day3_mmap M1 第 2 步看的就是它</text>
+    <text x="40" y="352" font-size="12" fill="#333">想给编码器：再 EXPBUF 成 dma_buf fd</text>
+    <text x="40" y="374" font-size="12" fill="#333">内存按摄像头的要求分配，最省心</text>
+    <text x="40" y="398" font-size="12" fill="#666">day3_cam2h264、day3_mmap 都是这种</text>
+    <text x="40" y="420" font-size="12" fill="#666">QBUF 时只填 index</text>
+
+    <rect x="380" y="84" width="340" height="360" rx="8" fill="#ffffff" stroke="#999" stroke-width="2"/>
+    <text x="550" y="112" text-anchor="middle" font-size="17" font-weight="bold" fill="#555">2 USERPTR</text>
+    <text x="550" y="136" text-anchor="middle" font-size="13" fill="#333">你分配，借给驱动写</text>
+    <rect x="420" y="160" width="260" height="60" rx="6" fill="#ffffff" stroke="#9a6700"/>
+    <text x="550" y="186" text-anchor="middle" font-size="13" font-weight="bold" fill="#9a6700">程序：自己 malloc 4 块</text>
+    <text x="550" y="206" text-anchor="middle" font-size="12" fill="#666">REQBUFS 不分配内存</text>
+    <line x1="550" y1="220" x2="550" y2="262" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+    <text x="560" y="246" font-size="12" fill="#333">QBUF 时填 m.userptr</text>
+    <rect x="420" y="266" width="260" height="56" rx="6" fill="#ffffff" stroke="#8250df"/>
+    <text x="550" y="292" text-anchor="middle" font-size="13" font-weight="bold" fill="#8250df">驱动：往你给的地址里写</text>
+    <text x="550" y="312" text-anchor="middle" font-size="12" fill="#666">内核要临时把这些页锁住</text>
+    <text x="400" y="352" font-size="12" fill="#333">缺点：malloc 的内存物理上不连续、</text>
+    <text x="400" y="374" font-size="12" fill="#333">对齐不一定合硬件的要求</text>
+    <text x="400" y="398" font-size="12" fill="#666">现在已经很少用，被 DMABUF 取代</text>
+
+    <rect x="740" y="84" width="340" height="360" rx="8" fill="#ffffff" stroke="#1f6feb" stroke-width="2"/>
+    <text x="910" y="112" text-anchor="middle" font-size="17" font-weight="bold" fill="#1f6feb">4 DMABUF</text>
+    <text x="910" y="136" text-anchor="middle" font-size="13" fill="#333">第三方分配，大家共用</text>
+    <rect x="780" y="160" width="260" height="60" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+    <text x="910" y="186" text-anchor="middle" font-size="13" font-weight="bold" fill="#1f6feb">dma_heap / DRM / MPP 分配</text>
+    <text x="910" y="206" text-anchor="middle" font-size="12" fill="#666">拿到 dma_buf fd</text>
+    <line x1="910" y1="220" x2="910" y2="262" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+    <text x="920" y="246" font-size="12" fill="#333">QBUF 时填 m.fd</text>
+    <rect x="780" y="266" width="260" height="56" rx="6" fill="#ffffff" stroke="#8250df"/>
+    <text x="910" y="292" text-anchor="middle" font-size="13" font-weight="bold" fill="#8250df">驱动：往这个 fd 的内存写</text>
+    <text x="910" y="312" text-anchor="middle" font-size="12" fill="#666">REQBUFS 也不分配内存</text>
+    <text x="760" y="352" font-size="12" fill="#333">比如直接让摄像头写进 MPP 的</text>
+    <text x="760" y="374" font-size="12" fill="#333">buffer、或显示用的 DRM 显存</text>
+    <text x="760" y="398" font-size="12" fill="#666">方向和 MMAP + EXPBUF 正好相反：</text>
+    <text x="760" y="420" font-size="12" fill="#666">那边是摄像头导出，这边是摄像头导入</text>
+  </g>
+
+  <rect x="20" y="462" width="1060" height="122" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="40" y="490" font-size="15" font-weight="bold" fill="#222">规则</text>
+  <text x="40" y="516" font-size="13" fill="#333">1. memory 一旦在 REQBUFS 里定了，后面 QUERYBUF、QBUF、DQBUF 的 v4l2_buffer.memory 都要填同一个值。</text>
+  <text x="40" y="540" font-size="13" fill="#333">2. 只有 MMAP 是"REQBUFS 时驱动真的分配内存"；USERPTR 和 DMABUF 的 REQBUFS 只是"准备好 4 个空位"，内存在 QBUF 时才交给驱动。</text>
+  <text x="40" y="564" font-size="13" fill="#333">3. 3 OVERLAY 是老电视卡叠加用的，video22 实测 EINVAL。</text>
+</svg>

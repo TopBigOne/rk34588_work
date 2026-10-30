@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="640" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">pix（单平面）和 pix_mp（多平面）：字段差不多，只是"每平面的两项"搬进了数组</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">左右同一行 = 同一个意思。蓝色箭头 = 从"整帧一份"变成"每个平面一份"</text>
+
+  <!-- 左 pix -->
+  <text x="250" y="96" text-anchor="middle" font-size="16" font-weight="bold" fill="#555">pix：v4l2_pix_format（48B）</text>
+  <g font-size="13" font-family="Menlo, monospace">
+    <rect x="80" y="110" width="340" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="92" y="130">__u32 width</text>
+    <rect x="80" y="140" width="340" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="92" y="160">__u32 height</text>
+    <rect x="80" y="170" width="340" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="92" y="190">__u32 pixelformat</text>
+    <rect x="80" y="200" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="220">__u32 field</text>
+    <rect x="80" y="230" width="340" height="30" fill="#e8f0ff" stroke="#1f6feb"/><text x="92" y="250">__u32 bytesperline</text>
+    <rect x="80" y="260" width="340" height="30" fill="#e8f0ff" stroke="#1f6feb"/><text x="92" y="280">__u32 sizeimage</text>
+    <rect x="80" y="290" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="310">__u32 colorspace</text>
+    <rect x="80" y="320" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="340">__u32 priv</text>
+    <rect x="80" y="350" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="370">__u32 flags</text>
+    <rect x="80" y="380" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="400">__u32 ycbcr_enc / hsv_enc</text>
+    <rect x="80" y="410" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="430">__u32 quantization</text>
+    <rect x="80" y="440" width="340" height="30" fill="#f6f8fa" stroke="#999"/><text x="92" y="460">__u32 xfer_func</text>
+  </g>
+  <text x="250" y="494" text-anchor="middle" font-size="12" fill="#666">12 个 __u32，一帧只能有一份 bytesperline / sizeimage</text>
+  <text x="250" y="512" text-anchor="middle" font-size="12" fill="#666">→ 只能描述"整帧放在一块内存里"的格式</text>
+
+  <!-- 右 pix_mp -->
+  <text x="830" y="96" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a7f37">pix_mp：v4l2_pix_format_mplane（192B）</text>
+  <g font-size="13" font-family="Menlo, monospace">
+    <rect x="640" y="110" width="380" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="652" y="130">__u32 width</text>
+    <rect x="640" y="140" width="380" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="652" y="160">__u32 height</text>
+    <rect x="640" y="170" width="380" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="652" y="190">__u32 pixelformat</text>
+    <rect x="640" y="200" width="380" height="30" fill="#f6f8fa" stroke="#999"/><text x="652" y="220">__u32 field</text>
+    <rect x="640" y="230" width="380" height="30" fill="#f6f8fa" stroke="#999"/><text x="652" y="250">__u32 colorspace</text>
+    <rect x="640" y="260" width="380" height="96" fill="#e8f0ff" stroke="#1f6feb" stroke-width="2"/>
+    <text x="652" y="280" font-weight="bold" fill="#1f6feb">plane_fmt[8]  （每个 20B）</text>
+    <text x="664" y="302">[0] sizeimage, bytesperline</text>
+    <text x="664" y="322" fill="#666">[1] sizeimage, bytesperline</text>
+    <text x="664" y="342" fill="#999">… 到 [7]</text>
+    <rect x="640" y="356" width="380" height="30" fill="#fff8c5" stroke="#9a6700"/><text x="652" y="376">__u8  num_planes  ← 新加的</text>
+    <rect x="640" y="386" width="380" height="30" fill="#f6f8fa" stroke="#999"/><text x="652" y="406">__u8  flags</text>
+    <rect x="640" y="416" width="380" height="30" fill="#f6f8fa" stroke="#999"/><text x="652" y="436">__u8  ycbcr_enc / hsv_enc</text>
+    <rect x="640" y="446" width="380" height="30" fill="#f6f8fa" stroke="#999"/><text x="652" y="466">__u8  quantization, xfer_func</text>
+    <rect x="640" y="476" width="380" height="30" fill="#f6f8fa" stroke="#999"/><text x="652" y="496">__u8  reserved[7]</text>
+  </g>
+
+  <!-- 箭头 -->
+  <line x1="422" y1="245" x2="636" y2="298" stroke="#1f6feb" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="422" y1="275" x2="636" y2="302" stroke="#1f6feb" stroke-width="2" marker-end="url(#a)"/>
+  <text x="530" y="240" text-anchor="middle" font-size="12" fill="#1f6feb">搬进数组</text>
+  <text x="530" y="335" text-anchor="middle" font-size="12" fill="#cf222e">priv 去掉了</text>
+  <text x="530" y="440" text-anchor="middle" font-size="12" fill="#666">flags 等从 __u32</text>
+  <text x="530" y="458" text-anchor="middle" font-size="12" fill="#666">缩成 __u8（省地方）</text>
+
+  <rect x="20" y="532" width="1060" height="92" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="40" y="558" font-size="13" fill="#333">黄色 = 你填的；蓝色 = 驱动写回的（每行字节数、一帧大小）；灰色 = 一般不用管。</text>
+  <text x="40" y="582" font-size="13" fill="#333">pix_mp 多了 num_planes 和 plane_fmt[8]：一帧可以分成最多 8 块独立内存，每块有自己的 bytesperline 和 sizeimage。</text>
+  <text x="40" y="606" font-size="13" fill="#333">我们用 NV12，num_planes = 1，所以只用 plane_fmt[0]，跟 pix 用起来其实差不多（第 6 节）。</text>
+</svg>

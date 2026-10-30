@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="720" fill="#ffffff"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">REQBUFS(count = 4) 之后，驱动在背后做了什么</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">S_FMT 1920×1080 NV12 之后实测（2026-10-30）。每块的大小、编号都是 QUERYBUF 读回来的</text>
+
+  <!-- 左：程序 -->
+  <rect x="20" y="88" width="300" height="230" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+  <text x="170" y="114" text-anchor="middle" font-size="16" font-weight="bold" fill="#9a6700">你的程序</text>
+  <g font-size="12" font-family="Menlo, monospace" fill="#222">
+    <text x="34" y="144">v4l2_requestbuffers req = {};</text>
+    <text x="34" y="164">req.count  = 4;</text>
+    <text x="34" y="184">req.type   = CAPTURE_MPLANE;</text>
+    <text x="34" y="204">req.memory = V4L2_MEMORY_MMAP;</text>
+    <text x="34" y="230">ioctl(videoFd,</text>
+    <text x="34" y="250">      VIDIOC_REQBUFS, &amp;req);</text>
+    <text x="34" y="282" fill="#1f6feb">→ req.count = 4（给够了）</text>
+    <text x="34" y="302" fill="#1f6feb">→ req.capabilities = 0x57</text>
+  </g>
+
+  <line x1="322" y1="200" x2="388" y2="200" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- 右：内核里 -->
+  <rect x="390" y="88" width="690" height="380" rx="8" fill="#f3e8ff" stroke="#8250df" stroke-width="2"/>
+  <text x="735" y="114" text-anchor="middle" font-size="16" font-weight="bold" fill="#8250df">驱动（rkisp + videobuf2）在内核里</text>
+
+  <text x="410" y="146" font-size="13" fill="#333">① 记下：这个队列归 videoFd 了（别的 fd 再来 REQBUFS → EBUSY，图 4）</text>
+  <text x="410" y="172" font-size="13" fill="#333">② 按当前格式算每块多大，分配 4 块物理内存（这时摄像头还没开始拍）：</text>
+
+  <g font-size="12">
+    <rect x="420" y="186" width="150" height="110" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="495" y="210" text-anchor="middle" font-weight="bold" fill="#1a7f37">buffer 0</text>
+    <text x="495" y="232" text-anchor="middle" font-family="Menlo, monospace" fill="#333">offset 0x000000</text>
+    <text x="495" y="254" text-anchor="middle" fill="#333">3,133,440 字节</text>
+    <text x="495" y="276" text-anchor="middle" fill="#666">flags 0x2000</text>
+    <rect x="580" y="186" width="150" height="110" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="655" y="210" text-anchor="middle" font-weight="bold" fill="#1a7f37">buffer 1</text>
+    <text x="655" y="232" text-anchor="middle" font-family="Menlo, monospace" fill="#333">offset 0x2fd000</text>
+    <text x="655" y="254" text-anchor="middle" fill="#333">3,133,440 字节</text>
+    <rect x="740" y="186" width="150" height="110" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="815" y="210" text-anchor="middle" font-weight="bold" fill="#1a7f37">buffer 2</text>
+    <text x="815" y="232" text-anchor="middle" font-family="Menlo, monospace" fill="#333">offset 0x5fa000</text>
+    <text x="815" y="254" text-anchor="middle" fill="#333">3,133,440 字节</text>
+    <rect x="900" y="186" width="150" height="110" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="975" y="210" text-anchor="middle" font-weight="bold" fill="#1a7f37">buffer 3</text>
+    <text x="975" y="232" text-anchor="middle" font-family="Menlo, monospace" fill="#333">offset 0x8f7000</text>
+    <text x="975" y="254" text-anchor="middle" fill="#333">3,133,440 字节</text>
+  </g>
+  <text x="410" y="324" font-size="13" fill="#333">③ 给每块编一个"假偏移"（mem_offset）：一块紧接一块，间隔 0x2fd000 = 3,133,440。</text>
+  <text x="430" y="346" font-size="12" fill="#666">它不是物理地址，只是 mmap(videoFd, offset) 时用来说"我要第几块"的编号。</text>
+  <text x="410" y="374" font-size="13" fill="#333">④ 4 块都标成"在程序手里"（还没 QBUF）。flags 0x2000 = TIMESTAMP_MONOTONIC，只说明时间戳的类型。</text>
+  <text x="410" y="402" font-size="13" fill="#333">⑤ 写回 count = 4、capabilities = 0x57。index 4 不存在：QUERYBUF 4 实测 EINVAL。</text>
+  <text x="410" y="434" font-size="12" fill="#666">内存由 videobuf2_cma_sg 分配（dma_buf 文档里 bufinfo 实测过）</text>
+
+  <!-- 下：大小为什么比一帧大 -->
+  <rect x="20" y="490" width="1060" height="214" rx="8" fill="#ffffff" stroke="#cf222e"/>
+  <text x="40" y="518" font-size="15" font-weight="bold" fill="#cf222e">为什么每块是 3,133,440，比一帧（sizeimage 3,110,400）大？</text>
+  <g font-size="13" fill="#333">
+    <text x="40" y="546">3,133,440 − 3,110,400 = 23,040 = 1920 × 12。正好是：</text>
+    <text x="60" y="574" font-family="Menlo, monospace">1920 × 1088 × 1.5 = 3,133,440</text>
+    <text x="400" y="574">← 高度 1080 往上补到 1088（16 的倍数）</text>
+    <text x="40" y="602">推断（按数字算出来的，没看驱动源码）：驱动按 1088 行分配，多留了 8 行，一帧只写 1080 行（sizeimage）。</text>
+    <text x="40" y="630">所以：mmap 的长度用 QUERYBUF 的 length（3,133,440）；一帧有效数据用 sizeimage（3,110,400）。两个都对，管的事不同。</text>
+    <text x="40" y="658">不先 S_FMT 会怎样：实测 REQBUFS 按驱动里留着的 3840×2160 分配，每块 12,441,600 字节，是 1080p 的 4 倍，白占内存。</text>
+    <text x="40" y="686" fill="#666">（3,133,440 = 765 页 × 4096，正好是整页，mmap 也要求整页。）</text>
+  </g>
+</svg>
