@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+  </defs>
+  <rect width="1100" height="640" fill="#ffffff"/>
+
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">两个指针（两个门牌号），同一批物理页（同一间屋子）</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">板子实测（2026-10-31）：第 0 块 765 页，A 和 B 每一页在页表里查到的物理页号都一样（765 / 765）</text>
+
+  <!-- 左：虚拟地址 -->
+  <text x="40" y="100" font-size="15" font-weight="bold" fill="#333">虚拟地址（进程自己的门牌号）</text>
+
+  <text x="40" y="128" font-size="13" fill="#1f6feb" font-weight="bold">指针 A = mmap(videoFd, mem_offset 0)</text>
+  <text x="40" y="146" font-size="12" font-family="Menlo, monospace" fill="#666">0x7fae506000 起，0x2fd000 字节</text>
+  <g stroke="#ffffff" stroke-width="0.5">
+    <rect x="40" y="154" width="281.1" height="40" fill="#1f6feb"/>
+    <rect x="321.1" y="154" width="70.3" height="40" fill="#1a7f37"/>
+    <rect x="391.4" y="154" width="35.1" height="40" fill="#9a6700"/>
+    <rect x="426.5" y="154" width="17.6" height="40" fill="#cf222e"/>
+    <rect x="444.1" y="154" width="8.8" height="40" fill="#8250df"/>
+    <rect x="452.9" y="154" width="4.4" height="40" fill="#bf3989"/>
+    <rect x="457.3" y="154" width="2.2" height="40" fill="#0a7ea4"/>
+    <rect x="459.5" y="154" width="1.5" height="40" fill="#57606a"/>
+  </g>
+  <text x="180" y="179" text-anchor="middle" font-size="13" fill="#ffffff">第 0～511 页</text>
+
+  <text x="40" y="238" font-size="13" fill="#1a7f37" font-weight="bold">指针 B = mmap(dmaBufFd, 0)</text>
+  <text x="40" y="256" font-size="12" font-family="Menlo, monospace" fill="#666">0x7fad912000 起，0x2fd000 字节</text>
+  <g stroke="#ffffff" stroke-width="0.5">
+    <rect x="40" y="264" width="281.1" height="40" fill="#1f6feb"/>
+    <rect x="321.1" y="264" width="70.3" height="40" fill="#1a7f37"/>
+    <rect x="391.4" y="264" width="35.1" height="40" fill="#9a6700"/>
+    <rect x="426.5" y="264" width="17.6" height="40" fill="#cf222e"/>
+    <rect x="444.1" y="264" width="8.8" height="40" fill="#8250df"/>
+    <rect x="452.9" y="264" width="4.4" height="40" fill="#bf3989"/>
+    <rect x="457.3" y="264" width="2.2" height="40" fill="#0a7ea4"/>
+    <rect x="459.5" y="264" width="1.5" height="40" fill="#57606a"/>
+  </g>
+  <text x="180" y="289" text-anchor="middle" font-size="13" fill="#ffffff">第 0～511 页</text>
+
+  <!-- 左下：pagemap 实测 -->
+  <rect x="40" y="330" width="440" height="160" rx="6" fill="#f6f8fa" stroke="#999"/>
+  <text x="56" y="356" font-size="14" font-weight="bold" fill="#333">怎么验证的：/proc/self/pagemap</text>
+  <text x="56" y="380" font-size="12" fill="#333">每个虚拟页查一次"它在页表里指向第几个物理页"（PFN）</text>
+  <g font-size="12" font-family="Menlo, monospace" fill="#333">
+    <text x="56" y="408">第   0 页</text><text x="170" y="408">A → 0x7000</text><text x="300" y="408">B → 0x7000</text><text x="430" y="408" fill="#1a7f37">✓</text>
+    <text x="56" y="430">第 764 页</text><text x="170" y="430">A → 0x5200</text><text x="300" y="430">B → 0x5200</text><text x="430" y="430" fill="#1a7f37">✓</text>
+    <text x="56" y="452">逐页比</text><text x="170" y="452">765 / 765 相同（4 块 buffer 都是）</text>
+  </g>
+  <text x="56" y="476" font-size="12" fill="#666">PFN 来自探针的一次运行（每次运行分到的物理页都不一样）；要 root</text>
+
+  <!-- 右：物理内存 8 段 -->
+  <text x="640" y="100" font-size="15" font-weight="bold" fill="#333">物理内存（第 0 块实际占的 8 段）</text>
+  <g font-size="12">
+    <rect x="640" y="114" width="420" height="38" rx="4" fill="#ddeaff" stroke="#1f6feb" stroke-width="2"/>
+    <text x="654" y="138" fill="#1f6feb" font-family="Menlo, monospace" font-weight="bold">① PFN 0x7000 起  512 页 = 2 MB</text>
+    <rect x="640" y="158" width="420" height="34" rx="4" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="654" y="180" fill="#1a7f37" font-family="Menlo, monospace">② PFN 0x7f80 起  128 页 = 512 KB</text>
+    <rect x="640" y="198" width="420" height="34" rx="4" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="654" y="220" fill="#9a6700" font-family="Menlo, monospace">③ PFN 0x9740 起   64 页 = 256 KB</text>
+    <rect x="640" y="238" width="420" height="34" rx="4" fill="#ffe8e8" stroke="#cf222e"/>
+    <text x="654" y="260" fill="#cf222e" font-family="Menlo, monospace">④ PFN 0x5360 起   32 页 = 128 KB</text>
+    <rect x="640" y="278" width="420" height="34" rx="4" fill="#f3e8ff" stroke="#8250df"/>
+    <text x="654" y="300" fill="#8250df" font-family="Menlo, monospace">⑤ PFN 0x2c70 起   16 页 =  64 KB</text>
+    <rect x="640" y="318" width="420" height="34" rx="4" fill="#ffeff7" stroke="#bf3989"/>
+    <text x="654" y="340" fill="#bf3989" font-family="Menlo, monospace">⑥ PFN 0x7f78 起    8 页 =  32 KB</text>
+    <rect x="640" y="358" width="420" height="34" rx="4" fill="#e0f4fa" stroke="#0a7ea4"/>
+    <text x="654" y="380" fill="#0a7ea4" font-family="Menlo, monospace">⑦ PFN 0x970c 起    4 页 =  16 KB</text>
+    <rect x="640" y="398" width="420" height="34" rx="4" fill="#eaeef2" stroke="#57606a"/>
+    <text x="654" y="420" fill="#57606a" font-family="Menlo, monospace">⑧ PFN 0x5200       1 页 =   4 KB</text>
+  </g>
+  <text x="640" y="458" font-size="12" fill="#333">512+128+64+32+16+8+4+1 = 765 页 = 3,133,440 字节</text>
+  <text x="640" y="478" font-size="12" fill="#666">8 段在物理上互不相连（详见第 5 节）</text>
+
+  <!-- 箭头 -->
+  <path d="M 300 174 C 470 174, 520 133, 636 133" fill="none" stroke="#1f6feb" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <path d="M 300 284 C 480 284, 520 140, 636 138" fill="none" stroke="#1a7f37" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <path d="M 461 190 C 560 200, 560 410, 636 413" fill="none" stroke="#1f6feb" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrowBlue)"/>
+  <path d="M 461 300 C 550 310, 550 415, 636 418" fill="none" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrowGreen)"/>
+  <text x="540" y="122" font-size="12" fill="#555">页表</text>
+  <text x="566" y="370" font-size="11" fill="#555">最后 1 页</text>
+
+  <!-- 底部 -->
+  <rect x="40" y="510" width="1020" height="112" rx="8" fill="#ffffff" stroke="#444"/>
+  <text x="60" y="538" font-size="14" fill="#333">颜色一一对应：A 的第 k 段和 B 的第 k 段，在页表里指向同一段物理内存。</text>
+  <text x="60" y="564" font-size="14" fill="#333">所以从 A 写进去的字，从 B 能读出来；反过来也一样。两个门牌号不同，只是因为 mmap 了两次，内核各挑了一个空位。</text>
+  <text x="60" y="590" font-size="14" fill="#333">比方：一间屋子开了两扇门。前门挂着"/dev/video22"的牌子，后门挂着"/dmabuf:"的牌子，</text>
+  <text x="60" y="610" font-size="14" fill="#333">从哪扇门进去，看到的都是同一间屋子里的东西。</text>
+</svg>

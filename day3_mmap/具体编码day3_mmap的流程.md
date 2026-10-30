@@ -25,6 +25,8 @@ cd /Users/dev/Documents/AV/rk_work/day3_mmap
 
 ### 0.2 main.cpp 从上到下的布局
 
+> **2026-10-31 已拆成多个文件**：实际代码不再是一个 main.cpp，而是 `src/` 下按模块分开，main.cpp 只负责按参数选实验（目录见 readme.md 第 6 节）。下面的布局图和参考代码还是按"一个文件"写的，**函数内容一样，只是放的位置不同**：公共小工具 → `src/common/`、`src/camera/`、`src/dma_heap/`；每个实验 → `src/experiments/`。
+
 ```
 main.cpp
 ├── 第 1 部分：头文件、常量、结构体
@@ -94,19 +96,19 @@ static const size_t kHeapBufSizeBytes = 3 * 1024 * 1024;
 static const int kSyncRepeatCount = 10;
 static const v4l2_buf_type kBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 
-/** 从 dma_heap 申请到的一块内存：钥匙（dma_buf fd）+ CPU 地址 */
+/** 从 dma_heap 申请到的一块内存：钥匙（dma_buf fd）+ mmap 得到的地址 */
 struct DmaHeapBuffer {
     int dmaBufFd = -1;
-    void *cpuAddr = nullptr;
+    void *mmapAddress = nullptr;
     size_t sizeBytes = 0;
 };
 
-/** 摄像头这一边：设备 fd，和 4 块 buffer 的 mem_offset、长度、CPU 地址 */
+/** 摄像头这一边：设备 fd，和 4 块 buffer 的 mem_offset、长度、mmap 得到的地址 */
 struct CameraBuffers {
     int videoFd = -1;
     uint32_t memOffsets[kBufCount] = {};
     size_t lengths[kBufCount] = {};
-    void *cpuAddrs[kBufCount] = {};
+    void *mmapAddresses[kBufCount] = {};
 };
 ```
 
@@ -237,7 +239,7 @@ static void print_maps_line_containing(const char *label, const void *address) {
  * @brief 从 dma_heap 申请一块 dma_buf，并 mmap 到本进程
  * @param[in]  heapPath  例如 "/dev/dma_heap/system"（cached）、"/dev/dma_heap/system-uncached"
  * @param[in]  sizeBytes 要多大
- * @param[out] heapBuf   传出 dmaBufFd 和 cpuAddr，用完调 free_dma_heap()
+ * @param[out] heapBuf   传出 dmaBufFd 和 mmapAddress，用完调 free_dma_heap()
  * @return 成功返回 true；失败打印原因并返回 false
  * @note 和 day3_camera_cache_test 的 alloc_dma_heap() 一样：open → ioctl(ALLOC) → mmap(allocData.fd)
  */
@@ -256,14 +258,14 @@ static bool alloc_dma_heap(const char *heapPath, size_t sizeBytes, DmaHeapBuffer
         printf("DMA_HEAP_IOCTL_ALLOC %s: %s\n", heapPath, strerror(errno));
         return false;
     }
-    void *cpuAddr = mmap(nullptr, sizeBytes, PROT_READ | PROT_WRITE, MAP_SHARED, allocData.fd, 0);
-    if (cpuAddr == MAP_FAILED) {
+    void *mmapAddress = mmap(nullptr, sizeBytes, PROT_READ | PROT_WRITE, MAP_SHARED, allocData.fd, 0);
+    if (mmapAddress == MAP_FAILED) {
         printf("mmap dma_buf: %s\n", strerror(errno));
         close(allocData.fd);
         return false;
     }
     heapBuf.dmaBufFd = allocData.fd;
-    heapBuf.cpuAddr = cpuAddr;
+    heapBuf.mmapAddress = mmapAddress;
     heapBuf.sizeBytes = sizeBytes;
     return true;
 }
@@ -273,9 +275,9 @@ static bool alloc_dma_heap(const char *heapPath, size_t sizeBytes, DmaHeapBuffer
  * @param[in,out] heapBuf 要释放的内存；释放后字段恢复成初始值
  */
 static void free_dma_heap(DmaHeapBuffer &heapBuf) {
-    if (heapBuf.cpuAddr) {
-        munmap(heapBuf.cpuAddr, heapBuf.sizeBytes);
-        heapBuf.cpuAddr = nullptr;
+    if (heapBuf.mmapAddress) {
+        munmap(heapBuf.mmapAddress, heapBuf.sizeBytes);
+        heapBuf.mmapAddress = nullptr;
     }
     if (heapBuf.dmaBufFd >= 0) {
         close(heapBuf.dmaBufFd);
@@ -335,15 +337,15 @@ static bool open_camera_and_map_buffers(CameraBuffers &camera) {
             printf("VIDIOC_QUERYBUF %d: %s\n", bufIndex, strerror(errno));
             return false;
         }
-        void *cpuAddr = mmap(nullptr, planes[0].length, PROT_READ | PROT_WRITE, MAP_SHARED, camera.videoFd,
+        void *mmapAddress = mmap(nullptr, planes[0].length, PROT_READ | PROT_WRITE, MAP_SHARED, camera.videoFd,
                              planes[0].m.mem_offset);
-        if (cpuAddr == MAP_FAILED) {
+        if (mmapAddress == MAP_FAILED) {
             printf("mmap camera buffer %d: %s\n", bufIndex, strerror(errno));
             return false;
         }
         camera.memOffsets[bufIndex] = planes[0].m.mem_offset;
         camera.lengths[bufIndex] = planes[0].length;
-        camera.cpuAddrs[bufIndex] = cpuAddr;
+        camera.mmapAddresses[bufIndex] = mmapAddress;
     }
     return true;
 }
@@ -354,9 +356,9 @@ static bool open_camera_and_map_buffers(CameraBuffers &camera) {
  */
 static void close_camera(CameraBuffers &camera) {
     for (int bufIndex = 0; bufIndex < kBufCount; ++bufIndex) {
-        if (camera.cpuAddrs[bufIndex]) {
-            munmap(camera.cpuAddrs[bufIndex], camera.lengths[bufIndex]);
-            camera.cpuAddrs[bufIndex] = nullptr;
+        if (camera.mmapAddresses[bufIndex]) {
+            munmap(camera.mmapAddresses[bufIndex], camera.lengths[bufIndex]);
+            camera.mmapAddresses[bufIndex] = nullptr;
         }
     }
     if (camera.videoFd >= 0) {
@@ -454,13 +456,13 @@ static int run_m1_maps() {
         for (int bufIndex = 0; bufIndex < kBufCount; ++bufIndex) {
             char label[32];
             snprintf(label, sizeof(label), "camera buf %d", bufIndex);
-            print_maps_line_containing(label, camera.cpuAddrs[bufIndex]);
+            print_maps_line_containing(label, camera.mmapAddresses[bufIndex]);
             printf("    （QUERYBUF 的 mem_offset = 0x%08x，长度 = %zu）\n", camera.memOffsets[bufIndex],
                    camera.lengths[bufIndex]);
         }
     }
     if (isHeapReady) {
-        print_maps_line_containing("dma_heap", heapBuf.cpuAddr);
+        print_maps_line_containing("dma_heap", heapBuf.mmapAddress);
     }
 
     // 收尾：和申请的顺序相反
@@ -510,11 +512,20 @@ privateFileAddr = 0x7f8d901000
 - 两次文件映射：路径、设备号 `00:11`、inode `63` 都一样（同一个文件），只有 `s` / `p` 不同。`00:11` 说明板子的 /tmp 是内存文件系统（tmpfs），不是 eMMC 上的分区（eMMC 上的库是 `b3:06`）
 - 后 mmap 的（PRIVATE）地址反而更小：内核从高往低找空位
 
-第 2、3 步（摄像头、dma_heap）还没测。
+**实测（2026-10-30，第 2 步：摄像头）**：
+
+```
+camera buf 0   0x7f905a5000 -> 7f905a5000-7f908a2000 rw-s 00000000 00:05 182   /dev/video22   mem_offset 0x00000000
+camera buf 1   0x7f902a8000 -> 7f902a8000-7f905a5000 rw-s 00000000 00:05 182   /dev/video22   mem_offset 0x002fd000
+camera buf 2   0x7f8ffab000 -> 7f8ffab000-7f902a8000 rw-s 00000000 00:05 182   /dev/video22   mem_offset 0x005fa000
+camera buf 3   0x7f8fcae000 -> 7f8fcae000-7f8ffab000 rw-s 00000000 00:05 182   /dev/video22   mem_offset 0x008f7000
+```
+
+路径是 `/dev/video22`、4 行、每行 0x2fd000、`s`，都和猜的一样。**猜错了一个：偏移列 4 行全是 0，不等于 mem_offset**（原因见 doc/1-理解M1的运行结果.md 第 6.1 节）。第 3 步（dma_heap）还没测。
 
 猜测的理由：
 - malloc 的地址末尾是 `010`，不是整页（`000`）：glibc 在这块的开头留了 16 字节记账用，所以 malloc 返回的指针比映射的起点多 16
-- 摄像头第 1 块的"偏移"列应该等于它的 `mem_offset`。maps 的偏移列就是 mmap 的最后一个参数
+- 摄像头第 1 块的"偏移"列应该等于它的 `mem_offset`。maps 的偏移列就是 mmap 的最后一个参数（⚠️ 猜错了：实测 4 块的偏移列都是 0，见上面的实测）
 
 ### 3.4 要回答的问题
 
@@ -534,7 +545,7 @@ privateFileAddr = 0x7f8d901000
 
 | 步 | 做什么 | 结果 |
 |:---:|---|---|
-| 1 | 打开摄像头，4 块都 mmap | 第 0 块的 cpuAddr 就是**指针 A** |
+| 1 | 打开摄像头，4 块都 mmap | 第 0 块的 mmapAddress 就是**指针 A** |
 | 2 | 对第 0 块 `VIDIOC_EXPBUF`，**flags 带 O_RDWR** | 得到 `dmaBufFd` |
 | 3 | `mmap(dmaBufFd, 偏移 0)` | **指针 B** |
 | 4 | 打印 A、B，各自在 maps 里找一行 | 两个地址不一样 |
@@ -561,13 +572,13 @@ day3_cam2h264 里 EXPBUF 只写了 `flags = O_CLOEXEC`。这样拿到的是一�
 static int run_m2_two_pointers() {
     printf("===== M2：同一块内存，两个指针 =====\n");
 
-    // 第 1 步：打开摄像头，4 块都 mmap（指针 A 就是第 0 块的 cpuAddr）
+    // 第 1 步：打开摄像头，4 块都 mmap（指针 A 就是第 0 块的 mmapAddress）
     CameraBuffers camera;
     if (!open_camera_and_map_buffers(camera)) {
         close_camera(camera);
         return 1;
     }
-    char *pointerA = static_cast<char *>(camera.cpuAddrs[0]);
+    char *pointerA = static_cast<char *>(camera.mmapAddresses[0]);
     const size_t bufLengthBytes = camera.lengths[0];
 
     // 第 2 步：EXPBUF 第 0 块，拿到 dma_buf fd。
@@ -629,6 +640,8 @@ static int run_m2_two_pointers() {
 ```
 
 ### 4.4 期望看到的输出 ⚠️ 猜测
+
+> **2026-10-31 已上板**：两个方向都读到，B 那一行是 `/dmabuf:2349-day3_mmap`（猜测的 `/dmabuf:` 后面还跟着"进程号-程序名"），设备号 `00:08`、inode `24`。下面"可能出现的意外"都没出现。实测和分析见 [doc/2-理解M2的运行结果.md](doc/2-理解M2的运行结果.md)。
 
 ```
 pointerA = 0x7f9a000000  （mmap(videoFd 3, mem_offset 0x00000000)）
@@ -713,7 +726,7 @@ static void measure_sync_once_per_heap(const char *heapPath) {
     if (!alloc_dma_heap(heapPath, kHeapBufSizeBytes, heapBuf)) {
         return;
     }
-    memset(heapBuf.cpuAddr, 0, heapBuf.sizeBytes); // 预热：先把物理页都分配好
+    memset(heapBuf.mmapAddress, 0, heapBuf.sizeBytes); // 预热：先把物理页都分配好
 
     double syncStartMs = 0;
     double memsetMs = 0;
@@ -725,7 +738,7 @@ static void measure_sync_once_per_heap(const char *heapPath) {
         const double afterSyncStartMs = now_ms();
 
         // 第 2 步：CPU 写满整块
-        memset(heapBuf.cpuAddr, roundIndex, heapBuf.sizeBytes);
+        memset(heapBuf.mmapAddress, roundIndex, heapBuf.sizeBytes);
         const double afterMemsetMs = now_ms();
 
         // 第 3 步：告诉内核"CPU 写完了"，cached 的这里要把 cache 里的数据写回内存
@@ -843,7 +856,7 @@ static bool create_fill_and_destroy_dumb(int drmFd, uint32_t width, uint32_t hei
     // 第 4 步：按 pitch 一行一行写像素。一行的起点 = 行号 × pitch，不是 行号 × width × 4
     if (isOk) {
         uint8_t *frameStart = static_cast<uint8_t *>(mapped);
-        printf("  offset 0x%llx -> cpuAddr %p\n", static_cast<unsigned long long>(mapDumb.offset), mapped);
+        printf("  offset 0x%llx -> mmapAddress %p\n", static_cast<unsigned long long>(mapDumb.offset), mapped);
         print_maps_line_containing("dumb buffer", mapped);
         for (uint32_t rowIndex = 0; rowIndex < height; ++rowIndex) {
             uint32_t *rowPixels = reinterpret_cast<uint32_t *>(frameStart + rowIndex * createDumb.pitch);
@@ -885,7 +898,7 @@ static int run_m4_dumb() {
 
 ```
 1920x1080：handle 1，pitch 7680（width × 4 = 7680），size 8294400
-  offset 0x10xxxxxxx -> cpuAddr 0x7f9...
+  offset 0x10xxxxxxx -> mmapAddress 0x7f9...
   dumb buffer    0x7f9...
     -> 7f9...-7f9... rw-s 10xxxxxxx 00:06 xxx  /dev/dri/card0
   写完，读回第一个像素：0x00ff0000

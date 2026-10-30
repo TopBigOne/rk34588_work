@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="600" viewBox="0 0 1100 600" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrowDark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+  </defs>
+  <rect width="1100" height="600" fill="#ffffff"/>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">谁拿着这块内存：最后一个人放手，内存才释放</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">上半：关系图（引用计数，源码是 4.4 的 videobuf2-dma-contig.c，板子 5.10 按实测推断一样）；下半：板子实测（2026-10-31）</text>
+
+  <!-- 中间：内存 -->
+  <rect x="440" y="150" width="220" height="80" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+  <text x="550" y="182" text-anchor="middle" font-size="15" font-weight="bold" fill="#9a6700">第 0 块 buffer 的内存</text>
+  <text x="550" y="206" text-anchor="middle" font-size="12" fill="#666">765 个物理页</text>
+
+  <!-- 左：videoFd 这一路 -->
+  <rect x="40" y="90" width="300" height="60" rx="6" fill="#ddeaff" stroke="#1f6feb"/>
+  <text x="190" y="116" text-anchor="middle" font-size="14" font-weight="bold" fill="#1f6feb">vb2 队列（videoFd + REQBUFS）</text>
+  <text x="190" y="138" text-anchor="middle" font-size="12" fill="#333">close(videoFd) 时放手</text>
+  <rect x="40" y="170" width="300" height="60" rx="6" fill="#ddeaff" stroke="#1f6feb"/>
+  <text x="190" y="196" text-anchor="middle" font-size="14" font-weight="bold" fill="#1f6feb">映射 A</text>
+  <text x="190" y="218" text-anchor="middle" font-size="12" fill="#333">munmap(A) 时放手</text>
+
+  <!-- 右：dma_buf 这一路 -->
+  <rect x="760" y="90" width="300" height="60" rx="6" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="910" y="116" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a7f37">dma_buf 对象</text>
+  <text x="910" y="138" text-anchor="middle" font-size="12" fill="#333">EXPBUF 时 atomic_inc(&amp;buf-&gt;refcount)</text>
+  <rect x="700" y="180" width="170" height="54" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="785" y="203" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a7f37">dmaBufFd</text>
+  <text x="785" y="223" text-anchor="middle" font-size="12" fill="#333">close 时放手</text>
+  <rect x="890" y="180" width="170" height="54" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="975" y="203" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a7f37">映射 B</text>
+  <text x="975" y="223" text-anchor="middle" font-size="12" fill="#333">munmap(B) 时放手</text>
+
+  <path d="M 340 120 L 436 170" stroke="#333" stroke-width="1.5" fill="none" marker-end="url(#arrowDark)"/>
+  <path d="M 340 200 L 436 196" stroke="#333" stroke-width="1.5" fill="none" marker-end="url(#arrowDark)"/>
+  <path d="M 760 120 L 664 170" stroke="#333" stroke-width="1.5" fill="none" marker-end="url(#arrowDark)"/>
+  <path d="M 785 180 L 820 152" stroke="#1a7f37" stroke-width="1.5" fill="none" marker-end="url(#arrowDark)"/>
+  <path d="M 975 180 L 940 152" stroke="#1a7f37" stroke-width="1.5" fill="none" marker-end="url(#arrowDark)"/>
+  <text x="560" y="262" text-anchor="middle" font-size="12" fill="#666">fdinfo 里 count: 2 = dmaBufFd 一个 + 映射 B 一个（推断：count 是这个 dma_buf 文件被引用的次数）</text>
+
+  <!-- 下：时间线 -->
+  <text x="40" y="306" font-size="16" font-weight="bold" fill="#333">实测：按这个顺序放手，B 一直能用</text>
+  <g font-size="13">
+    <rect x="40" y="320" width="1020" height="40" fill="#f6f8fa" stroke="#ccc"/>
+    <text x="56" y="345" fill="#333">① 从 A 写 "before-close"</text>
+    <text x="640" y="345" fill="#666">四个都拿着</text>
+
+    <rect x="40" y="360" width="1020" height="40" fill="#ffffff" stroke="#ccc"/>
+    <text x="56" y="385" fill="#333">② close(dmaBufFd)</text>
+    <text x="640" y="385" fill="#1a7f37">从 B 读到 "before-close" ✓</text>
+
+    <rect x="40" y="400" width="1020" height="40" fill="#f6f8fa" stroke="#ccc"/>
+    <text x="56" y="425" fill="#333">③ munmap 4 块 A + close(videoFd)（摄像头整个关掉）</text>
+    <text x="640" y="425" fill="#1a7f37">从 B 读到 "before-close" ✓，还能写 ✓</text>
+
+    <rect x="40" y="440" width="1020" height="40" fill="#ffffff" stroke="#ccc"/>
+    <text x="56" y="465" fill="#333">④ 此时 maps 里只剩 B 这一行</text>
+    <text x="640" y="465" font-family="Menlo, monospace" font-size="12" fill="#333">rw-s 00000000 00:08 27  /dmabuf:2379-m2_probe</text>
+
+    <rect x="40" y="480" width="1020" height="40" fill="#f6f8fa" stroke="#ccc"/>
+    <text x="56" y="505" fill="#333">⑤ 重新 open video22，REQBUFS 4 块</text>
+    <text x="640" y="505" fill="#1a7f37">成功，count 4（旧的那块只剩 B 拿着，不挡新的）</text>
+
+    <rect x="40" y="520" width="1020" height="40" fill="#ffffff" stroke="#ccc"/>
+    <text x="56" y="545" fill="#333">⑥ munmap(B)</text>
+    <text x="640" y="545" fill="#666">最后一个放手 → 内存还给系统（推断，用户态看不到）</text>
+  </g>
+  <text x="40" y="585" font-size="12" fill="#666">编码器拿着 dmaBufFd 编码时，就算摄像头那边先关了，这块内存也不会被抽走 —— 零拷贝能放心用，靠的就是这个。</text>
+</svg>

@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1180" viewBox="0 0 1100 1180" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+<defs><marker id="arrowDark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker><marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"/></marker><marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker></defs>
+<rect width="1100" height="1180" fill="#ffffff"/>
+<text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">M2 的代码怎么串起来：7 步，拿到两个指针</text>
+<text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">①～⑤ 在 open_camera_and_map_buffers() 里（camera_buffers.cpp），⑥⑦ 在 run_m2_two_pointers() 里（m2_two_pointers.cpp）</text>
+<g font-size="15" font-weight="bold" fill="#333"><text x="20" y="98">你的代码（用户态）</text><text x="440" y="98">内核 / 摄像头驱动做了什么</text><text x="810" y="98">得到什么，存到哪</text></g>
+<rect x="20" y="110" width="380" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<rect x="440" y="110" width="330" height="100" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+<rect x="810" y="110" width="270" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<text x="34" y="134" font-size="14" font-weight="bold" fill="#1f6feb">① open 打开摄像头</text>
+<text x="34" y="156" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">camera.videoFd&#160;=&#160;open(</text>
+<text x="34" y="178" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;"/dev/video22",&#160;O_RDWR);</text>
+<text x="454" y="136" font-size="13" fill="#333">打开摄像头设备</text>
+<text x="454" y="160" font-size="13" fill="#333">在本进程的 fd 表里找一个空格登记</text>
+<text x="454" y="184" font-size="13" fill="#333">（实测是第 3 格）</text>
+<text x="824" y="136" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">camera.videoFd&#160;=&#160;3</text>
+<text x="824" y="160" font-size="13" fill="#555">摄像头的“会员卡号”</text>
+<text x="824" y="184" font-size="13" fill="#555">后面每一步都拿它找摄像头</text>
+<path d="M 400 160.0 L 436 160.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 160.0 L 806 160.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<rect x="20" y="222" width="380" height="100" rx="6" fill="#f6f8fa" stroke="#999"/>
+<rect x="440" y="222" width="330" height="100" rx="6" fill="#ffffff" stroke="#999"/>
+<rect x="810" y="222" width="270" height="100" rx="6" fill="#f6f8fa" stroke="#999"/>
+<text x="34" y="246" font-size="14" font-weight="bold" fill="#555">② S_FMT 设格式</text>
+<text x="34" y="268" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">ioctl(videoFd,&#160;VIDIOC_S_FMT,&#160;&amp;format)</text>
+<text x="34" y="290" font-size="12" fill="#9a6700">填：1920 × 1080，NV12</text>
+<text x="454" y="248" font-size="13" fill="#333">记住格式，算出一块要多大</text>
+<text x="454" y="272" font-size="13" fill="#333">（这一步还没有分配内存）</text>
+<text x="824" y="248" font-size="13" fill="#555">没有要存的</text>
+<path d="M 400 272.0 L 436 272.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 272.0 L 806 272.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<rect x="20" y="334" width="380" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<rect x="440" y="334" width="330" height="100" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+<rect x="810" y="334" width="270" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<text x="34" y="358" font-size="14" font-weight="bold" fill="#1f6feb">③ REQBUFS 申请 4 块</text>
+<text x="34" y="380" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">ioctl(videoFd,&#160;VIDIOC_REQBUFS,</text>
+<text x="34" y="402" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;&#160;&#160;&amp;requestBufs)</text>
+<text x="34" y="424" font-size="12" fill="#9a6700">填：count 4、memory MMAP</text>
+<text x="454" y="360" font-size="13" fill="#333">在内核里分配 4 块内存</text>
+<rect x="454" y="370" width="68" height="24" rx="3" fill="#fff8c5" stroke="#9a6700"/>
+<text x="488" y="387" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#9a6700">buf0</text>
+<rect x="530" y="370" width="68" height="24" rx="3" fill="#fff8c5" stroke="#9a6700"/>
+<text x="564" y="387" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#9a6700">buf1</text>
+<rect x="606" y="370" width="68" height="24" rx="3" fill="#fff8c5" stroke="#9a6700"/>
+<text x="640" y="387" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#9a6700">buf2</text>
+<rect x="682" y="370" width="68" height="24" rx="3" fill="#fff8c5" stroke="#9a6700"/>
+<text x="716" y="387" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#9a6700">buf3</text>
+<text x="454" y="414" font-size="13" fill="#333">⚠ 你的程序还碰不到，也不知道地址</text>
+<text x="824" y="360" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">requestBufs.count&#160;=&#160;4</text>
+<text x="824" y="384" font-size="13" fill="#555">（内核写回：实际给了几块）</text>
+<path d="M 400 384.0 L 436 384.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 384.0 L 806 384.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<rect x="20" y="446" width="380" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<rect x="440" y="446" width="330" height="100" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+<rect x="810" y="446" width="270" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<text x="34" y="470" font-size="14" font-weight="bold" fill="#1f6feb">④ QUERYBUF × 4（bufIndex 0～3）</text>
+<text x="34" y="492" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">ioctl(videoFd,&#160;VIDIOC_QUERYBUF,</text>
+<text x="34" y="514" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;&#160;&#160;&amp;v4l2Buf)</text>
+<text x="34" y="536" font-size="12" fill="#9a6700">填：index = bufIndex</text>
+<text x="454" y="472" font-size="13" fill="#333">查第 bufIndex 块：</text>
+<text x="454" y="496" font-size="13" fill="#333">· 多大（length）</text>
+<text x="454" y="520" font-size="13" fill="#333">· 取件号（mem_offset）</text>
+<text x="824" y="472" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">camera.lengths[i]&#160;=&#160;3133440</text>
+<text x="824" y="496" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">camera.memOffsets[i]&#160;=</text>
+<text x="824" y="520" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;0/0x2fd000/0x5fa000/0x8f7000</text>
+<path d="M 400 496.0 L 436 496.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 496.0 L 806 496.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<rect x="20" y="558" width="380" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<rect x="440" y="558" width="330" height="100" rx="6" fill="#ffffff" stroke="#1f6feb"/>
+<rect x="810" y="558" width="270" height="100" rx="6" fill="#f5f9ff" stroke="#1f6feb"/>
+<text x="34" y="582" font-size="14" font-weight="bold" fill="#1f6feb">⑤ mmap × 4（第一次 mmap）</text>
+<text x="34" y="604" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">mmapAddress&#160;=&#160;mmap(nullptr,&#160;length,</text>
+<text x="34" y="626" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;RW,&#160;MAP_SHARED,</text>
+<text x="34" y="648" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;videoFd,&#160;mem_offset);</text>
+<text x="454" y="584" font-size="13" fill="#333">凭 videoFd 找到摄像头驱动</text>
+<text x="454" y="608" font-size="13" fill="#333">凭 mem_offset 找到是第几块</text>
+<text x="454" y="632" font-size="13" fill="#333">把这一块接到你的地址空间</text>
+<text x="824" y="580" font-size="12" font-family="Menlo, monospace" fill="#333">camera.mmapAddresses[i]</text>
+<text x="824" y="600" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;=&#160;mmapAddress</text>
+<text x="824" y="626" font-size="13" font-family="Menlo, monospace" font-weight="bold" fill="#1f6feb">pointerA = mmapAddresses[0]</text>
+<text x="824" y="646" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;=&#160;0x7fae506000</text>
+<path d="M 400 608.0 L 436 608.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 608.0 L 806 608.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<rect x="20" y="670" width="380" height="100" rx="6" fill="#f3fbf5" stroke="#1a7f37"/>
+<rect x="440" y="670" width="330" height="100" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+<rect x="810" y="670" width="270" height="100" rx="6" fill="#f3fbf5" stroke="#1a7f37"/>
+<text x="34" y="694" font-size="14" font-weight="bold" fill="#1a7f37">⑥ EXPBUF 导出第 0 块</text>
+<text x="34" y="716" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">ioctl(videoFd,&#160;VIDIOC_EXPBUF,</text>
+<text x="34" y="738" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;&#160;&#160;&amp;exportBuf)</text>
+<text x="34" y="760" font-size="12" fill="#9a6700">填：index 0、flags O_RDWR</text>
+<text x="454" y="696" font-size="13" fill="#333">给第 0 块做一个 dma_buf：</text>
+<text x="454" y="720" font-size="13" fill="#333">一把只开这一块的新钥匙</text>
+<text x="454" y="744" font-size="13" fill="#333">登记在 fd 表的空格（第 4 格）</text>
+<text x="824" y="696" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">exportBuf.fd&#160;=&#160;4（内核写回）</text>
+<text x="824" y="720" font-size="13" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">dmaBufFd = exportBuf.fd</text>
+<path d="M 400 720.0 L 436 720.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 720.0 L 806 720.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<rect x="20" y="782" width="380" height="100" rx="6" fill="#f3fbf5" stroke="#1a7f37"/>
+<rect x="440" y="782" width="330" height="100" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+<rect x="810" y="782" width="270" height="100" rx="6" fill="#f3fbf5" stroke="#1a7f37"/>
+<text x="34" y="806" font-size="14" font-weight="bold" fill="#1a7f37">⑦ mmap 第二次</text>
+<text x="34" y="828" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">pointerB&#160;=&#160;mmap(nullptr,&#160;length,</text>
+<text x="34" y="850" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;RW,&#160;MAP_SHARED,</text>
+<text x="34" y="872" font-size="12" font-family="Menlo, monospace" fill="#333" xml:space="preserve">&#160;&#160;&#160;&#160;dmaBufFd,&#160;0);</text>
+<text x="454" y="808" font-size="13" fill="#333">凭 dmaBufFd 找到第 0 块</text>
+<text x="454" y="832" font-size="13" fill="#333">（它只代表这一块，偏移填 0）</text>
+<text x="454" y="856" font-size="13" fill="#333">再接到地址空间的另一个位置</text>
+<text x="824" y="808" font-size="13" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">pointerB = 0x7fad912000</text>
+<path d="M 400 832.0 L 436 832.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<path d="M 770 832.0 L 806 832.0" stroke="#333" stroke-width="1.5" marker-end="url(#arrowDark)"/>
+<text x="20" y="918" font-size="16" font-weight="bold" fill="#333">最后的样子：两个指针，同一块内存</text>
+<rect x="40" y="936" width="300" height="70" rx="6" fill="#ddeaff" stroke="#1f6feb" stroke-width="2"/>
+<text x="190" y="964" text-anchor="middle" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#1f6feb">pointerA</text>
+<text x="190" y="988" text-anchor="middle" font-size="12" fill="#333">经过 videoFd + mem_offset（⑤）</text>
+<rect x="760" y="936" width="300" height="70" rx="6" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+<text x="910" y="964" text-anchor="middle" font-size="14" font-family="Menlo, monospace" font-weight="bold" fill="#1a7f37">pointerB</text>
+<text x="910" y="988" text-anchor="middle" font-size="12" fill="#333">经过 dmaBufFd + 偏移 0（⑦）</text>
+<rect x="400" y="936" width="300" height="70" rx="6" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+<text x="550" y="964" text-anchor="middle" font-size="14" font-weight="bold" fill="#9a6700">摄像头 buf0（③ 分配的）</text>
+<text x="550" y="988" text-anchor="middle" font-size="12" fill="#333">3,133,440 字节，同一批物理页</text>
+<path d="M 340 971 L 396 971" stroke="#1f6feb" stroke-width="2.5" marker-end="url(#arrowBlue)"/>
+<path d="M 760 971 L 704 971" stroke="#1a7f37" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+<rect x="20" y="1032" width="1060" height="134" rx="8" fill="#ffffff" stroke="#444"/>
+<text x="40" y="1060" font-size="14" fill="#333" font-weight="bold">ioctl 的规律：第三个参数是一张“表”（结构体的地址）。你填输入那几格，内核把答案写回输出那几格。</text>
+<text x="40" y="1086" font-size="14" fill="#333">③ REQBUFS 写回 count；④ QUERYBUF 写回 length、mem_offset；⑥ EXPBUF 写回 fd —— exportBuf.fd 就是这样来的。</text>
+<text x="40" y="1112" font-size="14" fill="#333">videoFd 用了 5 次（②～⑥）：它管着全部 4 块，所以 ⑤ 要用 mem_offset 说清楚要哪一块。</text>
+<text x="40" y="1138" font-size="14" fill="#333">dmaBufFd 只用了 1 次（⑦）：它只代表 buf0，所以偏移填 0。⑤⑦ 都只是“开门”，开门不会复制内存。</text>
+</svg>

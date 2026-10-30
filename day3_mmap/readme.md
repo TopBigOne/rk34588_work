@@ -8,6 +8,12 @@
 > 写代码时看：[具体编码day3_mmap的流程.md](具体编码day3_mmap的流程.md)（M1～M4 每一步的任务拆解和参考代码，已交叉编译通过）。
 >
 > 实验结果解读：[doc/1-理解M1的运行结果.md](doc/1-理解M1的运行结果.md)（怎么到 maps 里查指针、31 行分 9 组、库文件为什么变成 4 行、s 和 p 写时复制实测、从高往低找空位，6 张图）。
+>
+> M2 结果解读：[doc/2-理解M2的运行结果.md](doc/2-理解M2的运行结果.md)（pagemap 逐页实测 A、B 是同一批物理页、maps 两行对比、offset 对两种 fd 意思不一样、buffer 物理上分 8 段、EXPBUF 的 flags 和"每次新建一个 dma_buf"、关掉摄像头后 B 还能用，4 张图）。
+>
+> M2 代码怎么串起来：[doc/5-理解M2代码的串联流程.md](doc/5-理解M2代码的串联流程.md)（7 步流程图：open → S_FMT → REQBUFS → QUERYBUF → mmap → EXPBUF → mmap；ioctl"填表 → 写回"，exportBuf.fd 是怎么来的；mmap 靠 fd 和 V4L2 连起来；CameraBuffers 每个字段是哪一步填的）。
+>
+> 知识点：[doc/3-理解v4l2_format.md](doc/3-理解v4l2_format.md)（结构体里套了哪些结构体、type 选哪个成员、本板 30 个节点只用到 pix_mp 和 meta、没有音频参数、S_FMT 填什么写回什么、平面、bytesperline，7 张图）；[doc/4-理解v4l2_requestbuffers.md](doc/4-理解v4l2_requestbuffers.md)（REQBUFS 背后分配了什么、每块比一帧大、count 上限 64 和 0 = 释放、三种 memory、队列只认一个 fd，4 张图）。
 
 ---
 
@@ -27,7 +33,7 @@
 |   #    | 实验                                                                                                        | 要看到什么                                                                    | 状态 |
 |:------:|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|:---:|
 | **M1** | 看 `/proc/self/maps`：摄像头 buffer、dma_buf、malloc、文件映射在地址空间里长什么样                          | 每种映射一行，能认出哪一行是摄像头 buffer、哪一行是 dma_buf                   | ⬜ |
-| **M2** | ⭐ **同一块内存，两个指针**：`mmap(videoFd, mem_offset)` 和 `mmap(EXPBUF 的 fd, 0)` 指向同一块摄像头 buffer | 从指针 A 写一串字，从指针 B 读出来一模一样 → 证明是同一块物理内存             | ⬜ |
+| **M2** | ⭐ **同一块内存，两个指针**：`mmap(videoFd, mem_offset)` 和 `mmap(EXPBUF 的 fd, 0)` 指向同一块摄像头 buffer | 从指针 A 写一串字，从指针 B 读出来一模一样 → 证明是同一块物理内存             | ✅ 2026-10-31 |
 | **M3** | 自己调 `DMA_BUF_IOCTL_SYNC`：不经过 MPP，直接对 dma_buf fd 做 sync                                          | 理解 M6 里 `mpp_buffer_sync_begin / end` 背后在做什么；计时看 sync 一次要多久 | ⬜ |
 | **M4** | DRM dumb buffer：`/dev/dri/card0` 申请一块显存，mmap 后往里画一个色块                                       | 接了显示器的话，屏幕上出现色块（没接显示器就只做到 mmap 成功）                | ⬜ |
 
@@ -181,7 +187,7 @@ mmap(drmFd, offset)                 → CPU 指针
 - 板子上一运行就报 `version GLIBC_2.38 not found`（2026-10-21 写丢帧探针时踩过；GCC_Work/CPP/mmap 交叉编译时也查出来了）。
 - 读文件用 `fgets` / `std::getline`，数字自己解析或用 `std::istringstream`。
   - 编译完可以检查：`aarch64-buildroot-linux-gnu-objdump -T cmake-build-rk3588-debug/day3_mmap | grep GLIBC_2.38`，没有输出才对。
-- 名字按 `rk_work/代码规范.md`：`videoFd`、`dmaBufFd`、`drmFd`、`cpuAddr`、`mapLengthBytes`……
+- 名字按 `rk_work/代码规范.md`：`videoFd`、`dmaBufFd`、`drmFd`、`mmapAddress`、`mapLengthBytes`……
 - mmap 失败返回 `MAP_FAILED`，不是 `NULL`。
 - 每个 mmap 都要 munmap，每个 fd 都要 close，顺序和申请相反。
 
@@ -191,7 +197,29 @@ mmap(drmFd, offset)                 → CPU 指针
 
 ```bash
 cd /Users/dev/Documents/AV/rk_work/day3_mmap
-./run_on_board_with_mac.sh
+./run_on_board_with_mac.sh m1     # M1：到 /proc/self/maps 里查指针是谁
+./run_on_board_with_mac.sh m2     # M2：同一块内存，两个指针
 ```
+
+不带参数会打印用法并返回 1。CLion 里运行时，在 Run Configuration 的 **Program arguments** 填 `m1` 或 `m2`。
+
+**代码目录**（2026-10-31 从一个 main.cpp 拆开，main.cpp 只负责按参数选实验、调用）：
+
+```
+src/
+├── main.cpp                       ./day3_mmap m1 | m2
+├── experiments/
+│   ├── m1_maps.h / .cpp           run_m1_maps()、create_test_file()
+│   └── m2_two_pointers.h / .cpp   run_m2_two_pointers()
+├── camera/
+│   └── camera_buffers.h / .cpp    CameraBuffers、open_camera_and_map_buffers()、close_camera()   ← M1 M2
+├── dma_heap/
+│   └── dma_heap_buffer.h / .cpp   DmaHeapBuffer、alloc_dma_heap()、free_dma_heap()           ← M1 第 3 步、M3
+└── common/
+    ├── log.h                      带颜色的日志（每个 .cpp 自己的 kTag：Main、M1、M2、Camera、DmaHeap、Maps）
+    └── maps_printer.h / .cpp      print_whole_maps()、print_maps_line_containing()（parse_hex 是内部函数）
+```
+
+以后加 M3、M4：在 `src/experiments/` 加 `m3_sync.h/.cpp`、`m4_dumb.h/.cpp`，CMakeLists 里加上 .cpp，main.cpp 里加一个 `if`。
 
 编译目录 `cmake-build-rk3588-debug/` 已经配好（交叉编译）。CLion 里要加 **RK3588-Debug** profile（CMake options 填 `-DCMAKE_TOOLCHAIN_FILE=/Users/dev/rk-toolchain/rk3588-toolchain.cmake`），和 day3_cam2h264 一样。

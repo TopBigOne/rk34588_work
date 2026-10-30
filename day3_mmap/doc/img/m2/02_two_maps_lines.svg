@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="430" viewBox="0 0 1100 430" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="1100" height="430" fill="#ffffff"/>
+  <text x="550" y="34" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">maps 里 A、B 两行，一列一列对比</text>
+  <text x="550" y="60" text-anchor="middle" font-size="14" fill="#666">day3_mmap 实测（2026-10-31，进程号 2349）</text>
+
+  <g font-size="13" fill="#666">
+    <text x="30" y="104">谁</text>
+    <text x="110" y="104">地址范围</text>
+    <text x="330" y="104">权限</text>
+    <text x="400" y="104">偏移</text>
+    <text x="490" y="104">设备</text>
+    <text x="560" y="104">inode</text>
+    <text x="630" y="104">路径</text>
+  </g>
+  <line x1="30" y1="114" x2="1070" y2="114" stroke="#ccc"/>
+
+  <g font-size="13" font-family="Menlo, monospace">
+    <text x="30" y="142" fill="#1f6feb" font-weight="bold">A</text>
+    <text x="110" y="142" fill="#333">7fae506000-7fae803000</text>
+    <text x="330" y="142" fill="#333">rw-s</text>
+    <text x="400" y="142" fill="#333">00000000</text>
+    <text x="490" y="142" fill="#cf222e" font-weight="bold">00:05</text>
+    <text x="560" y="142" fill="#cf222e" font-weight="bold">182</text>
+    <text x="630" y="142" fill="#cf222e" font-weight="bold">/dev/video22</text>
+
+    <text x="30" y="174" fill="#1a7f37" font-weight="bold">B</text>
+    <text x="110" y="174" fill="#333">7fad912000-7fadc0f000</text>
+    <text x="330" y="174" fill="#333">rw-s</text>
+    <text x="400" y="174" fill="#333">00000000</text>
+    <text x="490" y="174" fill="#cf222e" font-weight="bold">00:08</text>
+    <text x="560" y="174" fill="#cf222e" font-weight="bold">24</text>
+    <text x="630" y="174" fill="#cf222e" font-weight="bold">/dmabuf:2349-day3_mmap</text>
+  </g>
+  <line x1="30" y1="188" x2="1070" y2="188" stroke="#ccc"/>
+
+  <g font-size="12" fill="#333">
+    <text x="30" y="214" fill="#666">比较</text>
+    <text x="110" y="214">起点不同（两扇门）</text>
+    <text x="110" y="232">大小都是 0x2fd000</text>
+    <text x="110" y="250">= 3,133,440</text>
+    <text x="330" y="214">一样</text>
+    <text x="330" y="232">都是 s</text>
+    <text x="400" y="214">一样</text>
+    <text x="400" y="232">都是 0</text>
+    <text x="490" y="214" fill="#cf222e">不同</text>
+    <text x="560" y="214" fill="#cf222e">不同</text>
+    <text x="630" y="214" fill="#cf222e">不同：同一块内存，</text>
+    <text x="630" y="232" fill="#cf222e">登记簿里登记成了两个"文件"</text>
+  </g>
+
+  <rect x="30" y="276" width="1040" height="136" rx="8" fill="#f6f8fa" stroke="#999"/>
+  <text x="50" y="302" font-size="13" fill="#333"><tspan font-weight="bold">00:05 / 182</tspan>：/dev 所在的 devtmpfs 里，video22 这个设备文件（stat /dev/video22 实测 st_ino 182，主次设备号 81:22）。</text>
+  <text x="50" y="326" font-size="13" fill="#333"><tspan font-weight="bold">00:08 / 24</tspan>：dma_buf 自己的小文件系统。每 EXPBUF 一次就新建一个 dma_buf，inode 加 1（实测 24、25、27、28……每次跑都不一样）。</text>
+  <text x="50" y="350" font-size="13" fill="#333"><tspan font-weight="bold">2349-day3_mmap</tspan>：dma_buf 的名字 = 进程号-程序名。/proc/self/fdinfo 里 name 一栏也是它（名字谁起的：推断是 Rockchip 内核自动起的）。</text>
+  <text x="50" y="374" font-size="13" fill="#333"><tspan font-weight="bold">偏移都是 0</tspan>：A 传的 mem_offset 本来就是 0（第 0 块）；B 传的也是 0。为什么 A 要传 mem_offset、B 传 0，见第 4 节。</text>
+  <text x="50" y="398" font-size="13" fill="#333"><tspan font-weight="bold">maps 看不出"是同一块"</tspan>：maps 只登记"从哪个文件映射来的"，不登记物理页。要证明是同一块，靠读写实验 + pagemap（图 1）。</text>
+</svg>
