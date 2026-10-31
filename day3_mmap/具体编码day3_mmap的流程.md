@@ -521,7 +521,7 @@ camera buf 2   0x7f8ffab000 -> 7f8ffab000-7f902a8000 rw-s 00000000 00:05 182   /
 camera buf 3   0x7f8fcae000 -> 7f8fcae000-7f8ffab000 rw-s 00000000 00:05 182   /dev/video22   mem_offset 0x008f7000
 ```
 
-路径是 `/dev/video22`、4 行、每行 0x2fd000、`s`，都和猜的一样。**猜错了一个：偏移列 4 行全是 0，不等于 mem_offset**（原因见 doc/1-理解M1的运行结果.md 第 6.1 节）。第 3 步（dma_heap）还没测。
+路径是 `/dev/video22`、4 行、每行 0x2fd000、`s`，都和猜的一样。**猜错了一个：偏移列 4 行全是 0，不等于 mem_offset**（原因见 doc/1-理解M1的运行结果.md 第 6.1 节）。第 3 步（dma_heap）的写法和实测见 3.5 节（2026-10-31 上板通过）。
 
 猜测的理由：
 - malloc 的地址末尾是 `010`，不是整页（`000`）：glibc 在这块的开头留了 16 字节记账用，所以 malloc 返回的指针比映射的起点多 16
@@ -536,6 +536,143 @@ camera buf 3   0x7f8fcae000 -> 7f8fcae000-7f8ffab000 rw-s 00000000 00:05 182   /
 | 3 | 摄像头那几行的"偏移"列，和打印的 `mem_offset` 一样吗？ | mmap 的最后一个参数 |
 | 4 | dma_heap 那一行，路径是 `/dev/dma_heap/system` 吗？ | mmap 的是 `allocData.fd`，不是 `heapFd` |
 | 5 | file SHARED 和 file PRIVATE 两行，只有哪一列不一样？ | `s` / `p` |
+
+### 3.5 第 3 步具体怎么写：dma_heap（2026-10-31 补，按拆分后的 src/ 写）
+
+**目的（一句话）**：从 dma heap 申请一块内存，mmap 以后到 maps 里找它那一行，和 M2 里 pointerB（摄像头 EXPBUF 出来的 dma_buf）那一行比一比。
+
+#### 3.5.1 已经准备好的东西（不用写）
+
+| 东西 | 在哪 | 做什么 |
+|---|---|---|
+| `alloc_dma_heap(heapPath, sizeBytes, heapBuf)` | `src/dma_heap/dma_heap_buffer.cpp` | open(heap) → `DMA_HEAP_IOCTL_ALLOC` 拿到 dma_buf fd → close(heapFd) → mmap(dma_buf fd, 0)。成功返回 true |
+| `free_dma_heap(heapBuf)` | 同上 | munmap → close(dmaBufFd)。没申请成功也能调（字段是初始值就跳过） |
+| `DmaHeapBuffer` | `src/dma_heap/dma_heap_buffer.h` | 三个字段：`dmaBufFd`、`mmapAddress`、`sizeBytes` |
+| `kHeapBufSizeBytes` | 同上 | 3 MB |
+| `print_maps_line_containing(label, address)` | `src/common/maps_printer.h` | 第 2 步已经用过 |
+
+这两个函数 2026-10-31 拆文件时就写好了，一直没被调用过，所以**还没在板子上跑过**。
+
+#### 3.5.2 板子上有哪些 heap（2026-10-31 实测 `adb shell ls -l /dev/dma_heap/`）
+
+```
+crw-rw---- 1 root video 251, 4 cma
+crw-rw---- 1 root video 251, 5 cma-uncached
+crw-rw---- 1 root video 251, 0 system
+crw-rw---- 1 root video 251, 1 system-dma32
+crw-rw---- 1 root video 251, 2 system-uncached
+crw-rw---- 1 root video 251, 3 system-uncached-dma32
+```
+
+- 第一个字母 `c`：字符设备。`251, 0` 是主设备号、次设备号，6 个 heap 主设备号都是 251，是同一个 dma-heap 驱动
+- `system`：普通物理页，不要求物理连续；CPU 访问走缓存（cached）
+- `cma`：从 CMA 区域分配，物理连续
+- `-uncached`：CPU 访问不走缓存，M3 要拿它和 cached 比 sync 的耗时
+- `-dma32`：只从 4 GB 以下的物理地址分配，给只能访问 32 位地址的硬件用
+
+第 3 步用 **`system`**。
+
+> 上面对每种 heap 的解释，是 Linux / Rockchip 的通用说法，这块板子上还没逐个验证。
+
+#### 3.5.3 要写的代码（都在 `src/experiments/m1_maps.cpp`）
+
+一共改 3 处：
+
+**① 文件开头的 include 里加一行**
+
+```cpp
+#include "dma_heap/dma_heap_buffer.h"
+```
+
+**② 常量区加一个常量**（和 `kTestFilePath` 放一起，不在函数里直接写字符串）
+
+```cpp
+// 从哪个 dma heap 申请：system = 普通物理页、CPU 访问走缓存（cached）。本板有 6 个 heap，见流程.md 3.5.2
+static const char* kDmaHeapPath = "/dev/dma_heap/system";
+```
+
+**③ `run_m1_maps()` 里，第 2 步那个 `if` 结束以后、`close_camera(camera);` 之前，插入第 3 步**
+
+```cpp
+    // 第 3 步：从 dma heap 申请一块 dma_buf，看它在 maps 里是哪一行
+    //   alloc_dma_heap 里做了三件事：open(heap) → DMA_HEAP_IOCTL_ALLOC 拿到 dma_buf fd → mmap(dma_buf fd, 0)
+    //   和 M2 的 pointerB 比：那块 dma_buf 是摄像头驱动用 EXPBUF 导出的，这块是 heap 直接分配的
+    DmaHeapBuffer heapBuf;
+    if (alloc_dma_heap(kDmaHeapPath, kHeapBufSizeBytes, heapBuf)) {
+        LOGI(kTag, "--- 第 3 步：dma_heap 一块 ---");
+        LOGI(kTag, "    dmaBufFd = %d, sizeBytes = %zu", heapBuf.dmaBufFd, heapBuf.sizeBytes);
+        print_maps_line_containing("dma_heap", heapBuf.mmapAddress);
+    }
+    // 成功、失败都要调：失败时 heapBuf 的字段还是初始值（-1、nullptr），free_dma_heap 会直接跳过
+    // 释放顺序和申请相反：dma_heap 是最后申请的，所以最先释放，然后才是 close_camera
+    free_dma_heap(heapBuf);
+```
+
+改完后，`run_m1_maps()` 结尾的顺序是：
+
+```
+第 2 步 if { ... }
+第 3 步（新加的）
+free_dma_heap(heapBuf);
+close_camera(camera);
+munmap(fileAddrPrivate, ...);
+munmap(fileAddrShared, ...);
+free(mallocAddr);
+return 0;
+```
+
+#### 3.5.4 运行
+
+```bash
+./run_on_board_with_mac.sh m1
+```
+
+CLion 里运行时，Program arguments 填 `m1`。不带参数会跑 M2，不是 M1。
+
+#### 3.5.5 期望看到的输出 ⚠️ 猜测，上板后改成实测
+
+```
+--- 第 3 步：dma_heap 一块 ---
+    dmaBufFd = 5, sizeBytes = 3145728
+dma_heap       0x7f8xxxx000 -> 7f8xxxx000-7f8yyyy000 rw-s 00000000 00:08 <inode>   /dmabuf:<pid>-day3_mmap
+```
+
+猜测的理由：
+- **dmaBufFd 是 5**：摄像头开着时 videoFd 占了 3；alloc_dma_heap 里 open(heap) 拿到 4，ALLOC 拿到 5，然后才 close(4)。摄像头没打开的话就是 4
+- **长度 0x300000**：3 MB = 3145728 正好是 768 页，不用向上取整
+- **`s`、偏移 0**：MAP_SHARED、偏移填的 0
+- **`00:08` 和 `/dmabuf:`**：M2 实测 pointerB 那一行就是这样（doc/2 第 3 节）。heap 分配的和 EXPBUF 导出的都是 dma_buf，推断显示方式一样。名字是不是 `<pid>-day3_mmap` 不确定
+
+**实测（2026-10-31，第 3 步：dma_heap system）**，猜测全部对上：
+
+```
+--- 第 3 步：dma_heap 一块 ---
+    dmaBufFd = 5, sizeBytes = 3145728
+dma_heap       0x7f8f3ee000 -> 7f8f3ee000-7f8f6ee000 rw-s 00000000 00:08 22   /dmabuf:1628-day3_mmap
+```
+
+- `dmaBufFd = 5`：和猜的一样（videoFd 3、heapFd 4、ALLOC 给 5，然后才关掉 4）
+- 长度 `0x7f8f6ee000 - 0x7f8f3ee000 = 0x300000` = 3 MB
+- `rw-s`、偏移 0、设备号 `00:08`、路径 `/dmabuf:<pid>-<程序名>`，和 M2 里 pointerB（摄像头 EXPBUF 出来的）那一行格式完全一样。**所以只看 maps，分不出这个 dma_buf 是 heap 分配的，还是摄像头导出的**
+- 地址紧挨着摄像头 buf 3 的下面（buf 3 从 `7f8f6ee000` 开始，dma_heap 正好在 `7f8f6ee000` 结束）。摄像头 buf 0 也紧挨着 malloc 那块的下面。说明内核是从高地址往低地址，一块挨一块地找空位
+
+#### 3.5.6 要回答的问题
+
+| # | 问题 | 提示 |
+|---|---|---|
+| 1 | 路径是 `/dev/dma_heap/system`，还是 `/dmabuf:...`？ | mmap 的是 `allocationData.fd`（dma_buf），不是 `heapFd` |
+| 2 | 和 M2 的 pointerB 那一行比，哪几列一样、哪几列不一样？ | 设备号、路径；inode 每个 dma_buf 都不同 |
+| 3 | `dmaBufFd` 实际是几？和猜的 5 一样吗？为什么？ | open 总是给最小的空号；close(heapFd) 在 ALLOC 之后 |
+| 4 | heapFd 在 mmap 之前就关了，为什么 mmap 还能成功？ | 内存归 dma_buf 管，不归 heapFd |
+| 5 | （进阶）把 `kDmaHeapPath` 换成 `system-uncached` 或 `cma` 再跑，maps 那一行有区别吗？ | 推断看不出区别：有没有走缓存不会显示在 maps 里，M3 用计时来看 |
+
+#### 3.5.7 写完自查
+
+- [ ] 新常量叫 `kDmaHeapPath`（`k` 开头 + 说清是路径），没有在函数里直接写 `"/dev/dma_heap/system"`
+- [ ] 有知识点的行写了注释
+- [ ] `free_dma_heap` 放在 `close_camera` 之前，而且不管成功失败都会调到
+- [ ] 上板 `m1` 跑完，`echo $?` 是 0
+- [ ] 把实测输出贴回 3.5.5，猜错的地方标出来
 
 ---
 

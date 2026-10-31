@@ -201,7 +201,7 @@ cd /Users/dev/Documents/AV/rk_work/day3_mmap
 ./run_on_board_with_mac.sh m2     # M2：同一块内存，两个指针
 ```
 
-不带参数会打印用法并返回 1。CLion 里运行时，在 Run Configuration 的 **Program arguments** 填 `m1` 或 `m2`。
+不带参数时跑 main.cpp 里写的默认实验（experimentName 为空就改指向它，2026-10-31 调 M1 时是 "m1"）。参数不是 m1 / m2 时返回 1。CLion 里运行时，在 Run Configuration 的 **Program arguments** 填 `m1` 或 `m2`。
 
 **代码目录**（2026-10-31 从一个 main.cpp 拆开，main.cpp 只负责按参数选实验、调用）：
 
