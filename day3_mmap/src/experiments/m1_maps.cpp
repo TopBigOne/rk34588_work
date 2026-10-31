@@ -98,16 +98,16 @@ int run_m1_maps() {
             // snprintf：把格式化的结果写进 label，最多写 sizeof(label) 个字节（含 '\0'），不会写出界
             snprintf(label, sizeof(label), "camera buf %d", bufIndex);
             print_maps_line_containing(label, camera.mmapAddresses[bufIndex]);
-            LOGI(kTag, "    QUERYBUF: mem_offset 0x%08x, length %zu", camera.memOffsets[bufIndex],
-                camera.lengths[bufIndex]);
+            LOGI(kTag, "                 QUERYBUF: mem_offset 0x%08x, length %zu", camera.memOffsets[bufIndex],camera.lengths[bufIndex]);
         }
     }
+    LOGI(kTag, "");
     // 第3步：从dma heap 中申请一块dma buf，看他在maps 里哪一行？
     DmaHeapBuffer dma_heap_buffer;
     if (alloc_dma_heap(kDmaHeapPath,kHeapBufSizeBytes, dma_heap_buffer)) {
         LOGI(kTag, "--- 第 3 步：dma_heap 一块 ---");
         LOGI(kTag, "    dmaBufFd = %d, sizeBytes = %zu", dma_heap_buffer.dmaBufFd, dma_heap_buffer.sizeBytes);
-        print_maps_line_containing("dma_heap", dma_heap_buffer.mmapAddress);
+        print_maps_line_containing("        dma_heap", dma_heap_buffer.mmapAddress);
     }
     free_dma_heap(dma_heap_buffer);
     close_camera(camera); // 成功、失败都要调：失败时已经打开的 fd 也要关

@@ -94,9 +94,10 @@ bool open_camera_and_map_buffers(CameraBuffers& camera) {
             return false;
         }
         LOGI(kTag, "       |--------------------------------------------------↓");
-        LOGI(kTag, "        -videoFd    ：%d", camera.videoFd);
-        LOGI(kTag, "        -length     ：%d", planes[0].length);
-        LOGI(kTag, "        -mem_offset ：0x%x", planes[0].m.mem_offset);
+        LOGI(kTag, "        -videoFd     ：%d", camera.videoFd);
+        LOGI(kTag, "        -bufIndex    ：%d", bufIndex);
+        LOGI(kTag, "        -length      ：%d", planes[0].length);
+        LOGI(kTag, "        -mem_offset  ：0x%x", planes[0].m.mem_offset);
         LOGI(kTag, "       |--------------------------------------------------↑");
         // mmap：请"fd 背后的驱动"把一段内存接到本进程的地址空间里，返回本进程能直接读写的地址。
         //   参数 1 nullptr                ：映射到哪个地址由内核挑
