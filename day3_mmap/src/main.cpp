@@ -10,6 +10,7 @@
 #include "common/log.h"
 #include "experiments/m1_maps.h"
 #include "experiments/m2_two_pointers.h"
+#include "experiments/m3_sync.h"
 #include <cstring>
 
 static const char* kTag = "Main";
@@ -30,7 +31,7 @@ int main(int argc, char** argv) {
     // strlen：数到 '\0' 为止有几个字符，在运行时数。不能用 sizeof：sizeof(指针) 永远是 8
     if (strlen(experimentName) == 0) {
         // 不写那块内存，改指针的指向：
-        experimentName = "m1";
+        experimentName = "m3";
     }
 
     // strcmp：两个字符串一样时返回 0（不是 true）。main 的返回值就是程序的退出码，shell 里 echo $? 能看到
@@ -39,6 +40,10 @@ int main(int argc, char** argv) {
     }
     if (strcmp(experimentName, "m2") == 0) {
         return run_m2_two_pointers();
+    }
+
+    if (strcmp(experimentName, "m3") == 0) {
+        return run_m3_sync();
     }
     // LOGE(kTag, "用法：%s m1 | m2", argv[0]);
     return 1;
