@@ -39,7 +39,7 @@ main.cpp
 │   └── open_camera_and_map_buffers() / close_camera()           ← M1 M2
 ├── 第 3 部分：M1  create_test_file()、run_m1_maps()
 ├── 第 4 部分：M2  run_m2_two_pointers()
-├── 第 5 部分：M3  sync_dma_buf()、measure_sync_once_per_heap()、run_m3_sync()
+├── 第 5 部分：M3  sync_dma_buf()、measure_sync_timing()、run_m3_sync()
 ├── 第 6 部分：M4  create_fill_and_destroy_dumb()、run_m4_dumb()
 └── 第 7 部分：main()  按 argv[1] 选实验
 ```
@@ -658,13 +658,13 @@ dma_heap       0x7f8f3ee000 -> 7f8f3ee000-7f8f6ee000 rw-s 00000000 00:08 22   /d
 
 #### 3.5.6 要回答的问题
 
-| # | 问题 | 提示 |
-|---|---|---|
-| 1 | 路径是 `/dev/dma_heap/system`，还是 `/dmabuf:...`？ | mmap 的是 `allocationData.fd`（dma_buf），不是 `heapFd` |
-| 2 | 和 M2 的 pointerB 那一行比，哪几列一样、哪几列不一样？ | 设备号、路径；inode 每个 dma_buf 都不同 |
-| 3 | `dmaBufFd` 实际是几？和猜的 5 一样吗？为什么？ | open 总是给最小的空号；close(heapFd) 在 ALLOC 之后 |
-| 4 | heapFd 在 mmap 之前就关了，为什么 mmap 还能成功？ | 内存归 dma_buf 管，不归 heapFd |
-| 5 | （进阶）把 `kDmaHeapPath` 换成 `system-uncached` 或 `cma` 再跑，maps 那一行有区别吗？ | 推断看不出区别：有没有走缓存不会显示在 maps 里，M3 用计时来看 |
+| #   | 问题                                                                                  | 提示                                                          |
+|-----|---------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| 1   | 路径是 `/dev/dma_heap/system`，还是 `/dmabuf:...`？                                   | mmap 的是 `allocationData.fd`（dma_buf），不是 `heapFd`       |
+| 2   | 和 M2 的 pointerB 那一行比，哪几列一样、哪几列不一样？                                | 设备号、路径；inode 每个 dma_buf 都不同                       |
+| 3   | `dmaBufFd` 实际是几？和猜的 5 一样吗？为什么？                                        | open 总是给最小的空号；close(heapFd) 在 ALLOC 之后            |
+| 4   | heapFd 在 mmap 之前就关了，为什么 mmap 还能成功？                                     | 内存归 dma_buf 管，不归 heapFd                                |
+| 5   | （进阶）把 `kDmaHeapPath` 换成 `system-uncached` 或 `cma` 再跑，maps 那一行有区别吗？ | 推断看不出区别：有没有走缓存不会显示在 maps 里，M3 用计时来看 |
 
 #### 3.5.7 写完自查
 
@@ -812,115 +812,283 @@ pointerB = 0x7f99a00000  （mmap(dmaBufFd 4, 0)）
 
 ### 5.1 任务拆解
 
-| 步 | 做什么 |
-|:---:|---|
-| 1 | 写一个函数 `sync_dma_buf(fd, flags)`：填 `dma_buf_sync`，调 `ioctl(fd, DMA_BUF_IOCTL_SYNC, &syncArgs)` |
-| 2 | 从 `/dev/dma_heap/system`（cached）申请 3 MB，先 memset 一遍（预热，把物理页分配好） |
-| 3 | 重复 10 轮：`sync(START \| WRITE)` → `memset` 写满 → `sync(END \| WRITE)`，三段分别计时 |
-| 4 | 打印 10 轮平均 |
-| 5 | 对 `/dev/dma_heap/system-uncached` 做同样的事 |
+|  步   | 做什么                                                                                                 |
+|:-----:|--------------------------------------------------------------------------------------------------------|
+|   1   | 写一个函数 `sync_dma_buf(fd, flags)`：填 `dma_buf_sync`，调 `ioctl(fd, DMA_BUF_IOCTL_SYNC, &syncArgs)` |
+|   2   | 从 `/dev/dma_heap/system`（cached）申请 3 MB，先 memset 一遍、不计时（第一次往往偏慢）                 |
+|   3   | 重复 10 轮：`sync(START \| WRITE)` → `memset` 写满 → `sync(END \| WRITE)`，三段分别计时                |
+|   4   | 打印 10 轮平均                                                                                         |
+|   5   | 对 `/dev/dma_heap/system-uncached` 做同样的事                                                          |
 
 ### 5.2 flags 怎么填
 
 `linux/dma-buf.h` 里的定义（sysroot 第 30～34 行）：
 
-| 宏 | 值 | 意思 |
-|---|---|---|
-| `DMA_BUF_SYNC_READ` | 1 | CPU 要读 |
-| `DMA_BUF_SYNC_WRITE` | 2 | CPU 要写 |
-| `DMA_BUF_SYNC_START` | 0 | 开始访问之前调 |
-| `DMA_BUF_SYNC_END` | 4 | 访问完之后调 |
+| 宏                   | 值 | 意思           |
+|----------------------|----|----------------|
+| `DMA_BUF_SYNC_READ`  | 1  | CPU 要读       |
+| `DMA_BUF_SYNC_WRITE` | 2  | CPU 要写       |
+| `DMA_BUF_SYNC_START` | 0  | 开始访问之前调 |
+| `DMA_BUF_SYNC_END`   | 4  | 访问完之后调   |
 
 所以"开始写"是 `START | WRITE`，"写完了"是 `END | WRITE`。START 的值是 0，"或"上去不改变数字，写上只是为了让人读得懂。
 
-### 5.3 代码
+### 5.3 代码（2026-10-31 按拆分后的 src/ 重写，全部代码）
+
+一共动 3 个文件：
+
+| 文件                              | 做什么                                                                                      |
+|-----------------------------------|---------------------------------------------------------------------------------------------|
+| `src/experiments/m3_sync.h`   | 整个替换成 5.3.1 的内容（CLion 生成的 `#ifndef` 模板换成 `#pragma once`，和其他头文件一致） |
+| `src/experiments/m3_sync.cpp` | 整个替换成 5.3.2 的内容                                                                     |
+| `src/main.cpp`                    | 加一行 include、加一个 `m3` 分支（5.3.3）                                                   |
+
+`CMakeLists.txt` 已经加过这两个文件，不用再改。`alloc_dma_heap` / `free_dma_heap` 用 `src/dma_heap/` 里现成的，M1 第 3 步已经验证过。
+
+函数怎么分工：
+
+```
+run_m3_sync()                       ← main 调它
+├── measure_sync_timing(system)            申请 → 先写一遍 → 10 轮计时 → 释放，传出平均值
+│     ├── alloc_dma_heap / free_dma_heap    （src/dma_heap/，现成的）
+│     ├── sync_dma_buf(fd, START | WRITE)   就是一次 ioctl(DMA_BUF_IOCTL_SYNC)
+│     ├── memset 写满 3 MB
+│     ├── sync_dma_buf(fd, END | WRITE)
+│     └── get_now_ms()                      每段前后各取一次时间
+├── measure_sync_timing(system-uncached)   同上
+└── print_sync_timing() × 2                两行放在一起打印，方便对比
+```
+
+#### 5.3.1 `src/experiments/m3_sync.h`
 
 ```cpp
+/*
+ * m3_sync.h：M3 实验——自己调 DMA_BUF_IOCTL_SYNC，比较 cached 和 uncached 两种 dma heap
+ *
+ *   对每种 heap：申请 3 MB → 先写一遍（不计时）→ 重复 10 轮：
+ *     sync(START | WRITE) → memset 写满 3 MB → sync(END | WRITE)，三段分别计时，最后取平均
+ *
+ * 写法和期望输出见 具体编码day3_mmap的流程.md 第 5 节
+ */
+#pragma once
+
+/**
+ * @brief M3：cached（system）和 uncached（system-uncached）两种 dma heap，各测一次 sync 和 memset 的耗时
+ * @return 两种 heap 都测完返回 0；任何一种申请失败或 sync 失败返回 1
+ * @note 只测"CPU 写"这个方向（flags 带 DMA_BUF_SYNC_WRITE），不涉及硬件，所以只能看出 sync 本身花多少时间
+ */
+int run_m3_sync();
+```
+
+#### 5.3.2 `src/experiments/m3_sync.cpp`
+
+```cpp
+#include "experiments/m3_sync.h"
+
+#include "common/log.h"
+#include "dma_heap/dma_heap_buffer.h"
+#include <cerrno> // errno
+#include <chrono> // std::chrono::steady_clock：计时
+#include <cstdint> // uint64_t
+#include <cstring> // memset、strerror
+#include <linux/dma-buf.h> // dma_buf_sync、DMA_BUF_IOCTL_SYNC、DMA_BUF_SYNC_START / END / READ / WRITE
+#include <sys/ioctl.h> // ioctl
+
+static const char* kTag = "M3";
+// 每种 heap 重复测几轮取平均：只测一轮的话，CPU 升频、别的进程打扰都会让数字跳来跳去
+static const int kSyncRepeatCount = 10;
+// 要比较的两种 heap（板子上都有，流程.md 3.5.2 实测）：
+//   system         ：CPU 读写走缓存（cached）。CPU 写的数据可能先停在缓存里，还没到内存，
+//                    交给硬件之前要 sync，把缓存里的数据写回内存
+//   system-uncached：CPU 读写不走缓存，每次都直接到内存。不用 sync，代价是 CPU 读写慢
+static const char* kCachedHeapPath   = "/dev/dma_heap/system";
+static const char* kUncachedHeapPath = "/dev/dma_heap/system-uncached";
+
+// 一种 heap 测出来的平均耗时，单位毫秒
+struct SyncTiming {
+    double syncStartMs = 0; // sync(START | WRITE) 花的时间
+    double memsetMs    = 0; // memset 写满整块花的时间
+    double syncEndMs   = 0; // sync(END | WRITE) 花的时间
+};
+
+/**
+ * @brief 取当前时间，单位毫秒
+ * @return 从某个固定起点开始的毫秒数，只能拿两次的结果相减，单独一个值没有意义
+ * @note 用 steady_clock：它只会往前走。system_clock 是墙上时间，可能被 NTP 或手动改时间调回去，量时间差会出错
+ */
+static double get_now_ms() {
+    using namespace std::chrono;
+    // duration<double, std::milli>：把时间换算成"带小数的毫秒"，这样 0.123 ms 也能表示
+    return duration<double, std::milli>(steady_clock::now().time_since_epoch()).count();
+}
+
 /**
  * @brief 对一个 dma_buf fd 调一次 DMA_BUF_IOCTL_SYNC
- * @param[in] dmaBufFd dma_buf 的 fd
- * @param[in] flags    DMA_BUF_SYNC_START 或 DMA_BUF_SYNC_END，再"或"上 READ / WRITE
+ * @param[in] dmaBufFd dma_buf 的 fd（ALLOC 或 EXPBUF 拿到的）
+ * @param[in] flags    DMA_BUF_SYNC_START 或 DMA_BUF_SYNC_END，再"或"上 DMA_BUF_SYNC_READ / DMA_BUF_SYNC_WRITE
  * @return 成功返回 true；失败打印原因并返回 false
- * @note MPP 的 mpp_buffer_sync_begin / end 就是这一行（osal/mpp_dmabuf.cpp 第 33、49 行）
+ * @note MPP 的 mpp_buffer_sync_begin / end 最后也是调这个 ioctl（mpp/osal/mpp_dmabuf.cpp 第 40、56 行）
  */
 static bool sync_dma_buf(int dmaBufFd, uint64_t flags) {
+    // dma_buf_sync 只有一个字段 flags（linux/dma-buf.h）
     dma_buf_sync syncArgs = {};
-    syncArgs.flags = flags;
+    syncArgs.flags        = flags;
+    // DMA_BUF_IOCTL_SYNC = _IOW('b', 0, struct dma_buf_sync)：只有 W，没有 R，
+    //   内核只读这张表、不往回写，所以调完以后 syncArgs 里没有新东西，只看返回值
     if (ioctl(dmaBufFd, DMA_BUF_IOCTL_SYNC, &syncArgs) != 0) {
-        printf("DMA_BUF_IOCTL_SYNC flags 0x%llx: %s\n", static_cast<unsigned long long>(flags), strerror(errno));
+        LOGE(kTag, "DMA_BUF_IOCTL_SYNC flags 0x%llx: %s", static_cast<unsigned long long>(flags), strerror(errno));
         return false;
     }
     return true;
 }
 
 /**
- * @brief 对一个 dma_heap 测 kSyncRepeatCount 轮：sync_start → memset 写满 → sync_end，各自计时取平均
- * @param[in] heapPath 堆的设备文件
- * @note 正式计时之前先 memset 一遍：第一次写会触发缺页（分配物理页），不算进 memset 的时间
+ * @brief 从一种 dma heap 申请一块内存，重复 kSyncRepeatCount 轮：sync START → memset 写满 → sync END，
+ *        三段分别计时取平均
+ * @param[in]  heapPath      heap 的设备文件，例如 kCachedHeapPath
+ * @param[out] averageTiming 成功时传出三段的平均耗时
+ * @return 成功返回 true；申请失败或 sync 失败返回 false
+ * @note 正式计时前先写一遍、不计时：第一次写往往偏慢（CPU 还没升频、页表和缓存都是冷的，推断），不算进平均
+ * @note 申请的内存在函数结束前释放，调用方不用管
  */
-static void measure_sync_once_per_heap(const char *heapPath) {
+static bool measure_sync_timing(const char* heapPath, SyncTiming& averageTiming) {
     DmaHeapBuffer heapBuf;
     if (!alloc_dma_heap(heapPath, kHeapBufSizeBytes, heapBuf)) {
-        return;
+        return false;
     }
-    memset(heapBuf.mmapAddress, 0, heapBuf.sizeBytes); // 预热：先把物理页都分配好
+    // 先写一遍，不计时（理由见 @note）
+    memset(heapBuf.mmapAddress, 0, heapBuf.sizeBytes);
 
-    double syncStartMs = 0;
-    double memsetMs = 0;
-    double syncEndMs = 0;
+    SyncTiming totalTiming;
+    bool isAllSyncOk = true;
     for (int roundIndex = 0; roundIndex < kSyncRepeatCount; ++roundIndex) {
-        // 第 1 步：告诉内核"CPU 要开始写了"
-        const double beforeSyncStartMs = now_ms();
-        sync_dma_buf(heapBuf.dmaBufFd, DMA_BUF_SYNC_START | DMA_BUF_SYNC_WRITE);
-        const double afterSyncStartMs = now_ms();
+        // 第 1 步 开始：告诉内核"CPU 要开始写这块了"。
+        //   START 的值是 0，"或"上去数字不变，写上只是让人读懂；WRITE 说明这次 CPU 要写。
+        //   cached 的 heap 在这里让 CPU 缓存里这块的旧内容作废，
+        //   免得 CPU 读到硬件写之前的旧数据（推断，本板内核源码没核对）
+        const double beforeSyncStartMs = get_now_ms();
+        // &=：只要有一次 sync 失败，isAllSyncOk 就变成 false，之后再成功也变不回 true
+        isAllSyncOk &= sync_dma_buf(heapBuf.dmaBufFd, DMA_BUF_SYNC_START | DMA_BUF_SYNC_WRITE);
+        const double afterSyncStartMs = get_now_ms();
 
-        // 第 2 步：CPU 写满整块
+        // 第 2 步 写：CPU 写满整块。每轮写的值不一样（roundIndex 只取低 8 位），保证每轮真的改了内容。
+        //   cached：先写进 CPU 缓存，很快；uncached：每个字节都直接写到内存，慢
         memset(heapBuf.mmapAddress, roundIndex, heapBuf.sizeBytes);
-        const double afterMemsetMs = now_ms();
+        const double afterMemsetMs = get_now_ms();
 
-        // 第 3 步：告诉内核"CPU 写完了"，cached 的这里要把 cache 里的数据写回内存
-        sync_dma_buf(heapBuf.dmaBufFd, DMA_BUF_SYNC_END | DMA_BUF_SYNC_WRITE);
-        const double afterSyncEndMs = now_ms();
+        // 第 3 步 结束：告诉内核"CPU 写完了"。
+        //   cached 的 heap 在这里把缓存里的新数据写回内存，之后硬件从内存读才能读到（推断，本板内核源码没核对）。
+        //   uncached 的 heap 没有缓存要处理，推断几乎不花时间
+        //   （MPP 对 uncached buffer 也直接跳过 sync：mpp/base/mpp_buffer.cpp 第 293 行）
+        isAllSyncOk &= sync_dma_buf(heapBuf.dmaBufFd, DMA_BUF_SYNC_END | DMA_BUF_SYNC_WRITE);
+        const double afterSyncEndMs = get_now_ms();
 
-        syncStartMs += afterSyncStartMs - beforeSyncStartMs;
-        memsetMs += afterMemsetMs - afterSyncStartMs;
-        syncEndMs += afterSyncEndMs - afterMemsetMs;
+        totalTiming.syncStartMs += afterSyncStartMs - beforeSyncStartMs;
+        totalTiming.memsetMs += afterMemsetMs - afterSyncStartMs;
+        totalTiming.syncEndMs += afterSyncEndMs - afterMemsetMs;
     }
-    printf("%-32s sync_start %.3f ms   memset %.3f ms   sync_end %.3f ms\n", heapPath,
-           syncStartMs / kSyncRepeatCount, memsetMs / kSyncRepeatCount, syncEndMs / kSyncRepeatCount);
     free_dma_heap(heapBuf);
+    if (!isAllSyncOk) {
+        return false;
+    }
+    averageTiming.syncStartMs = totalTiming.syncStartMs / kSyncRepeatCount;
+    averageTiming.memsetMs    = totalTiming.memsetMs / kSyncRepeatCount;
+    averageTiming.syncEndMs   = totalTiming.syncEndMs / kSyncRepeatCount;
+    return true;
 }
 
 /**
- * @brief M3：cached（system）和 uncached（system-uncached）两种堆，各测一次 sync 的耗时
- * @return 总是返回 0
+ * @brief 把一种 heap 的平均耗时打印成一行，后面附上合计和 memset 的写入速度
+ * @param[in] heapPath heap 的设备文件，打印在行首
+ * @param[in] timing   measure_sync_timing() 传出的平均耗时
+ * @return 无
  */
-static int run_m3_sync() {
-    printf("===== M3：自己调 DMA_BUF_IOCTL_SYNC（每项 %d 轮平均，每块 %zu 字节）=====\n", kSyncRepeatCount,
-           kHeapBufSizeBytes);
-    measure_sync_once_per_heap("/dev/dma_heap/system");
-    measure_sync_once_per_heap("/dev/dma_heap/system-uncached");
+static void print_sync_timing(const char* heapPath, const SyncTiming& timing) {
+    const double totalMs = timing.syncStartMs + timing.memsetMs + timing.syncEndMs;
+    // 写入速度 = 写了多少 MB ÷ 花了多少秒。1 MB = 1024 × 1024 字节，1 秒 = 1000 毫秒
+    const double memsetMegabytesPerSecond =
+        (static_cast<double>(kHeapBufSizeBytes) / (1024 * 1024)) / (timing.memsetMs / 1000);
+    LOGI(kTag, "%-30s sync_start %.3f ms | memset %.3f ms | sync_end %.3f ms | 合计 %.3f ms | 写入 %.0f MB/s", heapPath,
+        timing.syncStartMs, timing.memsetMs, timing.syncEndMs, totalMs, memsetMegabytesPerSecond);
+}
+
+int run_m3_sync() {
+    LOGD(kTag, "run_m3_sync()");
+    LOGD(kTag, "===== M3：自己调 DMA_BUF_IOCTL_SYNC（每种 heap %d 轮取平均，每块 %zu 字节）=====", kSyncRepeatCount,
+        kHeapBufSizeBytes);
+
+    // 第 1 步：cached heap
+    SyncTiming cachedTiming;
+    if (!measure_sync_timing(kCachedHeapPath, cachedTiming)) {
+        return 1;
+    }
+    // 第 2 步：uncached heap，做同样的事
+    SyncTiming uncachedTiming;
+    if (!measure_sync_timing(kUncachedHeapPath, uncachedTiming)) {
+        return 1;
+    }
+    // 第 3 步：两行放在一起打印，方便上下对比
+    print_sync_timing(kCachedHeapPath, cachedTiming);
+    print_sync_timing(kUncachedHeapPath, uncachedTiming);
     return 0;
 }
 ```
 
-### 5.4 期望看到的输出 ⚠️ 猜测（数字只是大概的量级）
+#### 5.3.3 `src/main.cpp` 要加的两处
+
+```cpp
+// ① include 区，跟在 m2_two_pointers.h 后面
+#include "experiments/m3_sync.h"
+
+// ② main() 里，跟在 m2 那个 if 后面
+    if (strcmp(experimentName, "m3") == 0) {
+        return run_m3_sync();
+    }
+```
+
+文件开头的注释里也加一行：`./day3_mmap m3   M3：自己调 DMA_BUF_IOCTL_SYNC，比较 cached 和 uncached → src/experiments/m3_sync.cpp`
+
+#### 5.3.4 运行
+
+```bash
+./run_on_board_with_mac.sh m3
+```
+
+CLion 里 Program arguments 填 `m3`。
+
+> 2026-10-31 上板通过（用户按 5.3 写成 `m3_sync.cpp/.h`，提交 1272944）。
+> 第一次跑时 heap 路径少了开头的 `/`（`"dev/dma_heap/system"`）也成功了，是因为 `adb shell` 的当前目录正好是 `/`；换个目录运行就会 ENOENT，已经改成绝对路径。
+
+### 5.4 实测输出（2026-10-31）和当初的猜测对照
 
 ```
-/dev/dma_heap/system             sync_start 0.2xx ms   memset 0.3xx ms   sync_end 0.2xx ms
-/dev/dma_heap/system-uncached    sync_start 0.00x ms   memset 3.xxx ms   sync_end 0.00x ms
+I M3: /dev/dma_heap/system           sync_start 0.001 ms | memset 0.349 ms | sync_end 0.001 ms | 合计 0.351 ms | 写入 8601 MB/s
+I M3: /dev/dma_heap/system-uncached  sync_start 0.001 ms | memset 0.651 ms | sync_end 0.001 ms | 合计 0.653 ms | 写入 4607 MB/s
 ```
 
-猜测的理由：
-- **cached**：sync 要真的操作 cache（END 时把 cache 里的脏数据写回内存），3 MB 要花一点时间。memset 快，因为写的是 cache
-- **uncached**：内核的 system-uncached 堆在 sync 时直接返回，什么都不做，所以几乎是 0。但 memset 慢，因为每个字节都直接写内存。day3_camera_cache_test 实测 uncached 读 3 MB 要 3.07 ms，写应该是同一个量级
-- 这就是 M6 里看到的：**cached 省了 CPU 访问的时间，代价是要 sync；uncached 不用 sync，代价是 CPU 访问慢**
+| | 当初猜测 ⚠️ | 实测 | 对上了吗 |
+|---|---|---|---|
+| cached 的 sync_start / sync_end | 约 0.2 ms | **0.001 ms** | ❌ 几乎是 0 |
+| uncached 的 sync | 约 0.00x ms | 0.001 ms | ✅ |
+| cached 的 memset | 0.3xx ms，约 8000 MB/s | 0.349 ms，8601 MB/s | ✅ |
+| uncached 的 memset | 3.xxx ms，约 1000 MB/s | **0.651 ms，4607 MB/s** | ❌ 只慢了约 1.9 倍 |
 
-### 5.5 要回答的问题
+同一天第一次跑的结果是 cached 13740 MB/s、uncached 5045 MB/s（约 2.7 倍）。两次绝对数字差得多，推断是被调度到了不同的核（RK3588 有 4 个 A76 大核、4 个 A55 小核），或者 CPU 频率不同。**只比同一次运行里两行的比值**。
 
-1. cached 那一块：sync_start + memset + sync_end 加起来，和 uncached 的 memset 比，哪个快？
-2. uncached 的 sync 为什么几乎不花时间？（内核里 uncached 堆跳过 cache 操作；MPP 也一样，`mpp_buffer.cpp` 第 293～297 行）
-3. 如果把 `DMA_BUF_SYNC_END` 那一行删掉，cached 那一块会出什么问题？（CPU 写的数据可能还在 cache 里，编码器硬件从内存读到的是旧数据）
+两处没对上的原因：
+
+- **cached 的 sync 几乎是 0**（推断：依据上游 5.10 `drivers/dma-buf/heaps/system_heap.c`，本板 Rockchip 内核源码没核对）：system heap 处理 sync 时，只对"已经 attach 到这块 buffer 的设备"刷 cache。这个实验只是 CPU 自己 mmap 来写，没有任何硬件 attach 过，所以没有要刷的，ioctl 进去就回来了，0.001 ms 基本就是一次系统调用的开销。
+- **uncached 的写没有想象中慢**（推断）：uncached heap 映射到用户空间时用的是 write-combine（写合并），连续的写会先在写缓冲里攒成大块再发到内存，所以 memset 这种顺序写还算快。真正慢的是**读**：没有 cache 也没有预取。day3_camera_cache_test 实测 uncached **读** 3 MB 要 3.07 ms，和这里写只要 0.651 ms 对得上。
+
+> 回头看，这个实验设计得不好：buffer 没交给过硬件，看不到"cached 的 sync 很花时间"；只测写不测读，看不到 uncached 最慢的那一面。下次要先上板 probe，确认现象明显再写成实验。
+
+### 5.5 学到了什么（3 句话，也写在 `m3_sync.cpp` 开头的注释里）
+
+1. **dma_buf 的内存分两种**：cached（system）CPU 读写快，但交给硬件前后要 sync；uncached（system-uncached）不用 sync，但 CPU 读写慢。
+2. **sync 本身花不花时间，要看这块内存有没有交给过硬件**。只给 CPU 自己用时，cached 的 sync 也几乎是 0（推断，理由见 5.4）。
+3. **以后 MPP 申请 buffer 会遇到这个选择**：摄像头 → 编码器、CPU 几乎不碰，用 uncached，省掉 sync；CPU 要改图像（画框、叠字），用 cached，前后记得 sync。MPP 自己对 uncached buffer 也直接跳过 sync（`mpp/base/mpp_buffer.cpp` 第 293 行）。
+
+还有一个没做实验、但值得记住的问题：如果 cached 的 buffer 写完不调 `DMA_BUF_SYNC_END` 就交给编码器，CPU 写的数据可能还在 cache 里，编码器从内存读到的是旧数据（花屏、绿块）。
 
 ---
 
@@ -928,25 +1096,25 @@ static int run_m3_sync() {
 
 ### 6.1 任务拆解
 
-| 步 | 做什么 | ioctl / 函数 | 传回什么 |
-|:---:|---|---|---|
-| 1 | 打开显示设备 | `open("/dev/dri/card0")` | `drmFd` |
-| 2 | 申请显存：填宽、高、bpp=32 | `DRM_IOCTL_MODE_CREATE_DUMB` | `handle`、`pitch`、`size` |
-| 3 | 问驱动"用什么 offset 去 mmap" | `DRM_IOCTL_MODE_MAP_DUMB` | `offset`（假偏移，只是一个编号） |
-| 4 | 映射 | `mmap(drmFd, size, offset)` | CPU 指针 |
-| 5 | 按 pitch 一行一行写颜色，再读回第一个像素 | | |
-| 6 | 释放 | `munmap` → `DRM_IOCTL_MODE_DESTROY_DUMB` → `close` | |
+|  步  | 做什么                                    | ioctl / 函数                                       | 传回什么                         |
+|:----:|-------------------------------------------|----------------------------------------------------|----------------------------------|
+|  1   | 打开显示设备                              | `open("/dev/dri/card0")`                           | `drmFd`                          |
+|  2   | 申请显存：填宽、高、bpp=32                | `DRM_IOCTL_MODE_CREATE_DUMB`                       | `handle`、`pitch`、`size`        |
+|  3   | 问驱动"用什么 offset 去 mmap"             | `DRM_IOCTL_MODE_MAP_DUMB`                          | `offset`（假偏移，只是一个编号） |
+|  4   | 映射                                      | `mmap(drmFd, size, offset)`                        | CPU 指针                         |
+|  5   | 按 pitch 一行一行写颜色，再读回第一个像素 |                                                    |                                  |
+|  6   | 释放                                      | `munmap` → `DRM_IOCTL_MODE_DESTROY_DUMB` → `close` |                                  |
 
 做两次：一次 1920 宽（1920 × 4 = 7680，是 64 的倍数），一次 1000 宽（1000 × 4 = 4000，**不是** 64 的倍数），对比 `pitch` 是不是等于 `width × 4`。
 
 **和摄像头对比**，套路完全一样：
 
-| | 摄像头 | DRM |
-|---|---|---|
-| 申请 | `VIDIOC_REQBUFS` | `DRM_IOCTL_MODE_CREATE_DUMB` |
-| 问 offset | `VIDIOC_QUERYBUF` → `mem_offset` | `DRM_IOCTL_MODE_MAP_DUMB` → `offset` |
-| 映射 | `mmap(videoFd, mem_offset)` | `mmap(drmFd, offset)` |
-| 每行字节数 | `bytesperline`（stride） | `pitch` |
+|            | 摄像头                           | DRM                                  |
+|------------|----------------------------------|--------------------------------------|
+| 申请       | `VIDIOC_REQBUFS`                 | `DRM_IOCTL_MODE_CREATE_DUMB`         |
+| 问 offset  | `VIDIOC_QUERYBUF` → `mem_offset` | `DRM_IOCTL_MODE_MAP_DUMB` → `offset` |
+| 映射       | `mmap(videoFd, mem_offset)`      | `mmap(drmFd, offset)`                |
+| 每行字节数 | `bytesperline`（stride）         | `pitch`                              |
 
 ### 6.2 代码
 
@@ -1087,13 +1255,13 @@ int main(int argc, char **argv) {
 
 ## 8. 写完以后的检查清单
 
-| # | 检查 | 怎么做 |
-|---|---|---|
-| 1 | 交叉编译没有警告 | CLion 用 RK3588-Debug profile 编译，看 Build 窗口 |
-| 2 | 没有用到 GLIBC_2.38 | `aarch64-buildroot-linux-gnu-objdump -T cmake-build-rk3588-debug/day3_mmap \| grep GLIBC_2.38`，**没有输出**才对 |
-| 3 | 板子连上了 | `adb devices` 要看到 `3a6aff9a20ba7de4`（不是手机） |
-| 4 | 摄像头没被占着 | `adb shell 'fuser /dev/video22'` 没有输出（M1、M2 需要） |
-| 5 | 有显示设备 | `adb shell ls -l /dev/dri/` 能看到 card0（M4 需要） |
-| 6 | 每个 mmap 都有 munmap，每个 fd 都有 close | 对着代码数一遍，顺序和申请相反 |
+| #  | 检查                                      | 怎么做                                                                                                           |
+|----|-------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| 1  | 交叉编译没有警告                          | CLion 用 RK3588-Debug profile 编译，看 Build 窗口                                                                |
+| 2  | 没有用到 GLIBC_2.38                       | `aarch64-buildroot-linux-gnu-objdump -T cmake-build-rk3588-debug/day3_mmap \| grep GLIBC_2.38`，**没有输出**才对 |
+| 3  | 板子连上了                                | `adb devices` 要看到 `3a6aff9a20ba7de4`（不是手机）                                                              |
+| 4  | 摄像头没被占着                            | `adb shell 'fuser /dev/video22'` 没有输出（M1、M2 需要）                                                         |
+| 5  | 有显示设备                                | `adb shell ls -l /dev/dri/` 能看到 card0（M4 需要）                                                              |
+| 6  | 每个 mmap 都有 munmap，每个 fd 都有 close | 对着代码数一遍，顺序和申请相反                                                                                   |
 
 上板跑完以后，把第 3.3、4.4、5.4、6.3 节的"⚠️ 猜测"换成实测输出，并写上日期。
