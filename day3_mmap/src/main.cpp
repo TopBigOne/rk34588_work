@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     // strlen：数到 '\0' 为止有几个字符，在运行时数。不能用 sizeof：sizeof(指针) 永远是 8
     if (strlen(experimentName) == 0) {
         // 不写那块内存，改指针的指向：
-        experimentName = "m2";
+        experimentName = "m1";
     }
 
     // strcmp：两个字符串一样时返回 0（不是 true）。main 的返回值就是程序的退出码，shell 里 echo $? 能看到

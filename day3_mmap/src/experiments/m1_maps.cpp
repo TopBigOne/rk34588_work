@@ -3,6 +3,7 @@
 #include "camera/camera_buffers.h"
 #include "common/log.h"
 #include "common/maps_printer.h"
+#include "dma_heap/dma_heap_buffer.h"
 #include <cerrno> // errno
 #include <cstdio> // snprintf
 #include <cstdlib> // malloc、free
@@ -18,6 +19,7 @@ static const char* kTestFilePath = "/tmp/day3_mmap_test.bin";
 static const size_t kMallocSizeBytes = 4 * 1024 * 1024;
 // 4096 字节 = 1 页（ARM64 Linux 这里的页大小）。mmap 的最小单位是页
 static const size_t kTestFileSizeBytes = 4096;
+static const char* kDmaHeapPath        = "/dev/dma_heap/system";
 
 /**
  * @brief 新建（或清空重建）测试文件 kTestFilePath，写入 kTestFileSizeBytes 个 'A'
@@ -100,6 +102,14 @@ int run_m1_maps() {
                 camera.lengths[bufIndex]);
         }
     }
+    // 第3步：从dma heap 中申请一块dma buf，看他在maps 里哪一行？
+    DmaHeapBuffer dma_heap_buffer;
+    if (alloc_dma_heap(kDmaHeapPath,kHeapBufSizeBytes, dma_heap_buffer)) {
+        LOGI(kTag, "--- 第 3 步：dma_heap 一块 ---");
+        LOGI(kTag, "    dmaBufFd = %d, sizeBytes = %zu", dma_heap_buffer.dmaBufFd, dma_heap_buffer.sizeBytes);
+        print_maps_line_containing("dma_heap", dma_heap_buffer.mmapAddress);
+    }
+    free_dma_heap(dma_heap_buffer);
     close_camera(camera); // 成功、失败都要调：失败时已经打开的 fd 也要关
     munmap(fileAddrPrivate, kTestFileSizeBytes);
     munmap(fileAddrShared, kTestFileSizeBytes);
