@@ -8,12 +8,16 @@
 
 #include <cstddef>
 
+// 3 MB：和一帧 1920x1080 NV12（约 3 MB）差不多大
 inline constexpr size_t kHeapBufSizeBytes = 3 * 1024 * 1024;
 
 struct DmaHeapBuffer {
-    int dmaBufFd      = -1;
+    // DMA_HEAP_IOCTL_ALLOC 写回的 dma_buf fd。-1 表示没申请到
+    int dmaBufFd = -1;
+    // mmap(dmaBufFd, 0) 的返回值：本进程里能直接读写这块内存的地址。nullptr 表示没映射
     void* mmapAddress = nullptr;
-    size_t sizeBytes  = 0;
+    // 申请了多少字节，munmap 时要用同一个长度
+    size_t sizeBytes = 0;
 };
 
 /**

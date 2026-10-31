@@ -42,6 +42,8 @@ static uintptr_t parse_hex(const char* text, const char** endText) {
 
 void print_whole_maps() {
     LOGD(kTag, "print_whole_maps()");
+    // /proc/self/maps：不是磁盘上的真文件，读它的时候内核现场生成内容，列出本进程地址空间里每一段映射。
+    //   self 指"正在读它的这个进程"，等于 /proc/<本进程 pid>/maps
     std::ifstream mapsFile("/proc/self/maps");
     if (!mapsFile.is_open()) {
         LOGE(kTag, "open /proc/self/maps: %s", strerror(errno));
@@ -59,6 +61,8 @@ void print_maps_line_containing(const char* label, const void* address) {
         LOGE(kTag, "open /proc/self/maps: %s", strerror(errno));
         return;
     }
+    // 指针不能直接和 maps 里读出来的数字比大小，先转成整数。
+    //   uintptr_t：大小正好能装下一个指针的无符号整数（ARM64 上是 8 字节）
     const uintptr_t targetAddress = reinterpret_cast<uintptr_t>(address);
     std::string line;
     bool isFound = false;
@@ -68,6 +72,7 @@ void print_maps_line_containing(const char* label, const void* address) {
         const uintptr_t startAddress = parse_hex(cursor, &cursor);
         ++cursor; // 跳过中间的 '-'
         const uintptr_t endAddress = parse_hex(cursor, &cursor);
+        // maps 每行开头 "起始-结束"：起始地址算在这一段里，结束地址不算（左闭右开）
         if (startAddress <= targetAddress && targetAddress < endAddress) {
             LOGI(kTag, "%-14s %p -> %s", label, address, line.c_str());
             isFound = true;

@@ -22,14 +22,24 @@ static const char* kTag = "Main";
  * @note 比较字符串用 strcmp，不用 atoi（atoi 会链接到 GLIBC_2.38，板子上跑不起来）
  */
 int main(int argc, char** argv) {
+    // argc：命令行有几个词（包括程序名）；argv[0] 是程序名，argv[1] 是第一个参数。
+    //   运行 ./day3_mmap m1 时，argc = 2，argv[1] = "m1"；不带参数时 argc = 1，没有 argv[1]，所以先判断 argc > 1
+    // "" 这种写在代码里的字符串（字面量）放在程序的只读段（.rodata），只能读不能写，所以类型带 const。
+    //   const char* 的意思是"不能通过它改字符"，指针本身可以改指向
     const char* experimentName = argc > 1 ? argv[1] : "";
+    // strlen：数到 '\0' 为止有几个字符，在运行时数。不能用 sizeof：sizeof(指针) 永远是 8
+    if (strlen(experimentName) == 0) {
+        // 不写那块内存，改指针的指向：
+        experimentName = "m2";
+    }
+
+    // strcmp：两个字符串一样时返回 0（不是 true）。main 的返回值就是程序的退出码，shell 里 echo $? 能看到
     if (strcmp(experimentName, "m1") == 0) {
         return run_m1_maps();
     }
     if (strcmp(experimentName, "m2") == 0) {
         return run_m2_two_pointers();
     }
-    run_m2_two_pointers();
     // LOGE(kTag, "用法：%s m1 | m2", argv[0]);
     return 1;
 }
