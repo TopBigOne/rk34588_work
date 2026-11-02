@@ -1102,34 +1102,34 @@ I M3: /dev/dma_heap/system-uncached  sync_start 0.001 ms | memset 0.651 ms | syn
 
 ### 6.1 和 mmap、DMA 有什么关系
 
-| | 关系 |
-|---|---|
-| **mmap** | 这是本程序第 3 种"驱动给的内存"：摄像头（M2）、dma_heap（M1 第 3 步、M3）、DRM 显存（M4）。三种都是"驱动先分配 → 给一个 offset 或 fd → mmap 拿到地址"，只是 ioctl 名字不一样 |
-| **DMA** | dumb buffer 是给**显示控制器**（RK3588 叫 VOP）用的：显示时 VOP 自己用 DMA 从这块内存读像素送到屏幕，不经过 CPU。PRIME 导出的 dma_buf fd 还能交给编码器、RGA，和摄像头的 dma_buf 一样用 |
+|           | 关系                                                                                                                                                                                    |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **mmap**  | 这是本程序第 3 种"驱动给的内存"：摄像头（M2）、dma_heap（M1 第 3 步、M3）、DRM 显存（M4）。三种都是"驱动先分配 → 给一个 offset 或 fd → mmap 拿到地址"，只是 ioctl 名字不一样            |
+| **DMA**   | dumb buffer 是给**显示控制器**（RK3588 叫 VOP）用的：显示时 VOP 自己用 DMA 从这块内存读像素送到屏幕，不经过 CPU。PRIME 导出的 dma_buf fd 还能交给编码器、RGA，和摄像头的 dma_buf 一样用 |
 
 套路和摄像头完全一样：
 
-| | 摄像头（M2） | DRM（M4） |
-|---|---|---|
-| 打开设备 | `open("/dev/video22")` → `videoFd` | `open("/dev/dri/card0")` → `drmFd` |
-| 申请 | `VIDIOC_REQBUFS` | `DRM_IOCTL_MODE_CREATE_DUMB` → handle、pitch、size |
-| 问 offset | `VIDIOC_QUERYBUF` → `mem_offset` | `DRM_IOCTL_MODE_MAP_DUMB` → `offset` |
-| 映射 | `mmap(videoFd, mem_offset)` | `mmap(drmFd, offset)` |
-| 每行字节数 | `bytesperline` | `pitch` |
-| 导出成 dma_buf | `VIDIOC_EXPBUF` | `DRM_IOCTL_PRIME_HANDLE_TO_FD` |
-| 释放 | `close(videoFd)` | `DRM_IOCTL_MODE_DESTROY_DUMB` → `close(drmFd)` |
+|                | 摄像头（M2）                       | DRM（M4）                                          |
+|----------------|------------------------------------|----------------------------------------------------|
+| 打开设备       | `open("/dev/video22")` → `videoFd` | `open("/dev/dri/card0")` → `drmFd`                 |
+| 申请           | `VIDIOC_REQBUFS`                   | `DRM_IOCTL_MODE_CREATE_DUMB` → handle、pitch、size |
+| 问 offset      | `VIDIOC_QUERYBUF` → `mem_offset`   | `DRM_IOCTL_MODE_MAP_DUMB` → `offset`               |
+| 映射           | `mmap(videoFd, mem_offset)`        | `mmap(drmFd, offset)`                              |
+| 每行字节数     | `bytesperline`                     | `pitch`                                            |
+| 导出成 dma_buf | `VIDIOC_EXPBUF`                    | `DRM_IOCTL_PRIME_HANDLE_TO_FD`                     |
+| 释放           | `close(videoFd)`                   | `DRM_IOCTL_MODE_DESTROY_DUMB` → `close(drmFd)`     |
 
 ### 6.2 任务拆解
 
 对 1920×1080 和 1000×1000 各做一轮（1920 × 4 = 7680 是 64 的倍数，1000 × 4 = 4000 不是）：
 
-|  步  | 做什么 | 看什么 |
-|:----:|---|---|
-|  1   | CREATE_DUMB → MAP_DUMB → mmap | pitch 和 宽 × 4 一样吗？offset 是什么样的数？ |
-|  2   | 按 pitch 写满像素，每个像素写 `行号 × 10000 + 列号` | |
-|  3   | 找第 10 行的第一个像素：按 pitch 找一次，按 宽 × 4 找一次 | 读到的是不是第 10 行？ |
-|  4   | PRIME 导出成 dma_buf fd，再 mmap 一次 | maps 里两行的路径；A 写 B 读、B 写 A 读对不对得上 |
-|  5   | munmap → DESTROY_DUMB；最后 close(drmFd) | |
+|  步   | 做什么                                                     | 看什么                                            |
+|:-----:|------------------------------------------------------------|---------------------------------------------------|
+|   1   | CREATE_DUMB → MAP_DUMB → mmap                              | pitch 和 宽 × 4 一样吗？offset 是什么样的数？     |
+|   2   | 按 pitch 写满像素，每个像素写 `行号 × 10000 + 列号`        |                                                   |
+|   3   | 找第 10 行的第一个像素：按 pitch 找一次，按 宽 × 4 找一次  | 读到的是不是第 10 行？                            |
+|   4   | PRIME 导出成 dma_buf fd，再 mmap 一次                      | maps 里两行的路径；A 写 B 读、B 写 A 读对不对得上 |
+|   5   | munmap → DESTROY_DUMB；最后 close(drmFd)                   |                                                   |
 
 ### 6.3 代码（全部代码，2026-10-31 上板验证过）
 
