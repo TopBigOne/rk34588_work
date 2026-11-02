@@ -50,6 +50,6 @@ int main(int argc, char** argv) {
         return run_m4_dumb_buffer();
     }
 
-    // LOGE(kTag, "用法：%s m1 | m2", argv[0]);
+    LOGE(kTag, "用法：%s m1 | m2", argv[0]);
     return 1;
 }
