@@ -1510,9 +1510,12 @@ I M4:     A 写 0x12345678，B 读到 0x12345678；B 写 0x9abcdef0，A 读到 0
 
 ### 6.6 要回答的问题
 
-1. 1000 宽的图，每行多出来的 32 字节放的是什么？显示时会显示出来吗？（每行末尾的填充，不显示；写图像时不用管它，但算下一行起点时必须跳过它）
-2. 如果把 `fill_pixels_by_pitch` 里的 `rowIndex * dumbBuf.pitchBytes` 错写成 `rowIndex * width * 4`，1000 宽的图会怎样？（每一行都往前错 32 字节，送到屏幕上画面是斜的；最后 1000 × 32 字节 ≈ 31 KB 没写到）
-3. 要把这块显存交给编码器，应该交 handle 还是 dmaBufFd？为什么？（dmaBufFd：handle 只在本 drmFd 里有意义）
+1. 1000 宽的图，每行多出来的 32 字节放的是什么？显示时会显示出来吗？
+   2. （每行末尾的填充，不显示；写图像时不用管它，但算下一行起点时必须跳过它）
+2. 如果把 `fill_pixels_by_pitch` 里的 `rowIndex * dumbBuf.pitchBytes` 错写成 `rowIndex * width * 4`，1000 宽的图会怎样？
+   3. （每一行都往前错 32 字节，送到屏幕上画面是斜的；最后 1000 × 32 字节 ≈ 31 KB 没写到）
+3. 要把这块显存交给编码器，应该交 handle 还是 dmaBufFd？为什么？
+   4. （dmaBufFd：handle 只在本 drmFd 里有意义）
 
 ---
 
