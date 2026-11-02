@@ -27,6 +27,8 @@ add_executable(day3_mmap
         src/experiments/m2_two_pointers.cpp
         src/experiments/m3_sync.cpp
         src/experiments/m3_sync.h
+        src/experiments/m4_dumb_buffer.cpp
+        src/experiments/m4_dumb_buffer.h
 )
 
 # 头文件搜索目录加上 src/：所有 #include 都写成相对 src/ 的路径，比如 #include "camera/camera_buffers.h"

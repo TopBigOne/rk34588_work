@@ -11,10 +11,10 @@
 #include "experiments/m1_maps.h"
 #include "experiments/m2_two_pointers.h"
 #include "experiments/m3_sync.h"
+#include "experiments/m4_dumb_buffer.h"
 #include <cstring>
 
 static const char* kTag = "Main";
-
 /**
  * @brief 按命令行参数选一个实验运行
  * @param[in] argc 参数个数
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     // strlen：数到 '\0' 为止有几个字符，在运行时数。不能用 sizeof：sizeof(指针) 永远是 8
     if (strlen(experimentName) == 0) {
         // 不写那块内存，改指针的指向：
-        experimentName = "m3";
+        experimentName = "m4";
     }
 
     // strcmp：两个字符串一样时返回 0（不是 true）。main 的返回值就是程序的退出码，shell 里 echo $? 能看到
@@ -45,6 +45,11 @@ int main(int argc, char** argv) {
     if (strcmp(experimentName, "m3") == 0) {
         return run_m3_sync();
     }
+
+    if (strcmp(experimentName, "m4") == 0) {
+        return run_m4_dumb_buffer();
+    }
+
     // LOGE(kTag, "用法：%s m1 | m2", argv[0]);
     return 1;
 }
