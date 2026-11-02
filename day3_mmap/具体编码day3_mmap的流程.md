@@ -40,7 +40,7 @@ main.cpp
 ├── 第 3 部分：M1  create_test_file()、run_m1_maps()
 ├── 第 4 部分：M2  run_m2_two_pointers()
 ├── 第 5 部分：M3  sync_dma_buf()、measure_sync_timing()、run_m3_sync()
-├── 第 6 部分：M4  create_fill_and_destroy_dumb()、run_m4_dumb()
+├── 第 6 部分：M4  create_and_map_dumb()、fill_pixels_by_pitch()、check_export_to_dma_buf()、run_m4_dumb_buffer()
 └── 第 7 部分：main()  按 argv[1] 选实验
 ```
 
@@ -1094,131 +1094,425 @@ I M3: /dev/dma_heap/system-uncached  sync_start 0.001 ms | memset 0.651 ms | syn
 
 ## 6. M4：DRM dumb buffer
 
-### 6.1 任务拆解
+**跑完 M4，你能回答：一块图像内存里，每一行占多少字节？是不是就等于 宽 × 4？**
 
-|  步  | 做什么                                    | ioctl / 函数                                       | 传回什么                         |
-|:----:|-------------------------------------------|----------------------------------------------------|----------------------------------|
-|  1   | 打开显示设备                              | `open("/dev/dri/card0")`                           | `drmFd`                          |
-|  2   | 申请显存：填宽、高、bpp=32                | `DRM_IOCTL_MODE_CREATE_DUMB`                       | `handle`、`pitch`、`size`        |
-|  3   | 问驱动"用什么 offset 去 mmap"             | `DRM_IOCTL_MODE_MAP_DUMB`                          | `offset`（假偏移，只是一个编号） |
-|  4   | 映射                                      | `mmap(drmFd, size, offset)`                        | CPU 指针                         |
-|  5   | 按 pitch 一行一行写颜色，再读回第一个像素 |                                                    |                                  |
-|  6   | 释放                                      | `munmap` → `DRM_IOCTL_MODE_DESTROY_DUMB` → `close` |                                  |
+答案是不一定。驱动给的"每行字节数"叫 **pitch**（也叫 stride，摄像头那边叫 `bytesperline`），它可能比 宽 × 4 大，多出来的是每行末尾的填充。后面 MPP 的 `hor_stride`、Day 4 RGA 的 `wstride` 都是这个概念，算错了画面会斜、会花。
 
-做两次：一次 1920 宽（1920 × 4 = 7680，是 64 的倍数），一次 1000 宽（1000 × 4 = 4000，**不是** 64 的倍数），对比 `pitch` 是不是等于 `width × 4`。
+顺带还能回答：**这块显存能不能交给别的硬件？** 能：用 PRIME 把它导出成 dma_buf fd，和 M2 摄像头 EXPBUF 是同一件事。
 
-**和摄像头对比**，套路完全一样：
+### 6.1 和 mmap、DMA 有什么关系
 
-|            | 摄像头                           | DRM                                  |
-|------------|----------------------------------|--------------------------------------|
-| 申请       | `VIDIOC_REQBUFS`                 | `DRM_IOCTL_MODE_CREATE_DUMB`         |
-| 问 offset  | `VIDIOC_QUERYBUF` → `mem_offset` | `DRM_IOCTL_MODE_MAP_DUMB` → `offset` |
-| 映射       | `mmap(videoFd, mem_offset)`      | `mmap(drmFd, offset)`                |
-| 每行字节数 | `bytesperline`（stride）         | `pitch`                              |
+| | 关系 |
+|---|---|
+| **mmap** | 这是本程序第 3 种"驱动给的内存"：摄像头（M2）、dma_heap（M1 第 3 步、M3）、DRM 显存（M4）。三种都是"驱动先分配 → 给一个 offset 或 fd → mmap 拿到地址"，只是 ioctl 名字不一样 |
+| **DMA** | dumb buffer 是给**显示控制器**（RK3588 叫 VOP）用的：显示时 VOP 自己用 DMA 从这块内存读像素送到屏幕，不经过 CPU。PRIME 导出的 dma_buf fd 还能交给编码器、RGA，和摄像头的 dma_buf 一样用 |
 
-### 6.2 代码
+套路和摄像头完全一样：
+
+| | 摄像头（M2） | DRM（M4） |
+|---|---|---|
+| 打开设备 | `open("/dev/video22")` → `videoFd` | `open("/dev/dri/card0")` → `drmFd` |
+| 申请 | `VIDIOC_REQBUFS` | `DRM_IOCTL_MODE_CREATE_DUMB` → handle、pitch、size |
+| 问 offset | `VIDIOC_QUERYBUF` → `mem_offset` | `DRM_IOCTL_MODE_MAP_DUMB` → `offset` |
+| 映射 | `mmap(videoFd, mem_offset)` | `mmap(drmFd, offset)` |
+| 每行字节数 | `bytesperline` | `pitch` |
+| 导出成 dma_buf | `VIDIOC_EXPBUF` | `DRM_IOCTL_PRIME_HANDLE_TO_FD` |
+| 释放 | `close(videoFd)` | `DRM_IOCTL_MODE_DESTROY_DUMB` → `close(drmFd)` |
+
+### 6.2 任务拆解
+
+对 1920×1080 和 1000×1000 各做一轮（1920 × 4 = 7680 是 64 的倍数，1000 × 4 = 4000 不是）：
+
+|  步  | 做什么 | 看什么 |
+|:----:|---|---|
+|  1   | CREATE_DUMB → MAP_DUMB → mmap | pitch 和 宽 × 4 一样吗？offset 是什么样的数？ |
+|  2   | 按 pitch 写满像素，每个像素写 `行号 × 10000 + 列号` | |
+|  3   | 找第 10 行的第一个像素：按 pitch 找一次，按 宽 × 4 找一次 | 读到的是不是第 10 行？ |
+|  4   | PRIME 导出成 dma_buf fd，再 mmap 一次 | maps 里两行的路径；A 写 B 读、B 写 A 读对不对得上 |
+|  5   | munmap → DESTROY_DUMB；最后 close(drmFd) | |
+
+### 6.3 代码（全部代码，2026-10-31 上板验证过）
+
+一共动 4 个文件：
+
+| 文件 | 做什么 |
+|---|---|
+| `src/experiments/m4_dumb_buffer.h` | 新建，内容见 6.3.1 |
+| `src/experiments/m4_dumb_buffer.cpp` | 新建，内容见 6.3.2 |
+| `src/main.cpp` | 加一行 include、加一个 `m4` 分支（6.3.3） |
+| `CMakeLists.txt` | `add_executable` 里加上这两个文件（6.3.3） |
+
+函数怎么分工：
+
+```
+run_m4_dumb_buffer()                         ← main 调它；open / close drmFd
+└── check_dumb_buffer_of_size(1920×1080)、(1000×1000)    一种宽高完整一轮
+      ├── create_and_map_dumb()               CREATE_DUMB → MAP_DUMB → mmap，结果放进 DumbBuffer
+      ├── fill_pixels_by_pitch()              按 pitch 写满：行号 × 10000 + 列号
+      ├── print_row_start_by_two_strides()    第 10 行：按 pitch 找 vs 按 宽 × 4 找
+      ├── check_export_to_dma_buf()           PRIME 导出 → mmap(dmaBufFd, 0) → 两个指针互相写读
+      │     └── print_maps_line_containing()  （src/common/，现成的）
+      └── unmap_and_destroy_dumb()            munmap → DESTROY_DUMB
+```
+
+#### 6.3.1 `src/experiments/m4_dumb_buffer.h`
 
 ```cpp
-/**
- * @brief 申请一块 dumb buffer，mmap，写满一种颜色，打印 pitch，再释放
- * @param[in] drmFd    /dev/dri/card0 的 fd
- * @param[in] width    宽，单位像素
- * @param[in] height   高，单位像素
- * @param[in] color    XRGB8888 颜色，例如 0x00FF0000 是红色
- * @return 成功返回 true；失败打印原因并返回 false
+/*
+ * m4_dumb_buffer.h：M4 实验——从显示驱动（DRM）申请 dumb buffer，看"每行字节数 pitch"是不是等于 宽 × 4
+ *
+ *   对两种宽度（1920、1000）各做一次：
+ *     CREATE_DUMB（申请）→ MAP_DUMB（问 offset）→ mmap → 按 pitch 写满像素
+ *     → 第 10 行分别按 pitch 和按 宽 × 4 去找，看读到的是不是第 10 行
+ *     → PRIME 导出成 dma_buf fd 再 mmap 一次 → munmap → DESTROY_DUMB（释放）
+ *
+ * 写法和实测输出见 具体编码day3_mmap的流程.md 第 6 节
  */
-static bool create_fill_and_destroy_dumb(int drmFd, uint32_t width, uint32_t height, uint32_t color) {
-    // 第 1 步：申请显存。填宽、高、每像素位数，驱动传回 handle、pitch（每行字节数）、size
-    drm_mode_create_dumb createDumb = {};
-    createDumb.width = width;
-    createDumb.height = height;
-    createDumb.bpp = 32;
-    if (ioctl(drmFd, DRM_IOCTL_MODE_CREATE_DUMB, &createDumb) != 0) {
-        printf("DRM_IOCTL_MODE_CREATE_DUMB: %s\n", strerror(errno));
-        return false;
-    }
-    printf("%ux%u：handle %u，pitch %u（width × 4 = %u），size %llu\n", width, height, createDumb.handle,
-           createDumb.pitch, width * 4, static_cast<unsigned long long>(createDumb.size));
+#pragma once
 
-    // 第 2 步：问驱动"这块显存用什么 offset 去 mmap"。这个 offset 是驱动编的"假偏移"，只是个编号
-    drm_mode_map_dumb mapDumb = {};
-    mapDumb.handle = createDumb.handle;
-    bool isOk = ioctl(drmFd, DRM_IOCTL_MODE_MAP_DUMB, &mapDumb) == 0;
-    if (!isOk) {
-        printf("DRM_IOCTL_MODE_MAP_DUMB: %s\n", strerror(errno));
-    }
+/**
+ * @brief M4：打开 /dev/dri/card0，申请 1920x1080 和 1000x1000 两块 dumb buffer，比较 pitch 和 宽 × 4
+ * @return 0 = 两块都申请、映射、读写、导出成功；1 = 打开设备或任何一块失败
+ * @note 只申请显存、CPU 读写，不往屏幕上显示，所以不用接显示器
+ */
+int run_m4_dumb_buffer();
+```
 
-    // 第 3 步：mmap(drmFd, 假偏移)，和摄像头 mmap(videoFd, mem_offset) 是一个套路
-    void *mapped = MAP_FAILED;
-    if (isOk) {
-        mapped = mmap(nullptr, createDumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, drmFd, mapDumb.offset);
-        isOk = mapped != MAP_FAILED;
-        if (!isOk) {
-            printf("mmap dumb: %s\n", strerror(errno));
-        }
-    }
+#### 6.3.2 `src/experiments/m4_dumb_buffer.cpp`
 
-    // 第 4 步：按 pitch 一行一行写像素。一行的起点 = 行号 × pitch，不是 行号 × width × 4
-    if (isOk) {
-        uint8_t *frameStart = static_cast<uint8_t *>(mapped);
-        printf("  offset 0x%llx -> mmapAddress %p\n", static_cast<unsigned long long>(mapDumb.offset), mapped);
-        print_maps_line_containing("dumb buffer", mapped);
-        for (uint32_t rowIndex = 0; rowIndex < height; ++rowIndex) {
-            uint32_t *rowPixels = reinterpret_cast<uint32_t *>(frameStart + rowIndex * createDumb.pitch);
-            for (uint32_t columnIndex = 0; columnIndex < width; ++columnIndex) {
-                rowPixels[columnIndex] = color;
-            }
-        }
-        const uint32_t *firstPixel = reinterpret_cast<const uint32_t *>(frameStart);
-        printf("  写完，读回第一个像素：0x%08x\n", *firstPixel);
-        munmap(mapped, createDumb.size);
-    }
+`unmap_and_destroy_dumb` 写在 `create_and_map_dumb` 前面：后者失败时要调它，C++ 里函数要先声明才能用。
 
-    // 第 5 步：释放显存
-    drm_mode_destroy_dumb destroyDumb = {};
-    destroyDumb.handle = createDumb.handle;
-    ioctl(drmFd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroyDumb);
-    return isOk;
+```cpp
+#include "experiments/m4_dumb_buffer.h"
+
+#include "common/log.h"
+#include "common/maps_printer.h"
+#include <cerrno> // errno
+#include <cstdint> // uint32_t、uint64_t
+#include <cstring> // strerror
+#include <drm/drm.h> // DRM_IOCTL_PRIME_HANDLE_TO_FD、drm_prime_handle、DRM_CLOEXEC、DRM_RDWR
+#include <drm/drm_mode.h> // drm_mode_create_dumb、drm_mode_map_dumb、drm_mode_destroy_dumb
+#include <fcntl.h> // open、O_RDWR、O_CLOEXEC
+#include <sys/ioctl.h> // ioctl
+#include <sys/mman.h> // mmap、munmap、PROT_READ、PROT_WRITE、MAP_SHARED、MAP_FAILED
+#include <unistd.h> // close
+
+static const char* kTag = "M4";
+// DRM（Direct Rendering Manager）：Linux 管显示和 GPU 的那套驱动框架。
+//   /dev/dri/card0 是它的设备节点，本板是 Rockchip 的显示驱动（导出的 dma_buf 在 fdinfo 里 exp_name 是 rockchipdrm）
+static const char* kDrmDevicePath = "/dev/dri/card0";
+// 每个像素写的值 = 行号 × kRowValueFactor + 列号。读回一个值就能一眼看出它是第几行第几列，
+//   例如 90928 = 第 9 行第 928 列。宽最大 1920 < 10000，所以列号不会"进位"到行号里
+static const uint32_t kRowValueFactor = 10000;
+// 拿第几行来比较"按 pitch 找"和"按 宽 × 4 找"：行号越大，错位越多，10 行已经足够看出来
+static const uint32_t kCheckRowIndex = 10;
+
+// 一块 dumb buffer 的信息：CREATE_DUMB、MAP_DUMB、mmap 三步写回的东西放在一起
+struct DumbBuffer {
+    // CREATE_DUMB 写回的编号（GEM handle）。它不是 fd，只在申请它的那个 drmFd 里有意义。0 表示没申请到
+    uint32_t handle = 0;
+    // CREATE_DUMB 写回的每行字节数（pitch，也叫 stride）。驱动可能给得比 宽 × 4 大，多出来的是每行末尾的填充
+    uint32_t pitchBytes = 0;
+    // CREATE_DUMB 写回的整块字节数 = pitchBytes × 高
+    uint64_t sizeBytes = 0;
+    // MAP_DUMB 写回的 offset：给 mmap 第 6 个参数用的编号，不是地址
+    uint64_t mmapOffset = 0;
+    // mmap(drmFd, mmapOffset) 的返回值：本进程里能直接读写这块显存的地址。nullptr 表示没映射
+    void* mmapAddress = nullptr;
+};
+
+/**
+ * @brief 释放 create_and_map_dumb() 申请的 dumb buffer：先 munmap，再 DESTROY_DUMB
+ * @param[in]     drmFd   申请时用的那个 drmFd
+ * @param[in,out] dumbBuf 要释放的 buffer，释放后 mmapAddress 置 nullptr、handle 置 0
+ * @return 无
+ * @note 对只申请了、还没映射的 buffer 也能调（mmapAddress 是 nullptr 就跳过 munmap）
+ */
+static void unmap_and_destroy_dumb(int drmFd, DumbBuffer& dumbBuf) {
+    if (dumbBuf.mmapAddress != nullptr) {
+        // munmap(地址, 长度)：长度要和 mmap 时一样
+        munmap(dumbBuf.mmapAddress, dumbBuf.sizeBytes);
+        dumbBuf.mmapAddress = nullptr;
+    }
+    if (dumbBuf.handle != 0) {
+        // DESTROY_DUMB：告诉驱动"这个 handle 我不用了"。
+        //   显存要等所有使用者都放手才真正释放：比如导出的 dma_buf 还有人拿着，就先不释放（引用计数，推断和 M2 一样）
+        drm_mode_destroy_dumb destroyDumb = {};
+        destroyDumb.handle                = dumbBuf.handle;
+        ioctl(drmFd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroyDumb);
+        dumbBuf.handle = 0;
+    }
 }
 
 /**
- * @brief M4：打开 /dev/dri/card0，申请两块不同宽度的 dumb buffer，看 pitch 是不是等于 width × 4
- * @return 成功返回 0；失败返回 1
+ * @brief 申请一块 dumb buffer，并 mmap 到本进程
+ * @param[in]  drmFd   open("/dev/dri/card0") 得到的 fd
+ * @param[in]  width   宽，单位像素
+ * @param[in]  height  高，单位像素
+ * @param[out] dumbBuf 成功时填好 handle、pitchBytes、sizeBytes、mmapOffset、mmapAddress
+ * @return true = 成功；false = 任何一步失败（已经申请到的显存在函数里释放掉）
+ * @note 用完要调 unmap_and_destroy_dumb() 释放
  */
-static int run_m4_dumb() {
-    printf("===== M4：DRM dumb buffer =====\n");
+static bool create_and_map_dumb(int drmFd, uint32_t width, uint32_t height, DumbBuffer& dumbBuf) {
+    // 第 1 步 申请：drm_mode_create_dumb 是 CREATE_DUMB 用的表。
+    //   "dumb" = 笨的：只是一块能放像素的内存，GPU 不会在上面做加速运算，CPU 写好后交给显示控制器显示
+    //   应用填 width、height、bpp；驱动写回 handle、pitch、size
+    drm_mode_create_dumb createDumb = {};
+    createDumb.width                = width;
+    createDumb.height               = height;
+    // bpp（bits per pixel）：每个像素多少位。32 位 = 4 字节，对应 XRGB8888（X 不用、R、G、B 各 8 位）
+    createDumb.bpp = 32;
+    // DRM_IOCTL_MODE_CREATE_DUMB = DRM_IOWR(0xB2, struct drm_mode_create_dumb)：WR，应用填、内核写回。
+    //   这一步驱动就把显存分配好了，和摄像头 REQBUFS 一样：内存有了，但本进程还没有地址
+    if (ioctl(drmFd, DRM_IOCTL_MODE_CREATE_DUMB, &createDumb) != 0) {
+        LOGE(kTag, "DRM_IOCTL_MODE_CREATE_DUMB %ux%u: %s", width, height, strerror(errno));
+        return false;
+    }
+    dumbBuf.handle     = createDumb.handle;
+    dumbBuf.pitchBytes = createDumb.pitch;
+    dumbBuf.sizeBytes  = createDumb.size;
+
+    // 第 2 步 问 offset：和摄像头 QUERYBUF 写回 mem_offset 是一回事。
+    //   应用填 handle（要哪一块），驱动写回 offset：mmap 时拿它告诉驱动"我要映射的是这一块"
+    drm_mode_map_dumb mapDumb = {};
+    mapDumb.handle            = dumbBuf.handle;
+    // DRM_IOCTL_MODE_MAP_DUMB = DRM_IOWR(0xB3, struct drm_mode_map_dumb)：只是查一个编号，不分配内存
+    if (ioctl(drmFd, DRM_IOCTL_MODE_MAP_DUMB, &mapDumb) != 0) {
+        LOGE(kTag, "DRM_IOCTL_MODE_MAP_DUMB: %s", strerror(errno));
+        unmap_and_destroy_dumb(drmFd, dumbBuf);
+        return false;
+    }
+    dumbBuf.mmapOffset = mapDumb.offset;
+
+    // 第 3 步 映射：和摄像头一样是 mmap(设备 fd, 驱动给的 offset)，6 个参数的意思见 camera_buffers.cpp。
+    //   参数 2 用 CREATE_DUMB 写回的 size，不是 宽 × 高 × 4：pitch 比 宽 × 4 大时，size 也跟着大
+    //   参数 5 drmFd：内核凭它找到 DRM 驱动；参数 6 mmapOffset：驱动凭它找到是哪一块
+    void* mmapAddress = mmap(nullptr, dumbBuf.sizeBytes, PROT_READ | PROT_WRITE, MAP_SHARED, drmFd, dumbBuf.mmapOffset);
+    // 失败返回 MAP_FAILED（就是 (void*)-1），不是 nullptr
+    if (mmapAddress == MAP_FAILED) {
+        LOGE(kTag, "mmap dumb buffer: %s", strerror(errno));
+        unmap_and_destroy_dumb(drmFd, dumbBuf);
+        return false;
+    }
+    dumbBuf.mmapAddress = mmapAddress;
+    return true;
+}
+
+/**
+ * @brief 按 pitch 一行一行写满像素，每个像素写 行号 × kRowValueFactor + 列号
+ * @param[in] dumbBuf 已经 mmap 好的 dumb buffer
+ * @param[in] width   宽，单位像素（每行只写这么多个像素，行末的填充不写）
+ * @param[in] height  高，单位像素
+ * @return 无
+ */
+static void fill_pixels_by_pitch(const DumbBuffer& dumbBuf, uint32_t width, uint32_t height) {
+    // 用 uint8_t*（按字节走）算每行的起点：pitchBytes 的单位是字节。
+    //   如果直接用 uint32_t* 加 rowIndex * pitchBytes，指针会走 4 倍远（指针加 1 = 走一个元素的大小）
+    uint8_t* frameStart = static_cast<uint8_t*>(dumbBuf.mmapAddress);
+    for (uint32_t rowIndex = 0; rowIndex < height; ++rowIndex) {
+        // 第 rowIndex 行的起点 = 整块起点 + 行号 × pitch。这就是 M4 要记住的那一行：乘 pitch，不是乘 宽 × 4
+        uint32_t* rowPixels = reinterpret_cast<uint32_t*>(frameStart + rowIndex * dumbBuf.pitchBytes);
+        for (uint32_t columnIndex = 0; columnIndex < width; ++columnIndex) {
+            rowPixels[columnIndex] = rowIndex * kRowValueFactor + columnIndex;
+        }
+    }
+}
+
+/**
+ * @brief 找第 rowIndex 行的第一个像素：按 pitch 找一次、按 宽 × 4 找一次，打印两次读到的是第几行第几列
+ * @param[in] dumbBuf  已经用 fill_pixels_by_pitch() 写满的 dumb buffer
+ * @param[in] width    宽，单位像素
+ * @param[in] rowIndex 要找第几行（从 0 数）
+ * @return 无
+ * @note pitch 等于 宽 × 4 时两次结果一样；pitch 更大时，按 宽 × 4 找会落到前面某一行的中间
+ */
+static void print_row_start_by_two_strides(const DumbBuffer& dumbBuf, uint32_t width, uint32_t rowIndex) {
+    const uint8_t* frameStart = static_cast<const uint8_t*>(dumbBuf.mmapAddress);
+    // 对：按驱动给的 pitch 算这一行的起点
+    const uint32_t byPitchValue = *reinterpret_cast<const uint32_t*>(frameStart + rowIndex * dumbBuf.pitchBytes);
+    // 错：以为每行正好 宽 × 4 字节、行和行之间没有填充
+    const uint32_t byWidthValue = *reinterpret_cast<const uint32_t*>(frameStart + rowIndex * width * 4);
+    // 读到的值 ÷ kRowValueFactor = 行号，% kRowValueFactor = 列号（fill_pixels_by_pitch 就是这样写进去的）
+    LOGI(kTag,
+        "    找第 %u 行第 0 列：按 pitch（%u × %u）读到第 %u 行第 %u 列；按 宽 × 4（%u × %u）读到第 %u 行第 %u 列",
+        rowIndex, rowIndex, dumbBuf.pitchBytes, byPitchValue / kRowValueFactor, byPitchValue % kRowValueFactor,
+        rowIndex, width * 4, byWidthValue / kRowValueFactor, byWidthValue % kRowValueFactor);
+}
+
+/**
+ * @brief 把 dumb buffer 导出成 dma_buf fd（PRIME），再 mmap 一次，验证两个指针指向同一块显存
+ * @param[in] drmFd   申请 dumb buffer 时用的 drmFd
+ * @param[in] dumbBuf 已经 mmap 好的 dumb buffer（pointerA 就是它的 mmapAddress）
+ * @return true = 导出、映射成功，并且两边互相看得到对方写的值；false = 任何一步失败或看不到
+ * @note 函数里 mmap 的 pointerB 和导出的 dmaBufFd 都在函数结束前释放
+ */
+static bool check_export_to_dma_buf(int drmFd, const DumbBuffer& dumbBuf) {
+    // PRIME：DRM 里"handle ↔ dma_buf fd"互相转换的机制。
+    //   handle 只在本 drmFd 里有意义；转成 dma_buf fd 以后，就能交给别的驱动（编码器、RGA）或者别的进程
+    drm_prime_handle primeHandle = {};
+    primeHandle.handle           = dumbBuf.handle; // 输入：要导出哪一块
+    // flags：新 fd 的属性。DRM_CLOEXEC = exec 时自动关掉（和 O_CLOEXEC 一样）；
+    //   DRM_RDWR = 导出的 dma_buf 可读可写。不加就是只读，下面 PROT_WRITE 的 mmap 会失败（推断和 M2 只读 EXPBUF 一样是
+    //   EACCES）
+    primeHandle.flags = DRM_CLOEXEC | DRM_RDWR;
+    // DRM_IOCTL_PRIME_HANDLE_TO_FD = DRM_IOWR(0x2d, struct drm_prime_handle)：驱动写回 primeHandle.fd。
+    //   和摄像头 VIDIOC_EXPBUF 是同一件事：把驱动自己的 buffer 包成 dma_buf，给一个 fd
+    if (ioctl(drmFd, DRM_IOCTL_PRIME_HANDLE_TO_FD, &primeHandle) != 0) {
+        LOGE(kTag, "DRM_IOCTL_PRIME_HANDLE_TO_FD: %s", strerror(errno));
+        return false;
+    }
+    const int dmaBufFd = primeHandle.fd;
+    LOGI(kTag, "    PRIME 导出：handle %u -> dmaBufFd %d", dumbBuf.handle, dmaBufFd);
+
+    // mmap(dmaBufFd, 0)：dma_buf 的 offset 永远填 0（一个 fd 就是一整块，不用再选哪一块），和 M2 的 pointerB 一样
+    void* mmapAddress = mmap(nullptr, dumbBuf.sizeBytes, PROT_READ | PROT_WRITE, MAP_SHARED, dmaBufFd, 0);
+    if (mmapAddress == MAP_FAILED) {
+        LOGE(kTag, "mmap dmaBufFd: %s", strerror(errno));
+        close(dmaBufFd);
+        return false;
+    }
+    uint32_t* pointerA = static_cast<uint32_t*>(dumbBuf.mmapAddress); // mmap(drmFd, mmapOffset) 得到的
+    uint32_t* pointerB = static_cast<uint32_t*>(mmapAddress); // mmap(dmaBufFd, 0) 得到的
+    print_maps_line_containing("    pointerA", pointerA);
+    print_maps_line_containing("    pointerB", pointerB);
+
+    // 两个方向各写一次：A 写、B 读；B 写、A 读。都对上才说明是同一块物理内存
+    pointerA[0]             = 0x12345678;
+    pointerB[1]             = 0x9abcdef0;
+    const bool isSameMemory = pointerB[0] == 0x12345678 && pointerA[1] == 0x9abcdef0;
+    LOGI(kTag, "    A 写 0x12345678，B 读到 0x%08x；B 写 0x9abcdef0，A 读到 0x%08x -> %s", pointerB[0], pointerA[1],
+        isSameMemory ? "同一块内存" : "不是同一块");
+
+    munmap(mmapAddress, dumbBuf.sizeBytes);
+    // close(dmaBufFd)：只是还掉这个 fd，显存还被 drmFd 的 handle 拿着，不会释放
+    close(dmaBufFd);
+    return isSameMemory;
+}
+
+/**
+ * @brief 对一种宽高做完整的一轮：申请映射 → 打印 pitch → 写满 → 两种方式找第 kCheckRowIndex 行 → PRIME 导出 → 释放
+ * @param[in] drmFd  open("/dev/dri/card0") 得到的 fd
+ * @param[in] width  宽，单位像素
+ * @param[in] height 高，单位像素，必须大于 kCheckRowIndex
+ * @return true = 每一步都成功；false = 任何一步失败
+ */
+static bool check_dumb_buffer_of_size(int drmFd, uint32_t width, uint32_t height) {
+    LOGI(kTag, "----- %u x %u -----", width, height);
+    DumbBuffer dumbBuf;
+    if (!create_and_map_dumb(drmFd, width, height, dumbBuf)) {
+        return false;
+    }
+    // 第 1 步 看 pitch：驱动给的每行字节数，和 宽 × 4 比一比
+    LOGI(kTag, "    handle %u | pitch %u 字节（宽 × 4 = %u，每行多 %u）| size %llu 字节", dumbBuf.handle,
+        dumbBuf.pitchBytes, width * 4, dumbBuf.pitchBytes - width * 4,
+        static_cast<unsigned long long>(dumbBuf.sizeBytes));
+    LOGI(kTag, "    MAP_DUMB offset 0x%llx -> mmapAddress %p", static_cast<unsigned long long>(dumbBuf.mmapOffset),
+        dumbBuf.mmapAddress);
+
+    // 第 2 步 写满，再用两种方式找同一行，看错位
+    fill_pixels_by_pitch(dumbBuf, width, height);
+    print_row_start_by_two_strides(dumbBuf, width, kCheckRowIndex);
+
+    // 第 3 步 导出成 dma_buf，再映射一次
+    const bool isExportOk = check_export_to_dma_buf(drmFd, dumbBuf);
+
+    unmap_and_destroy_dumb(drmFd, dumbBuf);
+    return isExportOk;
+}
+
+int run_m4_dumb_buffer() {
+    LOGD(kTag, "run_m4_dumb_buffer()");
+    LOGD(kTag, "===== M4：DRM dumb buffer，看 pitch 和 宽 × 4 =====");
+    // O_RDWR：要申请、映射可写的显存，必须可读可写打开
     const int drmFd = open(kDrmDevicePath, O_RDWR | O_CLOEXEC);
     if (drmFd < 0) {
-        printf("open %s: %s\n", kDrmDevicePath, strerror(errno));
+        LOGE(kTag, "open %s: %s", kDrmDevicePath, strerror(errno));
         return 1;
     }
-    const bool isWideOk = create_fill_and_destroy_dumb(drmFd, 1920, 1080, 0x00FF0000);
-    const bool isOddOk = create_fill_and_destroy_dumb(drmFd, 1000, 100, 0x0000FF00); // 1000 × 4 = 4000，不是 64 的倍数
+    // 1920 × 4 = 7680 = 64 × 120，本来就是 64 的倍数；1000 × 4 = 4000 不是 64 的倍数
+    const bool isWideOk = check_dumb_buffer_of_size(drmFd, 1920, 1080);
+    const bool isOddOk  = check_dumb_buffer_of_size(drmFd, 1000, 1000);
+    // close(drmFd)：没 DESTROY 的 dumb buffer 也会在这时被驱动释放
     close(drmFd);
     return isWideOk && isOddOk ? 0 : 1;
 }
 ```
 
-### 6.3 期望看到的输出 ⚠️ 猜测
+#### 6.3.3 `src/main.cpp` 和 `CMakeLists.txt` 要加的
+
+```cpp
+// main.cpp ① include 区，跟在 m3_sync.h 后面
+#include "experiments/m4_dumb_buffer.h"
+
+// main.cpp ② main() 里，跟在 m3 那个 if 后面
+    if (strcmp(experimentName, "m4") == 0) {
+        return run_m4_dumb_buffer();
+    }
+```
+
+main.cpp 开头的注释里也加一行：`./day3_mmap m4   M4：DRM dumb buffer，看 pitch 和 宽 × 4 → src/experiments/m4_dumb_buffer.cpp`
+
+```cmake
+# CMakeLists.txt 的 add_executable 里，跟在 m3_sync.h 后面
+        src/experiments/m4_dumb_buffer.cpp
+        src/experiments/m4_dumb_buffer.h
+```
+
+`<drm/drm.h>`、`<drm/drm_mode.h>` 是内核头文件，工具链的 sysroot 里就有，**不用链接 libdrm**。
+
+#### 6.3.4 运行
+
+```bash
+./run_on_board_with_mac.sh m4
+```
+
+CLion 里 Program arguments 填 `m4`。不用接显示器：只申请显存、CPU 读写，不往屏幕上送。
+
+> 2026-10-31 这份代码上板跑过，输出见 6.4。2026-11-02 工作区被还原后按原样重写了一遍：交叉编译通过（`-Wall -Wextra` 没有 warning，最高只用到 GLIBC_2.34），clang-format 过了一遍；当时板子没连着，重写后没有再上板跑。
+
+### 6.4 实测输出（2026-10-31，我用这份参考代码跑的）
 
 ```
-1920x1080：handle 1，pitch 7680（width × 4 = 7680），size 8294400
-  offset 0x10xxxxxxx -> mmapAddress 0x7f9...
-  dumb buffer    0x7f9...
-    -> 7f9...-7f9... rw-s 10xxxxxxx 00:06 xxx  /dev/dri/card0
-  写完，读回第一个像素：0x00ff0000
-1000x100：handle 1，pitch 4032（width × 4 = 4000），size 403200
-  ...
+D M4: run_m4_dumb_buffer()
+D M4: ===== M4：DRM dumb buffer，看 pitch 和 宽 × 4 =====
+I M4: ----- 1920 x 1080 -----
+I M4:     handle 1 | pitch 7680 字节（宽 × 4 = 7680，每行多 0）| size 8294400 字节
+I M4:     MAP_DUMB offset 0x100000000 -> mmapAddress 0x7f9a50a000
+I M4:     找第 10 行第 0 列：按 pitch（10 × 7680）读到第 10 行第 0 列；按 宽 × 4（10 × 7680）读到第 10 行第 0 列
+I M4:     PRIME 导出：handle 1 -> dmaBufFd 4
+I Maps:     pointerA   0x7f9a50a000 -> 7f9a50a000-7f9acf3000 rw-s 00000000 00:05 254    /dev/dri/card0
+I Maps:     pointerB   0x7f99d21000 -> 7f99d21000-7f9a50a000 rw-s 00000000 00:08 24     /dmabuf:1700-m4test
+I M4:     A 写 0x12345678，B 读到 0x12345678；B 写 0x9abcdef0，A 读到 0x9abcdef0 -> 同一块内存
+I M4: ----- 1000 x 1000 -----
+I M4:     handle 1 | pitch 4032 字节（宽 × 4 = 4000，每行多 32）| size 4032000 字节
+I M4:     MAP_DUMB offset 0x100000000 -> mmapAddress 0x7f9a91a000
+I M4:     找第 10 行第 0 列：按 pitch（10 × 4032）读到第 10 行第 0 列；按 宽 × 4（10 × 4000）读到第 9 行第 928 列
+I M4:     PRIME 导出：handle 1 -> dmaBufFd 4
+I Maps:     pointerA   0x7f9a91a000 -> 7f9a91a000-7f9acf3000 rw-s 00000000 00:05 254    /dev/dri/card0
+I Maps:     pointerB   0x7f9a541000 -> 7f9a541000-7f9a91a000 rw-s 00000000 00:08 25     /dmabuf:1700-m4test
+I M4:     A 写 0x12345678，B 读到 0x12345678；B 写 0x9abcdef0，A 读到 0x9abcdef0 -> 同一块内存
+退出码 0
 ```
 
-- 1000 宽的 pitch 我猜是 **4032**（往上补齐到 64 的倍数）。Rockchip DRM 驱动申请 dumb buffer 时会把每行字节数对齐，这和摄像头 stride 要对齐是同一个原因：硬件一次搬一整块，喜欢整齐的数字。**要上板看实际数字**
-- maps 里那一行的偏移列，应该就是 `MAP_DUMB` 给的那个假偏移
+（程序名你那边是 `day3_mmap`，`/dmabuf:<pid>-day3_mmap`；地址、pid、inode 每次不一样）
 
-### 6.4 要回答的问题
+另外单独试过 1001 宽：pitch 也是 4032。
 
-1. `pitch` 和 `width × 4` 一样吗？不一样的话，差的那些字节是什么？（每行末尾的填充，不显示）
-2. 第 4 步写像素时，如果把 `rowIndex * createDumb.pitch` 错写成 `rowIndex * width * 4`，1000 宽那块会怎样？（从第 2 行开始，每行都往前错位 32 字节，画面斜了）
-3. maps 里 dumb buffer 那一行的路径是什么？
+### 6.5 看懂这份输出
+
+1. **pitch 会被补齐**：1920 宽时 pitch = 7680 = 宽 × 4；1000 宽时 pitch = 4032，比 4000 多 32；1001 宽（4004）也是 4032。7680、4032 都是 64 的倍数，推断驱动把每行补到 64 字节的倍数（Rockchip DRM 源码没核对）。原因推断：VOP 用 DMA 一次搬一整块，行首对齐搬得快。
+2. **按 宽 × 4 找行会错位**：第 10 行按 宽 × 4 算，起点在 10 × 4000 = 40000 字节处。但按 pitch，第 9 行从 9 × 4032 = 36288 开始，40000 − 36288 = 3712 字节 = 928 个像素，所以读到的是"第 9 行第 928 列"，和输出一样。越往下错得越多，画到屏幕上就是一张斜的图。
+3. **offset 只是个编号**：两次都是 `0x100000000`（4 GB），明显不是地址。它是 DRM 编出来给 mmap 用的"假偏移"，和摄像头 `mem_offset` 一个作用。maps 里偏移那一列却是 `00000000`：推断是 DRM 的 mmap 处理完以后把偏移清零了（源码没核对）。
+4. **两条 maps 行，同一块内存**：pointerA 是 `00:05 254 /dev/dri/card0`（设备文件，和摄像头 `/dev/video22` 一样）；pointerB 是 `00:08 /dmabuf:<pid>-<程序名>`（dma_buf，和 M2 的 pointerB、M1 第 3 步 dma_heap 一样）。两边互相写读都对得上，说明是同一块物理内存。
+5. **handle 两次都是 1**：第一块 DESTROY 以后编号被收回，第二块又拿到 1。handle 只在本 drmFd 里有意义，所以要导出成 fd 才能给别人。
+
+我另外用 `/proc/<pid>/fdinfo/<dmaBufFd>` 看过（探针），`exp_name: rockchipdrm`：这个 dma_buf 是 Rockchip DRM 驱动导出的，摄像头那边是 `videobuf2_cma_sg`。
+
+### 6.6 要回答的问题
+
+1. 1000 宽的图，每行多出来的 32 字节放的是什么？显示时会显示出来吗？（每行末尾的填充，不显示；写图像时不用管它，但算下一行起点时必须跳过它）
+2. 如果把 `fill_pixels_by_pitch` 里的 `rowIndex * dumbBuf.pitchBytes` 错写成 `rowIndex * width * 4`，1000 宽的图会怎样？（每一行都往前错 32 字节，送到屏幕上画面是斜的；最后 1000 × 32 字节 ≈ 31 KB 没写到）
+3. 要把这块显存交给编码器，应该交 handle 还是 dmaBufFd？为什么？（dmaBufFd：handle 只在本 drmFd 里有意义）
 
 ---
 

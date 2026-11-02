@@ -4,7 +4,7 @@
 - [提交信息前缀](feedback_commit_msg_prefix.md) — 用当天工程名作前缀，例如 "day3_cam2h264: xxx"，不用 "3:"
 - [新技术点都写文档](feedback_new_tech_point_doc.md) — 聊天里讲到的新命令/概念，主动整理成单独的 md，放当天工程 doc/ 并加导航
 - [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
-- [Day 3 进度断点](project_day3_status.md) — 2026-10-31：day3_mmap M1（含第 3 步 dma_heap）、M2、M3 上板通过并提交；M3 sync 两边都≈0；下一步 M4（DRM dumb buffer）
+- [Day 3 进度断点](project_day3_status.md) — 2026-11-02：day3_mmap M1～M3 已提交；M4 参考代码在流程.md 第 6 节（上板验证过），等用户写；板子 11-01 洒啤酒，检查正常，摄像头已拆下
 - [关键文档和位置](reference_rk_work_docs.md) — 速查表、Day 2 文档、板子参考程序、会话记录 jsonl 路径
 - [代码质量：命名和注释不能误导](feedback_code_quality_naming_comments.md) — 2026-10-31 用户指出多次被带偏；注释先写字面意思再写作用，名字说是什么、从哪来；规则在 CLAUDE.md
 - [聊天用简单英语](feedback_chat_in_simple_english.md) — 2026-10-22 起聊天用简单英语（新概念 1～3 水平），文档、注释、提交信息仍用中文
