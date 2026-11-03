@@ -16,6 +16,8 @@ metadata:
 
 - **2026-10-18 用户明确说**：命令行参数解析、帧率 / 耗时统计这类"死知识点"、编解码里很小的分支，**先不学，等所有技术点都学完再回头细学**（不是不学）。现在排里程碑时先跳过它们（常量写死；真需要时我直接写好），时间放在核心机制上：零拷贝 / 内存、V4L2 和 MPP 的交互、stride、**旋转（prep:rotation，用户确认要学）**、多路码流、性能对比。把跳过的这些记在 Day 3 进度里，最后统一补。
 
+- **2026-11-04 用户肯定**：Day 4 把 `mpp_encoder.h/.cpp` 从头手写一遍（不复制 Day 3 的），顺带复习了 mpp_create / mpp_init / control / MppBuffer / MppFrame / MppPacket，用户说"这样挺好"，目标是**熟悉和精通 MPP 编解码 API**。以后每一天新工程里的 MPP 封装（encoder、decoder）都让用户手写，我按 -Wall -Wextra 编译 + 对照上一天的原版 + 查 MPP 源码来 review，不直接给成品。这次 review 抓到的典型错误：`control(MPP_ENC_GET_CFG / SET_CFG, &encoderCfg)` 多了 `&`、`mpp_buffer_put(&buffer)` 多了 `&`，都是"传指针本身还是指针的地址"，编译器不报，要重点讲。
+
 **Why:** 用户的目标是真正理解系统（能独立写出 MPP 编解码器），不是只要能跑的代码；同时不想在样板代码上浪费时间。
 
 **How to apply:**
