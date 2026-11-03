@@ -1,7 +1,8 @@
 - [用户学习背景](user_learning_profile.md) — 在学 RK3588 MPP 编解码，国庆 5 天计划，中文交流，爱追问原理
 - [教学分工方式](feedback_teaching_workflow.md) — 我写文档并 review，用户写 MPP 核心代码；先面条后重构；md5 上板验证
 - [文档风格](feedback_docs_style.md) — 详细、SVG 图渲染检查、源码行号和实测数据要核对
-- [提交信息前缀](feedback_commit_msg_prefix.md) — 用当天工程名作前缀，例如 "day3_cam2h264: xxx"，不用 "3:"
+- [提交信息前缀](feedback_commit_msg_prefix.md) — Day 4 起用 "[day4_rga_M1] xxx"（方括号 + 分支名）；以前是 "day3_cam2h264: xxx"
+- [提交后直接 push](feedback_commit_then_push.md) — 2026-11-04 起，用户让提交时，提交完紧接着 push，不 force push
 - [新技术点都写文档](feedback_new_tech_point_doc.md) — 聊天里讲到的新命令/概念，主动整理成单独的 md，放当天工程 doc/ 并加导航
 - [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
 - [Day 3 进度断点](project_day3_status.md) — 2026-11-02：day3_mmap M1～M4 代码都已提交，M4 还没上板（11-03 跑）；板子 11-01 洒啤酒在清洗，摄像头已拆下
