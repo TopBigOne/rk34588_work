@@ -22,6 +22,9 @@ struct EncoderConfigArg {
     int rotation = 0;
 };
 
+/**
+ * 编码包
+ */
 struct EncodedPacket {
     std::vector<uint8_t> data;
     bool isKeyFrame = false;

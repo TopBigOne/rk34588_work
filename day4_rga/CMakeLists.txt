@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(day4_rga main.cpp
         common/mpp_utils.h
         encoder/mpp_encoder.cpp
-        encoder/mpp_encoder.h)
+        encoder/mpp_encoder.h
+        rga/rga_resizer.cpp
+        rga/rga_resizer.h)
 
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
