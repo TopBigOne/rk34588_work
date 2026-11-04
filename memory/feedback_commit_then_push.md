@@ -12,4 +12,5 @@ metadata:
 **How to apply:**
 - 只在用户要求提交时才提交（CLAUDE.md 的规则不变）；提交完立刻 `git push`，新分支用 `git push -u origin <分支名>`。
 - 不 force push；push 失败（比如远端有新提交）就停下来告诉用户，不自己 rebase 或强推。
+- **不开 PR，也不提 PR**（2026-11-04 用户说"我干嘛要开 PR？直接提交就行了"）：个人学习仓库，提交 + push 到当前分支就结束；push 输出里 GitHub 给的 PR 链接不用转告。
 - 提交前缀用用户指定的，例如 `[day4_rga_M1]`，见 [[feedback-commit-msg-prefix]]。
