@@ -3,12 +3,17 @@ project(day4_rga)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(day4_rga main.cpp
-        common/mpp_utils.h
-        encoder/mpp_encoder.cpp
-        encoder/mpp_encoder.h
-        rga/rga_resizer.cpp
-        rga/rga_resizer.h)
+add_executable(day4_rga
+        src/main.cpp
+        src/common/log.h
+        src/common/mpp_utils.h
+        src/encoder/mpp_encoder.cpp
+        src/encoder/mpp_encoder.h
+        src/rga/rga_resizer.cpp
+        src/rga/rga_resizer.h)
+
+# 头文件搜索目录加上 src：任何文件里都可以写 #include "common/log.h"，不用数 ../ 有几层
+target_include_directories(day4_rga PRIVATE src)
 
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
