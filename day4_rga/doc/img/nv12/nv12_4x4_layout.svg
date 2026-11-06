@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="470" viewBox="0 0 980 470" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="980" height="470" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+
+  <text x="490" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">4×4 的小图，在 NV12 里怎么排</text>
+
+  <!-- 左：画面 -->
+  <text x="150" y="68" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">画面（屏幕上看到的）</text>
+  <text x="150" y="88" font-size="12" text-anchor="middle" fill="#555">每 2×2 个像素是一组，同一种底色 = 共用一对 U、V</text>
+  <!-- block A (0,0) -->
+  <rect x="50" y="100" width="100" height="100" fill="#ffe3c2" stroke="#d08a3a" stroke-width="2"/>
+  <!-- block B -->
+  <rect x="150" y="100" width="100" height="100" fill="#d6ecff" stroke="#3d82c4" stroke-width="2"/>
+  <!-- block C -->
+  <rect x="50" y="200" width="100" height="100" fill="#dff3d6" stroke="#4e9a3a" stroke-width="2"/>
+  <!-- block D -->
+  <rect x="150" y="200" width="100" height="100" fill="#efdcf5" stroke="#9050a8" stroke-width="2"/>
+  <!-- pixel grid lines -->
+  <g stroke="#999" stroke-width="1" stroke-dasharray="3,3">
+    <line x1="100" y1="100" x2="100" y2="300"/>
+    <line x1="200" y1="100" x2="200" y2="300"/>
+    <line x1="50" y1="150" x2="250" y2="150"/>
+    <line x1="50" y1="250" x2="250" y2="250"/>
+  </g>
+  <g font-size="14" text-anchor="middle" fill="#222">
+    <text x="75" y="130">Y00</text><text x="125" y="130">Y01</text><text x="175" y="130">Y02</text><text x="225" y="130">Y03</text>
+    <text x="75" y="180">Y10</text><text x="125" y="180">Y11</text><text x="175" y="180">Y12</text><text x="225" y="180">Y13</text>
+    <text x="75" y="230">Y20</text><text x="125" y="230">Y21</text><text x="175" y="230">Y22</text><text x="225" y="230">Y23</text>
+    <text x="75" y="280">Y30</text><text x="125" y="280">Y31</text><text x="175" y="280">Y32</text><text x="225" y="280">Y33</text>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#555">
+    <text x="100" y="320">x = 0 ～ 1</text><text x="200" y="320">x = 2 ～ 3</text>
+  </g>
+  <g font-size="12" fill="#444">
+    <text x="62" y="350">橙色组：U0 V0　　蓝色组：U1 V1</text>
+    <text x="62" y="370">绿色组：U2 V2　　紫色组：U3 V3</text>
+  </g>
+
+  <line x1="280" y1="200" x2="340" y2="200" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="310" y="188" font-size="12" text-anchor="middle" fill="#555">按地址</text>
+  <text x="310" y="220" font-size="12" text-anchor="middle" fill="#555">从小到大</text>
+
+  <!-- 右：内存 -->
+  <text x="640" y="68" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">内存（一个字节一格，从左到右、从上到下）</text>
+
+  <text x="350" y="112" font-size="13" font-weight="bold" fill="#222">Y 平面</text>
+  <text x="350" y="130" font-size="11" fill="#555">4 行 × 4 字节</text>
+  <g font-size="13" text-anchor="middle" fill="#222">
+    <!-- row 0 -->
+    <rect x="460" y="98" width="60" height="30" fill="#ffe3c2" stroke="#888"/><text x="490" y="118">Y00</text>
+    <rect x="520" y="98" width="60" height="30" fill="#ffe3c2" stroke="#888"/><text x="550" y="118">Y01</text>
+    <rect x="580" y="98" width="60" height="30" fill="#d6ecff" stroke="#888"/><text x="610" y="118">Y02</text>
+    <rect x="640" y="98" width="60" height="30" fill="#d6ecff" stroke="#888"/><text x="670" y="118">Y03</text>
+    <!-- row 1 -->
+    <rect x="460" y="128" width="60" height="30" fill="#ffe3c2" stroke="#888"/><text x="490" y="148">Y10</text>
+    <rect x="520" y="128" width="60" height="30" fill="#ffe3c2" stroke="#888"/><text x="550" y="148">Y11</text>
+    <rect x="580" y="128" width="60" height="30" fill="#d6ecff" stroke="#888"/><text x="610" y="148">Y12</text>
+    <rect x="640" y="128" width="60" height="30" fill="#d6ecff" stroke="#888"/><text x="670" y="148">Y13</text>
+    <!-- row 2 -->
+    <rect x="460" y="158" width="60" height="30" fill="#dff3d6" stroke="#888"/><text x="490" y="178">Y20</text>
+    <rect x="520" y="158" width="60" height="30" fill="#dff3d6" stroke="#888"/><text x="550" y="178">Y21</text>
+    <rect x="580" y="158" width="60" height="30" fill="#efdcf5" stroke="#888"/><text x="610" y="178">Y22</text>
+    <rect x="640" y="158" width="60" height="30" fill="#efdcf5" stroke="#888"/><text x="670" y="178">Y23</text>
+    <!-- row 3 -->
+    <rect x="460" y="188" width="60" height="30" fill="#dff3d6" stroke="#888"/><text x="490" y="208">Y30</text>
+    <rect x="520" y="188" width="60" height="30" fill="#dff3d6" stroke="#888"/><text x="550" y="208">Y31</text>
+    <rect x="580" y="188" width="60" height="30" fill="#efdcf5" stroke="#888"/><text x="610" y="208">Y32</text>
+    <rect x="640" y="188" width="60" height="30" fill="#efdcf5" stroke="#888"/><text x="670" y="208">Y33</text>
+  </g>
+  <g font-size="11" fill="#555">
+    <text x="710" y="118">偏移 0～3</text>
+    <text x="710" y="148">偏移 4～7</text>
+    <text x="710" y="178">偏移 8～11</text>
+    <text x="710" y="208">偏移 12～15</text>
+  </g>
+
+  <text x="350" y="262" font-size="13" font-weight="bold" fill="#222">UV 平面</text>
+  <text x="350" y="280" font-size="11" fill="#555">2 行（= 高 / 2）</text>
+  <text x="350" y="296" font-size="11" fill="#555">× 4 字节（= 宽）</text>
+  <g font-size="13" text-anchor="middle" fill="#222">
+    <rect x="460" y="248" width="60" height="30" fill="#ffe3c2" stroke="#888"/><text x="490" y="268">U0</text>
+    <rect x="520" y="248" width="60" height="30" fill="#ffe3c2" stroke="#888"/><text x="550" y="268">V0</text>
+    <rect x="580" y="248" width="60" height="30" fill="#d6ecff" stroke="#888"/><text x="610" y="268">U1</text>
+    <rect x="640" y="248" width="60" height="30" fill="#d6ecff" stroke="#888"/><text x="670" y="268">V1</text>
+    <rect x="460" y="278" width="60" height="30" fill="#dff3d6" stroke="#888"/><text x="490" y="298">U2</text>
+    <rect x="520" y="278" width="60" height="30" fill="#dff3d6" stroke="#888"/><text x="550" y="298">V2</text>
+    <rect x="580" y="278" width="60" height="30" fill="#efdcf5" stroke="#888"/><text x="610" y="298">U3</text>
+    <rect x="640" y="278" width="60" height="30" fill="#efdcf5" stroke="#888"/><text x="670" y="298">V3</text>
+  </g>
+  <g font-size="11" fill="#555">
+    <text x="710" y="268">偏移 16～19：管画面第 0、1 行</text>
+    <text x="710" y="298">偏移 20～23：管画面第 2、3 行</text>
+  </g>
+
+  <!-- 总结 -->
+  <rect x="350" y="340" width="610" height="110" rx="8" fill="#f7f7f7" stroke="#bbb"/>
+  <g font-size="13" fill="#222">
+    <text x="365" y="366">• Y 一共 4 × 4 = 16 字节，UV 一共 4 × 2 = 8 字节，合计 24 = 16 × 1.5</text>
+    <text x="365" y="390">• UV 平面紧跟在 Y 平面后面开始（这里没有填充，所以从偏移 16 开始）</text>
+    <text x="365" y="414">• U、V 交替存（U V U V），所以叫"半平面"（semi-planar）</text>
+    <text x="365" y="438">• 换成 V U V U 就是 NV21；U、V 各占一整块就是 I420</text>
+  </g>
+</svg>

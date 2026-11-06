@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="560" viewBox="0 0 1020 560" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1020" height="560" fill="#ffffff"/>
+  <g transform="translate(40,0)">
+  <text x="490" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">1080p 一帧：文件里（没有填充） vs MppBuffer 里（有填充）</text>
+
+  <!-- 左：文件 -->
+  <text x="200" y="68" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">文件 in_1080p_60f.nv12 里的一帧</text>
+  <text x="200" y="88" font-size="12" text-anchor="middle" fill="#555">宽 1920 × 高 1080，行挨着行</text>
+  <rect x="60" y="100" width="280" height="270" fill="#e8e8e8" stroke="#666"/>
+  <text x="200" y="230" font-size="14" text-anchor="middle" fill="#222">Y：1080 行</text>
+  <text x="200" y="250" font-size="12" text-anchor="middle" fill="#555">1920 × 1080 = 2,073,600 字节</text>
+  <rect x="60" y="370" width="280" height="135" fill="#ffe3c2" stroke="#666"/>
+  <text x="200" y="432" font-size="14" text-anchor="middle" fill="#222">UV：540 行</text>
+  <text x="200" y="452" font-size="12" text-anchor="middle" fill="#555">1920 × 540 = 1,036,800 字节</text>
+  <text x="200" y="530" font-size="13" text-anchor="middle" fill="#222">一帧 3,110,400 字节</text>
+  <text x="50" y="104" font-size="11" text-anchor="end" fill="#555">0</text>
+  <text x="50" y="374" font-size="11" text-anchor="end" fill="#555">2,073,600</text>
+
+  <!-- 中间箭头 -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+  <line x1="350" y1="235" x2="520" y2="235" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="350" y1="437" x2="520" y2="447" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="435" y="215" font-size="12" text-anchor="middle" fill="#555">一行一行 fread</text>
+  <text x="435" y="260" font-size="11" text-anchor="middle" fill="#555">每行读 width 字节</text>
+  <text x="435" y="276" font-size="11" text-anchor="middle" fill="#555">写到 行号 × horStride</text>
+  <text x="435" y="292" font-size="11" text-anchor="middle" fill="#555">main.cpp:69、75</text>
+
+  <!-- 右：buffer -->
+  <text x="720" y="68" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">MppBuffer 里的一帧</text>
+  <text x="720" y="88" font-size="12" text-anchor="middle" fill="#555">horStride 1920 × verStride 1088</text>
+  <rect x="580" y="100" width="280" height="270" fill="#e8e8e8" stroke="#666"/>
+  <text x="720" y="230" font-size="14" text-anchor="middle" fill="#222">Y：第 0～1079 行</text>
+  <rect x="580" y="370" width="280" height="16" fill="#ffd6d6" stroke="#c44" stroke-dasharray="4,3"/>
+  <text x="720" y="382" font-size="11" text-anchor="middle" fill="#a22">Y 填充：第 1080～1087 行（8 行，没人写）</text>
+  <rect x="580" y="386" width="280" height="135" fill="#ffe3c2" stroke="#666"/>
+  <text x="720" y="448" font-size="14" text-anchor="middle" fill="#222">UV：第 0～539 行</text>
+  <rect x="580" y="521" width="280" height="10" fill="#ffd6d6" stroke="#c44" stroke-dasharray="4,3"/>
+  <text x="870" y="530" font-size="11" fill="#a22">UV 填充 4 行</text>
+
+  <text x="570" y="104" font-size="11" text-anchor="end" fill="#555">0</text>
+  <text x="570" y="374" font-size="11" text-anchor="end" fill="#555">1920 × 1080</text>
+  <text x="570" y="390" font-size="11" text-anchor="end" fill="#2c5d93" font-weight="bold">1920 × 1088 = 2,088,960</text>
+  <text x="570" y="406" font-size="11" text-anchor="end" fill="#2c5d93">↑ uvStart（main.cpp:73）</text>
+  <text x="720" y="552" font-size="13" text-anchor="middle" fill="#222">一帧 1920 × 1088 × 1.5 = 3,133,440 字节（main.cpp:44）</text>
+  </g>
+</svg>
