@@ -6,9 +6,9 @@
 - [新技术点都写文档](feedback_new_tech_point_doc.md) — 聊天里讲到的新命令/概念，主动整理成单独的 md，放当天工程 doc/ 并加导航
 - [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
 - [Day 3 进度断点](project_day3_status.md) — 2026-11-02：day3_mmap M1～M4 代码都已提交，M4 还没上板（11-03 跑）；板子 11-01 洒啤酒在清洗，摄像头已拆下
-- [Day 4 进度断点](project_day4_status.md) — 2026-11-06：M1 已提交，M2 文件双码流跑通未提交，源码移到 src/；M3 等摄像头
+- [Day 4 进度断点](project_day4_status.md) — 2026-11-06：M1、M2 已提交；M3 参考代码在流程文档第 6 节（编译过、没上板），等用户照写、等摄像头
 - [关键文档和位置](reference_rk_work_docs.md) — 速查表、Day 2 文档、板子参考程序、会话记录 jsonl 路径
 - [代码质量：命名和注释不能误导](feedback_code_quality_naming_comments.md) — 2026-10-31 用户指出多次被带偏；注释先写字面意思再写作用，名字说是什么、从哪来；规则在 CLAUDE.md
 - [聊天用简单英语](feedback_chat_in_simple_english.md) — 2026-10-22 起聊天用简单英语（新概念 1～3 水平），文档、注释、提交信息仍用中文
 - [实验设计要有明显对比](feedback_experiment_design.md) — 2026-10-31 M3 两边 sync 都≈0，用户觉得白学；先 probe 确认现象明显，先说清学完能回答什么
-- [别学偏：主线是编解码和传输](feedback_stay_on_codec_transport.md) — 2026-11-02 day3_mmap 挖底层太深；新内容先说清服务于哪个编解码/传输问题
+- [别学偏：主线是 MPP 编解码 API](feedback_stay_on_codec_transport.md) — 支撑知识只讲到看懂 MPP 代码为止；不主动做 A/B、性能实验，不写顺便一提的推断（2026-11-06 再次强调）

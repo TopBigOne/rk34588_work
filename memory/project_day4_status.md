@@ -1,6 +1,6 @@
 ---
 name: project-day4-status
-description: 2026-11-06：day4_rga_M1 分支，M1（RGA 缩放）已提交；M2 文件双码流跑通（子码流 1.5 Mbps = 主码流 38%）还没提交；源码已移到 src/
+description: 2026-11-06：M1、M2 已提交；M3 参考代码已写进流程文档第 6 节（编译过、没上板），等用户照写、等摄像头
 metadata:
   type: project
 ---
@@ -17,6 +17,9 @@ metadata:
 
 - 2026-11-06 写了 `doc/1_理解M1的需求和代码.md`、`doc/1_理解M2的需求和代码.md`（含 SVG 流程图、verStride 1080 实验：顶部绿边、颜色下移 16 行；I/P 帧大小；SPS/PPS 只有开头一份的源码原因）。
 
-**下一步**：（流程文档 ⚠️ 期望输出已在 11-06 换成实测）M3（摄像头双码流）等摄像头装回。
+- 2026-11-06 写了 `doc/2_NV12内存排布.md`（用户说 NV12 排布不太懂）。
+- 2026-11-06 用户要求把 M3 完整代码写进流程文档：第 6 节已写好 `src/camera/camera_capture.h/.cpp`（CameraCapture 类，Day 3 的 V4L2 步骤收拢，去掉 mmap 和拷贝版本）+ `run_m3_dual_stream_from_camera()`。在 scratchpad 的工程副本里交叉编译通过（-Wall -Wextra 0 warning），**没上板**；用户自己照着写进 src/。当天 adb 连的是三星手机 SM-A5460，不是板子。
+
+**下一步**：用户照第 6 节写 M3 代码 → 摄像头装回后上板跑，把 6.7 的期望输出换成实测；之后进 Day 5 转码器。
 
 **How to apply:** 恢复工作时先看 `git log`、`git status`；用户写完代码让我 review 时，按 [[feedback-teaching-workflow]] 先用交叉编译器加 -Wall -Wextra 编一遍。

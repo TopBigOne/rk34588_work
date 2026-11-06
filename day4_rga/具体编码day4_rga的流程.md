@@ -1,7 +1,7 @@
 # 具体编码 day4_rga 的流程
 
 > 2026-11-03 写。参考代码已经交叉编译通过（`-Wall -Wextra` 0 warning，最高只用到 GLIBC_2.34）。
-> 2026-11-06 更新：M1、M2 已经上板跑通（用户手写的版本在 `src/`），第 4.5、5.2 节的输出换成了实测数据。逐段讲解和更多实测见 [doc/1_理解M1的需求和代码.md](doc/1_理解M1的需求和代码.md)、[doc/1_理解M2的需求和代码.md](doc/1_理解M2的需求和代码.md)。
+> 2026-11-06 更新：M1、M2 已经上板跑通（用户手写的版本在 `src/`），第 4.5、5.2 节的输出换成了实测数据。逐段讲解和更多实测见 [doc/1_理解M1的需求和代码.md](doc/1_理解M1的需求和代码.md)、[doc/1_理解M2的需求和代码.md](doc/1_理解M2的需求和代码.md)。NV12 的 Y、UV 在内存里怎么排、stride 填充在哪，见 [doc/2_NV12内存排布.md](doc/2_NV12内存排布.md)。
 
 ## 0. 今天学完，能回答什么
 
@@ -54,7 +54,8 @@ day4_rga/
     ├── main.cpp                 M1、M2 都在这里（面条代码，先跑通）
     ├── encoder/mpp_encoder.h/.cpp   从 day3_cam2h264/src/encoder/ 原样复制，不用改
     ├── common/log.h、mpp_utils.h    从 day3_cam2h264/src/common/ 原样复制
-    └── rga/rga_resizer.h/.cpp   新写：用 RGA 缩放一帧 NV12（第 4 节）
+    ├── rga/rga_resizer.h/.cpp   新写：用 RGA 缩放一帧 NV12（第 4 节）
+    └── camera/camera_capture.h/.cpp  M3 新写：摄像头采集，从 Day 3 main.cpp 收拢过来（第 6 节）
 ```
 
 现在 `day4_rga/` 里的 `main.cpp`、`CMakeLists.txt` 是 CLion 生成的模板，整个替换掉。
@@ -615,16 +616,532 @@ I Main: 子码流 1280x720：337734 字节 -> /userdata/av/sub_720p.h264
 
 ## 6. M3：摄像头双码流（摄像头装回后再做）
 
-和 M2 只差输入：
+> 2026-11-06 写。下面的代码已经交叉编译通过（`-Wall -Wextra` 0 warning），**还没上板跑过**（摄像头没装回）。6.6 的输出是按 Day 3、M2 的实测推断的，跑完换成实测。
 
-|        | M2                                  | M3                                                                                                   |
-|--------|-------------------------------------|------------------------------------------------------------------------------------------------------|
-| 输入   | 每帧从文件读进 `mainPicture.mppBuf` | 摄像头 DQBUF 出来的那块 buffer（Day 3 已经 `mpp_buffer_import` 成 MppBuffer）                        |
-| 主码流 | 编 `mainPicture.mppBuf`             | 直接编摄像头的 MppBuffer（Day 3 的零拷贝）                                                           |
-| 子码流 | RGA 从 `mainPicture` 缩             | RGA 从摄像头的 MppBuffer 缩，`Nv12Picture` 里填摄像头的 stride（1920 × 1080，不是 1088，Day 3 踩过） |
-| 旋转   | 不用                                | 两个编码器都设 `cfg.rotation = 3`；子码流转正后是 720 × 1280                                         |
+### 6.1 和 M2 比，只差 3 处
 
-做法：把 Day 3 的 `main.cpp` 复制过来，在"编码一帧"的地方，按 M2 的写法加上 RGA 缩放和第二个编码器。做的时候再细写。
+|        | M2                                  | M3                                                                       |
+|--------|-------------------------------------|--------------------------------------------------------------------------|
+| 输入   | 每帧从文件读进 `pictureMain.mppBuf` | 摄像头 DQBUF 出来的那块 buffer（Day 3 的 `mpp_buffer_import`）           |
+| stride | 自己申请，1920 × **1088**           | 用摄像头驱动给的，1920 × **1080**（Day 3 实测）                          |
+| 旋转   | 不用                                | 两个编码器都设 `rotation = 3`；主码流转正后 1080 × 1920，子码流 720 × 1280 |
+
+其他（两个编码器、RGA 缩放、写 SPS/PPS、drain）都和 M2 一样，直接复用 `main.cpp` 里已有的函数。
+
+### 6.2 每一帧的数据流
+
+```
+摄像头 DQBUF ─► cameraBuf（1920x1080，stride 1920x1080，驱动的内存）
+                  │
+                  ├──────────────► 编码器 #1（rotation 3）─► cam_main_1080p.h264
+                  │
+                  └─► RGA imresize ─► pictureSub（1280x720，MPP 申请的）
+                                         │
+   ⭐ 编码器 #1 和 RGA 都返回了 ─► QBUF 把 cameraBuf 还给摄像头
+                                         │
+                                         └─► 编码器 #2（rotation 3）─► cam_sub_720p.h264
+```
+
+**这一节要学的点：摄像头的 buffer 什么时候能还？** 读它的有两个硬件：编码器 #1 和 RGA。两个调用都是同步的（返回时硬件已经读完），所以两个都返回以后就能 QBUF。编码器 #2 读的是 `pictureSub`，不是摄像头的 buffer，不用等它。
+
+CPU 从头到尾不碰画面，所以：不用 `mmap` 摄像头的 buffer，也不用 `mpp_buffer_sync_begin/end`（sync 只在 CPU 读写 cached 内存时才需要）。
+
+### 6.3 要写的东西
+
+| 文件 | 做什么 |
+|---|---|
+| `src/camera/camera_capture.h/.cpp`（新） | 把 Day 3 `main.cpp` 里的 V4L2 步骤收进 `CameraCapture` 类：开摄像头、取一帧、还一帧，析构时自动释放。去掉了 mmap 和拷贝版本 |
+| `src/main.cpp`（加） | 加 `run_m3_dual_stream_from_camera()`，`main()` 里加 `m3` |
+| `CMakeLists.txt`（加） | `add_executable` 里加 camera 的两个文件 |
+
+`CMakeLists.txt` 的 `add_executable` 改成：
+
+```cmake
+add_executable(day4_rga
+        src/main.cpp
+        src/common/log.h
+        src/common/mpp_utils.h
+        src/encoder/mpp_encoder.cpp
+        src/encoder/mpp_encoder.h
+        src/rga/rga_resizer.cpp
+        src/rga/rga_resizer.h
+        src/camera/camera_capture.cpp
+        src/camera/camera_capture.h)
+```
+
+### 6.4 `src/camera/camera_capture.h`
+
+```cpp
+//
+// M3：摄像头采集。把 Day 3 main.cpp 里的 V4L2 步骤收进一个类，main.cpp 只管"取一帧、还一帧"
+//
+#pragma once
+
+#include <linux/videodev2.h>
+#include <rockchip/rk_mpi.h>
+
+/**
+ * @brief 一块摄像头 buffer：驱动分配的内存，导出成 dma_buf fd，再包装成 MppBuffer
+ * @note M3 里 CPU 不读画面（编码器、RGA 都是硬件，直接用 fd），所以不 mmap，没有 CPU 地址
+ */
+struct CameraBuffer {
+    int dmaFd = -1;          // VIDIOC_EXPBUF 写回的 dma_buf fd，用完要 close
+    MppBuffer mppBuf = nullptr; // mpp_buffer_import 包装出来的 MppBuffer，编码器、RGA 都用它
+};
+
+/**
+ * @brief 摄像头采集：打开 /dev/videoN → 设格式 → 申请 buffer → 导出成 MppBuffer → 开拍；
+ *        之后每帧 dequeue_filled_buffer() 取、queue_buffer() 还
+ * @note 析构时自动 STREAMOFF、释放 MppBuffer、close fd，调用方不用管
+ */
+class CameraCapture {
+public:
+    static constexpr int kBufCount = 4; // 向驱动要几块 buffer（Day 3 实测：4 块才能跑满 30 fps）
+
+    CameraCapture() = default;
+    ~CameraCapture();
+    CameraCapture(const CameraCapture &) = delete;
+    CameraCapture &operator=(const CameraCapture &) = delete;
+
+    /**
+     * @brief 打开摄像头并开拍：open → QUERYCAP → S_FMT / G_FMT → REQBUFS → QUERYBUF + EXPBUF + import → QBUF × 4 → STREAMON
+     * @param[in] devicePath  摄像头节点，例如 "/dev/video22"（ISP0 的 mainpath，Day 3 用 CameraFinder 找到的）
+     * @param[in] width       想要的宽，单位像素，例如 1920
+     * @param[in] height      想要的高，单位像素，例如 1080
+     * @return true = 已经开拍；false = 某一步失败（已打印原因，已拿到的资源由析构函数释放）
+     * @note 只能调用一次。驱动可能改宽高、stride，以 get_width() 等返回的实际值为准
+     */
+    bool open_and_start(const char *devicePath, int width, int height);
+
+    /**
+     * @brief VIDIOC_DQBUF：取出一块摄像头已经写好画面的 buffer
+     * @return 成功返回 buffer 序号（0 ～ kBufCount - 1）；失败返回 -1
+     * @note 没有写好的帧时会阻塞等（30 fps 时最多约 33 ms）。取出来的 buffer 用完一定要 queue_buffer() 还回去
+     */
+    int dequeue_filled_buffer();
+
+    /**
+     * @brief VIDIOC_QBUF：把第 bufIndex 块 buffer 还给驱动，让摄像头往里写下一帧
+     * @param[in] bufIndex  dequeue_filled_buffer() 返回的序号
+     * @return true = 成功；false = ioctl 失败
+     * @note ⭐ 所有读这块 buffer 的硬件（编码器、RGA）都读完以后才能还，否则摄像头可能边写边被读，画面撕裂
+     */
+    bool queue_buffer(int bufIndex);
+
+    /**
+     * @brief 取第 bufIndex 块 buffer 对应的 MppBuffer
+     * @param[in] bufIndex  0 ～ kBufCount - 1
+     * @return MppBuffer，所有权还在本类，调用方不要 mpp_buffer_put
+     */
+    MppBuffer get_mpp_buffer(int bufIndex) const { return cameraBuffers_[bufIndex].mppBuf; }
+
+    /** @brief 驱动实际给的宽，单位像素 @return 宽 */
+    int get_width() const { return width_; }
+    /** @brief 驱动实际给的高，单位像素 @return 高 */
+    int get_height() const { return height_; }
+    /** @brief 一行在内存里占多少字节（驱动的 bytesperline），Day 3 实测 1920 @return 行跨度 */
+    int get_hor_stride() const { return horStride_; }
+    /** @brief Y 平面在内存里占多少行，由 sizeimage 算出来，Day 3 实测 1080（不是 1088） @return 行数 */
+    int get_ver_stride() const { return verStride_; }
+
+private:
+    int videoFd_ = -1;      // open("/dev/video22") 得到的 fd，所有 V4L2 ioctl 都发给它
+    bool isStreaming_ = false; // STREAMON 成功后为 true，析构时据此决定要不要 STREAMOFF
+    CameraBuffer cameraBuffers_[kBufCount];
+    int width_ = 0;
+    int height_ = 0;
+    int horStride_ = 0;
+    int verStride_ = 0;
+};
+```
+
+### 6.5 `src/camera/camera_capture.cpp`
+
+和 Day 3 `main.cpp` 的 `run()` 第 1～5 步、`queue_buffer`、`dequeue_buffer`、`release_resources` 一一对应，V4L2 的细节注释见 Day 3 的代码。
+
+```cpp
+//
+// M3：摄像头采集。步骤和 Day 3 main.cpp 的 run() 第 1～5 步一样，去掉了 mmap 和拷贝版本
+//
+#include "camera_capture.h"
+
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
+#include "common/log.h"
+
+static const char *kTag = "Camera";
+// 缓冲区类型：多平面视频采集。板子的 rkisp mainpath 只支持多平面类型，填单平面会 EINVAL
+static const v4l2_buf_type kBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+
+/**
+ * @brief ioctl 的包装：被信号打断（EINTR）时自动重试
+ * @param[in]     fd       设备 fd
+ * @param[in]     request  命令号，例如 VIDIOC_DQBUF
+ * @param[in,out] arg      命令对应的结构体地址
+ * @return 和 ioctl 一样：0 = 成功，-1 = 失败（原因在 errno）
+ * @note 阻塞在 DQBUF 时收到信号，ioctl 会返回 -1、errno = EINTR，这不是真的失败，重来一次就行
+ */
+static int xioctl(int fd, unsigned long request, void *arg) {
+    int ret;
+    do {
+        ret = ioctl(fd, request, arg);
+    } while (ret == -1 && errno == EINTR);
+    return ret;
+}
+
+bool CameraCapture::open_and_start(const char *devicePath, int width, int height) {
+    // 第 1 步 打开设备。O_RDWR：要读写；O_CLOEXEC：以后 exec 别的程序时自动关掉这个 fd。没加 O_NONBLOCK，所以 DQBUF 会阻塞等
+    videoFd_ = open(devicePath, O_RDWR | O_CLOEXEC);
+    if (videoFd_ < 0) {
+        LOGE(kTag, "open %s: %s", devicePath, strerror(errno));
+        return false;
+    }
+
+    // 第 2 步 设格式：1 个 plane 的 NV12。S_FMT 是"我想要"，G_FMT 读回"驱动实际给的"
+    v4l2_format format = {};
+    format.type = kBufType;
+    format.fmt.pix_mp.width = width;
+    format.fmt.pix_mp.height = height;
+    format.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12; // NV12：Y 一块，UV 交替一块（见 doc/2_NV12内存排布.md）
+    format.fmt.pix_mp.field = V4L2_FIELD_NONE;           // 逐行扫描，不是隔行
+    format.fmt.pix_mp.num_planes = 1;                    // Y 和 UV 放在同一块内存里
+    if (xioctl(videoFd_, VIDIOC_S_FMT, &format) == -1 || xioctl(videoFd_, VIDIOC_G_FMT, &format) == -1) {
+        LOGE(kTag, "VIDIOC_S_FMT / G_FMT: %s", strerror(errno));
+        return false;
+    }
+    width_ = static_cast<int>(format.fmt.pix_mp.width);
+    height_ = static_cast<int>(format.fmt.pix_mp.height);
+    // bytesperline：一行在内存里占多少字节，就是 horStride
+    horStride_ = static_cast<int>(format.fmt.pix_mp.plane_fmt[0].bytesperline);
+    // sizeimage：一帧一共多少字节 = horStride × verStride × 1.5，反过来算 verStride。Day 3 实测 3110400 / 1920 × 2 / 3 = 1080
+    const uint32_t sizeImageBytes = format.fmt.pix_mp.plane_fmt[0].sizeimage;
+    if (format.fmt.pix_mp.pixelformat != V4L2_PIX_FMT_NV12 || format.fmt.pix_mp.num_planes != 1 || horStride_ <= 0) {
+        LOGE(kTag, "驱动没有给 1 个 plane 的 NV12");
+        return false;
+    }
+    verStride_ = static_cast<int>(sizeImageBytes / horStride_ * 2 / 3);
+    LOGI(kTag, "%s: %dx%d NV12，stride %dx%d，sizeimage %u", devicePath, width_, height_, horStride_, verStride_,
+         sizeImageBytes);
+
+    // 第 3 步 申请 4 块 buffer。MMAP 类型：内存由摄像头驱动分配（不是我们自己分配）
+    v4l2_requestbuffers requestBufs = {};
+    requestBufs.count = kBufCount;
+    requestBufs.type = kBufType;
+    requestBufs.memory = V4L2_MEMORY_MMAP;
+    if (xioctl(videoFd_, VIDIOC_REQBUFS, &requestBufs) == -1 || requestBufs.count != kBufCount) {
+        LOGE(kTag, "VIDIOC_REQBUFS: 要 %d 块，给了 %u 块，%s", kBufCount, requestBufs.count, strerror(errno));
+        return false;
+    }
+
+    // 第 4 步 每块 buffer：查大小 → 导出成 dma_buf fd → 包装成 MppBuffer
+    for (int bufIndex = 0; bufIndex < kBufCount; ++bufIndex) {
+        // 4.1 QUERYBUF：问驱动第 bufIndex 块有多大（planes[0].length，Day 3 实测 3133440）
+        v4l2_plane planes[1] = {};
+        v4l2_buffer v4l2Buf = {};
+        v4l2Buf.type = kBufType;
+        v4l2Buf.memory = V4L2_MEMORY_MMAP;
+        v4l2Buf.index = bufIndex;
+        v4l2Buf.m.planes = planes; // 多平面类型必须挂上 planes 数组，驱动往里写每个 plane 的信息
+        v4l2Buf.length = 1;        // 多平面类型里 length 是 planes 数组有几项，不是字节数
+        if (xioctl(videoFd_, VIDIOC_QUERYBUF, &v4l2Buf) == -1) {
+            LOGE(kTag, "VIDIOC_QUERYBUF %d: %s", bufIndex, strerror(errno));
+            return false;
+        }
+
+        // 4.2 EXPBUF：把这块内存导出成 dma_buf fd。不分配新内存，只是给同一块内存一个别的硬件也认的 fd
+        v4l2_exportbuffer exportBuf = {};
+        exportBuf.type = kBufType; // buffer 类型，必须和 REQBUFS 时一样；内核用它找到对应的队列
+        exportBuf.index = bufIndex; // 导出第几块
+        exportBuf.plane = 0;        // 导出第几个 plane，NV12 这里只有 1 个
+        exportBuf.flags = O_CLOEXEC; // 新 fd 的属性
+        if (xioctl(videoFd_, VIDIOC_EXPBUF, &exportBuf) == -1) {
+            LOGE(kTag, "VIDIOC_EXPBUF %d: %s", bufIndex, strerror(errno));
+            return false;
+        }
+        cameraBuffers_[bufIndex].dmaFd = exportBuf.fd; // 驱动写回的 fd，析构时 close
+
+        // 4.3 mpp_buffer_import：把 dma_buf fd 包装成 MppBuffer。编码器认 MppBuffer，RGA 通过 mpp_buffer_get_fd 拿回 fd
+        MppBufferInfo bufInfo = {};
+        bufInfo.type = MPP_BUFFER_TYPE_EXT_DMA; // 外部来的 dma_buf（不是 MPP 自己分配的）
+        bufInfo.fd = exportBuf.fd;
+        bufInfo.size = planes[0].length; // 整块 buffer 的字节数
+        bufInfo.index = bufIndex;
+        if (mpp_buffer_import(&cameraBuffers_[bufIndex].mppBuf, &bufInfo) != MPP_OK) {
+            LOGE(kTag, "mpp_buffer_import %d 失败", bufIndex);
+            return false;
+        }
+    }
+
+    // 第 5 步 4 块空 buffer 全部交给驱动，再开拍。顺序不能反：开拍时驱动手里没有空 buffer 就没地方写
+    for (int bufIndex = 0; bufIndex < kBufCount; ++bufIndex) {
+        if (!queue_buffer(bufIndex)) {
+            return false;
+        }
+    }
+    v4l2_buf_type bufType = kBufType; // STREAMON 的参数是"启动哪一种队列"，必须传地址
+    if (xioctl(videoFd_, VIDIOC_STREAMON, &bufType) == -1) {
+        LOGE(kTag, "VIDIOC_STREAMON: %s", strerror(errno));
+        return false;
+    }
+    isStreaming_ = true;
+    return true;
+}
+
+int CameraCapture::dequeue_filled_buffer() {
+    v4l2_plane planes[1] = {};
+    v4l2_buffer v4l2Buf = {};
+    v4l2Buf.type = kBufType;
+    v4l2Buf.memory = V4L2_MEMORY_MMAP;
+    v4l2Buf.m.planes = planes;
+    v4l2Buf.length = 1;
+    // 进去时只填类型；驱动把"哪一块写好了"写回 v4l2Buf.index
+    if (xioctl(videoFd_, VIDIOC_DQBUF, &v4l2Buf) == -1) {
+        LOGE(kTag, "VIDIOC_DQBUF: %s", strerror(errno));
+        return -1;
+    }
+    if (v4l2Buf.index >= kBufCount) {
+        LOGE(kTag, "VIDIOC_DQBUF 返回的序号 %u 越界", v4l2Buf.index);
+        return -1;
+    }
+    return static_cast<int>(v4l2Buf.index);
+}
+
+bool CameraCapture::queue_buffer(int bufIndex) {
+    v4l2_plane planes[1] = {};
+    v4l2_buffer v4l2Buf = {};
+    v4l2Buf.type = kBufType;
+    v4l2Buf.memory = V4L2_MEMORY_MMAP;
+    v4l2Buf.index = bufIndex; // 还哪一块
+    v4l2Buf.m.planes = planes;
+    v4l2Buf.length = 1;
+    if (xioctl(videoFd_, VIDIOC_QBUF, &v4l2Buf) == -1) {
+        LOGE(kTag, "VIDIOC_QBUF %d: %s", bufIndex, strerror(errno));
+        return false;
+    }
+    return true;
+}
+
+CameraCapture::~CameraCapture() {
+    // 先停摄像头，再释放 buffer：停了以后驱动不会再往里写
+    if (isStreaming_) {
+        v4l2_buf_type bufType = kBufType;
+        xioctl(videoFd_, VIDIOC_STREAMOFF, &bufType);
+    }
+    for (CameraBuffer &cameraBuffer: cameraBuffers_) {
+        if (cameraBuffer.mppBuf != nullptr) {
+            mpp_buffer_put(cameraBuffer.mppBuf); // 只释放包装，不释放摄像头的内存（内存归驱动管）
+        }
+        if (cameraBuffer.dmaFd >= 0) {
+            close(cameraBuffer.dmaFd);
+        }
+    }
+    if (videoFd_ >= 0) {
+        close(videoFd_); // 关掉以后，驱动才真正释放 REQBUFS 申请的 4 块内存
+    }
+}
+```
+
+### 6.6 `src/main.cpp` 里加的东西
+
+**① 开头的 include 加一行**（放在 `#include "rga/rga_resizer.h"` 下面）：
+
+```cpp
+#include "camera/camera_capture.h" // M3
+```
+
+**② 常量加 5 个**（放在 `kSubHeight` 下面）：
+
+```cpp
+// M3：摄像头双码流
+static const char *kCameraDevicePath = "/dev/video22"; // ISP0 的 mainpath（Day 3 用 CameraFinder 找到的）
+static const char *kCameraMainStreamPath = "/userdata/av/cam_main_1080p.h264";
+static const char *kCameraSubStreamPath = "/userdata/av/cam_sub_720p.h264";
+static const int kSkipFrameCount = 30;    // 开头丢掉的帧数（等自动曝光稳定，约 1 秒）
+static const int kRecordFrameCount = 300; // 录多少帧：30 fps 下 10 秒
+```
+
+**③ 新函数**（放在 `run_m2_dual_stream_from_file()` 后面、`main()` 前面）：
+
+```cpp
+/**
+ * @brief M3 摄像头双码流：摄像头每一帧 → 编码器 #1（1080p 主码流）；同一帧 → RGA 缩成 720p → 编码器 #2（子码流）
+ * @return 0 = 成功；1 = 失败（已打印原因）
+ * @note 摄像头 buffer 从头到尾 CPU 不碰：编码器 #1 直接读它（Day 3 的零拷贝），RGA 通过它的 dma_buf fd 读。
+ *       和 M2 只差 3 处：输入从文件换成摄像头；摄像头的 stride 是 1920 × 1080（不是 1088）；两个编码器都转 270°
+ */
+static int run_m3_dual_stream_from_camera() {
+    LOGI(kTag, "===== M3：摄像头双码流（1080p 主码流 + 720p 子码流）=====");
+
+    // 第 1 步 开摄像头。stride 用驱动给的，不自己算
+    CameraCapture camera;
+    if (!camera.open_and_start(kCameraDevicePath, kMainWidth, kMainHeight)) {
+        return 1;
+    }
+
+    // 第 2 步 描述两路画面
+    // 主码流：就是摄像头的 buffer，所以宽高、stride 全部用摄像头的；mppBuf 每帧换成 DQBUF 出来的那一块
+    Nv12Picture cameraPicture = {.mppBuf = nullptr,
+                                 .width = camera.get_width(),
+                                 .height = camera.get_height(),
+                                 .horStride = camera.get_hor_stride(),
+                                 .verStride = camera.get_ver_stride()};
+    // 子码流：RGA 的输出，和 M2 一样从 MPP 申请（720 是 16 的倍数，stride 就是 1280 × 720）
+    Nv12Picture pictureSub = {.mppBuf = nullptr,
+                              .width = kSubWidth,
+                              .height = kSubHeight,
+                              .horStride = ALIGN(kSubWidth, 16),
+                              .verStride = ALIGN(kSubHeight, 16)};
+
+    // 第 3 步 两个编码器的参数。和 M2 比：stride 用摄像头的；rotation = 3（摄像头侧装，Day 3 的设置）
+    EncoderConfigArg mainCfg;
+    mainCfg.width = cameraPicture.width;
+    mainCfg.height = cameraPicture.height;
+    mainCfg.horStride = cameraPicture.horStride; // 1920
+    mainCfg.verStride = cameraPicture.verStride; // ⭐ 1080：填 0 的话编码器自己按 16 对齐算成 1088，UV 就找错了
+    mainCfg.bps = 4 * 1000 * 1000;
+    mainCfg.rotation = 3; // 编码前转 270°，码流画面是 1080 × 1920（竖的）
+
+    EncoderConfigArg subCfg;
+    subCfg.width = pictureSub.width;
+    subCfg.height = pictureSub.height;
+    subCfg.horStride = pictureSub.horStride;
+    subCfg.verStride = pictureSub.verStride;
+    subCfg.bps = 1500 * 1000;
+    subCfg.rotation = 3; // RGA 只缩不转；转交给编码器，码流画面是 720 × 1280
+
+    // 第 4 步 申请子码流的 buffer、打开文件、初始化编码器（和 M2 一样）
+    MppBufferGroup mppBufferGroup = nullptr;
+    if (mpp_buffer_group_get_internal(&mppBufferGroup, MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE) != MPP_OK) {
+        LOGE(kTag, "mpp_buffer_group_get_internal 失败");
+        return 1;
+    }
+    FILE *mainStreamFile = fopen(kCameraMainStreamPath, "wb");
+    FILE *subStreamFile = fopen(kCameraSubStreamPath, "wb");
+    MppEncoder mainEncoder;
+    MppEncoder subEncoder;
+    int exitCode = 1;
+
+    if (mainStreamFile == nullptr || subStreamFile == nullptr) {
+        LOGE(kTag, "打开码流文件失败：%s", strerror(errno));
+    } else if (alloc_nv12_picture(mppBufferGroup, pictureSub) &&
+               init_encoder_and_write_header(mainCfg, mainStreamFile, mainEncoder) &&
+               init_encoder_and_write_header(subCfg, subStreamFile, subEncoder)) {
+
+        // 第 5 步 开头的帧丢掉：摄像头刚开时自动曝光、白平衡还没稳定，画面偏暗偏色（Day 3 的做法）
+        bool isAllOk = true;
+        for (int frameIndex = 0; frameIndex < kSkipFrameCount && isAllOk; ++frameIndex) {
+            const int filledBufIndex = camera.dequeue_filled_buffer();
+            isAllOk = filledBufIndex >= 0 && camera.queue_buffer(filledBufIndex);
+        }
+
+        // 第 6 步 主循环：取 → 编主码流 → RGA 缩 → 还给摄像头 → 编子码流
+        EncodedPacket mainPacket;
+        EncodedPacket subPacket;
+        size_t mainStreamBytes = 0;
+        size_t subStreamBytes = 0;
+        int encodedFrameCount = 0;
+        const double loopStartMs = get_now_ms();
+        while (isAllOk && encodedFrameCount < kRecordFrameCount) {
+            // 6.1 取一块摄像头写好的 buffer（阻塞，30 fps 时最多等约 33 ms）
+            const int filledBufIndex = camera.dequeue_filled_buffer();
+            if (filledBufIndex < 0) {
+                isAllOk = false;
+                break;
+            }
+            cameraPicture.mppBuf = camera.get_mpp_buffer(filledBufIndex);
+
+            // 6.2 主码流：编码器直接读摄像头的 buffer（零拷贝）
+            isAllOk = mainEncoder.encode(cameraPicture.mppBuf, false, mainPacket) &&
+                      write_packet(mainStreamFile, mainPacket);
+            // 6.3 子码流的输入：RGA 读摄像头的 buffer，缩好写进 pictureSub
+            isAllOk = isAllOk && resize_nv12_by_rga(cameraPicture, pictureSub);
+
+            // 6.4 ⭐ 编码器 #1 和 RGA 都读完了（两个调用都是同步的，返回时硬件已经做完），现在才能还给摄像头。
+            //     子码流编码读的是 pictureSub，不是摄像头的 buffer，所以不用等它编完
+            //     失败时也要还：少还一块，摄像头就少一块可写的 buffer
+            isAllOk = camera.queue_buffer(filledBufIndex) && isAllOk;
+
+            // 6.5 子码流：编 RGA 缩好的那一块
+            isAllOk = isAllOk && subEncoder.encode(pictureSub.mppBuf, false, subPacket) &&
+                      write_packet(subStreamFile, subPacket);
+
+            mainStreamBytes += mainPacket.data.size();
+            subStreamBytes += subPacket.data.size();
+            ++encodedFrameCount;
+        }
+        const double loopMs = get_now_ms() - loopStartMs;
+
+        // 第 7 步 排空两个编码器，打印结果
+        if (isAllOk && drain_encoder(mainEncoder, mainStreamFile) && drain_encoder(subEncoder, subStreamFile)) {
+            // 实际帧率：摄像头是 30 fps，两路编码 + RGA 跟得上的话这里接近 30；跟不上就会明显低于 30
+            LOGI(kTag, "%d 帧，用时 %.2f s，实际 %.1f fps", encodedFrameCount, loopMs / 1000,
+                 encodedFrameCount * 1000 / loopMs);
+            LOGI(kTag, "主码流（转正后 %dx%d）：%zu 字节 -> %s", mainCfg.height, mainCfg.width, mainStreamBytes,
+                 kCameraMainStreamPath);
+            LOGI(kTag, "子码流（转正后 %dx%d）：%zu 字节 -> %s", subCfg.height, subCfg.width, subStreamBytes,
+                 kCameraSubStreamPath);
+            exitCode = 0;
+        }
+    }
+
+    // 第 8 步 释放。摄像头由 camera 的析构函数释放（函数返回时自动 STREAMOFF、close）
+    if (pictureSub.mppBuf != nullptr) {
+        mpp_buffer_put(pictureSub.mppBuf);
+    }
+    for (FILE *file: {mainStreamFile, subStreamFile}) {
+        if (file != nullptr) {
+            fclose(file);
+        }
+    }
+    mpp_buffer_group_put(mppBufferGroup);
+    return exitCode;
+}
+```
+
+**④ `main()` 里加 m3**：
+
+```cpp
+    if (strcmp(experimentName, "m3") == 0) {
+        return run_m3_dual_stream_from_camera();
+    }
+
+    LOGE(kTag, "用法：%s m1 | m2 | m3", argv[0]);
+```
+
+### 6.7 运行和验证
+
+```bash
+./run_on_board_with_mac.sh m3
+adb pull /userdata/av/cam_main_1080p.h264 .
+adb pull /userdata/av/cam_sub_720p.h264 .
+ffprobe -v error -show_entries stream=width,height,nb_read_frames -count_frames cam_main_1080p.h264
+ffprobe -v error -show_entries stream=width,height,nb_read_frames -count_frames cam_sub_720p.h264
+ffplay cam_sub_720p.h264
+```
+
+期望输出（⚠️ 推断，还没跑过；跑完换成实测）：
+
+```
+I Camera: /dev/video22: 1920x1080 NV12，stride 1920x1080，sizeimage 3110400
+I Main: 300 帧，用时 10.0 s 左右，实际 30 fps 左右
+I Main: 主码流（转正后 1080x1920）：xxx 字节 -> /userdata/av/cam_main_1080p.h264
+I Main: 子码流（转正后 720x1280）：xxx 字节 -> /userdata/av/cam_sub_720p.h264
+```
+
+验收：
+- [ ] 两个文件 ffprobe 都是 300 帧，宽高分别是 1080x1920、720x1280（竖的，画面是正的）
+- [ ] 实际帧率接近 30 fps（摄像头是 30 fps；低很多说明两路编码 + RGA 跟不上）
+- [ ] 两个文件内容一样，子码流只是小一些
+
+### 6.8 要回答的问题
+
+1. 摄像头的 buffer，为什么在编码器 #1 和 RGA 都返回以后就能还，不用等编码器 #2？
+2. 把 `mainCfg.verStride` 改成 0（让编码器自己按 16 对齐算成 1088），主码流画面会怎样？（和 M1 的绿边是同一个原因，方向相反：这次是编码器以为 UV 在更后面）
+3. 为什么 M3 不需要 `mpp_buffer_sync_begin/end`，M2 的 `read_nv12_frame` 却需要？
 
 ## 7. 晚上的实验（可选，都和编码有关）
 
