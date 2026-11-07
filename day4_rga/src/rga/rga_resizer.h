@@ -3,15 +3,7 @@
 //
 #pragma once
 
-#include <rockchip/rk_mpi.h>
-
-struct Nv12Picture {
-    MppBuffer mppBuf = nullptr;
-    int width = 0;
-    int height = 0;
-    int horStride = 0;
-    int verStride = 0;
-};
+#include "common/nv12_picture.h" // Nv12Picture 搬到了这里（重构时从本文件移出，M1～M3 都要用）
 
 /**
  * 用RGA把srcPicture 缩放dstPicture 的尺寸（NV12->NV12）

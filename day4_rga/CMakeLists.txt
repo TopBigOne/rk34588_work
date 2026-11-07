@@ -5,12 +5,24 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(day4_rga
         src/main.cpp
+        src/app/app_config.h
+        src/app/milestones.h
+        src/app/m1_resize_one_frame.cpp
+        src/app/m2_dual_stream_from_file.cpp
+        src/app/m3_dual_stream_from_camera.cpp
         src/common/log.h
         src/common/mpp_utils.h
+        src/common/time_utils.h
+        src/common/nv12_picture.h
+        src/common/nv12_picture.cpp
         src/encoder/mpp_encoder.cpp
         src/encoder/mpp_encoder.h
+        src/encoder/dual_stream_encoder.cpp
+        src/encoder/dual_stream_encoder.h
         src/rga/rga_resizer.cpp
-        src/rga/rga_resizer.h)
+        src/rga/rga_resizer.h
+        src/camera/camera_capture.cpp
+        src/camera/camera_capture.h)
 
 # 头文件搜索目录加上 src：任何文件里都可以写 #include "common/log.h"，不用数 ../ 有几层
 target_include_directories(day4_rga PRIVATE src)
