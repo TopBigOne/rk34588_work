@@ -1,6 +1,6 @@
 # NV12 内存排布：Y、UV 在内存里怎么放，stride 填充在哪
 
-> 2026-11-06 写。代码行号按 `day4_rga/src/main.cpp` 当前版本。第 1、4、6 节的数字是 2026-11-06 在 Mac 上用 Python 读文件实测的（读法见第 9 节），没实测的地方写了"推断"。
+> 2026-11-06 写。代码行号按 `day4_rga/src/common/nv12_picture.cpp`（2026-11-08 重构后，NV12 的申请和读写搬到了这里）。第 1、4、6 节的数字是 2026-11-06 在 Mac 上用 Python 读文件实测的（读法见第 9 节），没实测的地方写了"推断"。
 > 相关：[1_理解M1的需求和代码.md](1_理解M1的需求和代码.md) 第 5 节（verStride 填错，顶部绿边）
 
 ## 0. 一句话
@@ -87,7 +87,7 @@ UV 平面开头 8 字节（偏移 2,073,600 起）：113 144 113 144 113 144 113
 
 ## 5. 加上 stride：UV 从第 verStride 行开始
 
-MPP 编码器要求 buffer 的宽、高对齐到 16 的倍数（H.264 按 16 × 16 的宏块编码），所以 `main.cpp` 里用 `ALIGN(…, 16)` 算 stride（[main.cpp:217-218](../src/main.cpp#L217-L218)）。1080p 时：
+MPP 编码器要求 buffer 的宽、高对齐到 16 的倍数（H.264 按 16 × 16 的宏块编码），所以 `make_aligned_nv12_picture` 里用 `ALIGN(…, 16)` 算 stride（[nv12_picture.cpp:14-15](../src/common/nv12_picture.cpp#L14-L15)）。1080p 时：
 
 - `horStride = ALIGN(1920, 16) = 1920`：一行在内存里占多少字节。1920 本来就是 16 的倍数，不用加。
 - `verStride = ALIGN(1080, 16) = 1088`：Y 平面在内存里占多少行。比画面多 8 行。
@@ -103,9 +103,9 @@ MPP 编码器要求 buffer 的宽、高对齐到 16 的倍数（H.264 按 16 × 
 
 对照代码：
 
-- [main.cpp:44](../src/main.cpp#L44)：`frameSizeBytes = horStride * verStride * 3 / 2`，申请的是右边的大小。
-- [main.cpp:73](../src/main.cpp#L73)：`uvStart = frameStart + picture.horStride * picture.verStride;` —— **UV 起点用 verStride，不用 height**。这一行就是这篇文档最重要的一点。
-- [main.cpp:69](../src/main.cpp#L69)、[main.cpp:75](../src/main.cpp#L75)：每次 `fread` 只读 `width` 字节，写到 `rowIndex * horStride` 的位置。两边一帧大小不一样，所以不能一次 `fread` 一整帧，只能一行一行搬，把填充跳过去。
+- [nv12_picture.cpp:20](../src/common/nv12_picture.cpp#L20)：`frameSizeBytes = horStride * verStride * 3 / 2`，申请的是右边的大小。
+- [nv12_picture.cpp:47](../src/common/nv12_picture.cpp#L47)：`uvStart = frameStart + picture.horStride * picture.verStride;` —— **UV 起点用 verStride，不用 height**。这一行就是这篇文档最重要的一点。
+- [nv12_picture.cpp:43](../src/common/nv12_picture.cpp#L43)、[nv12_picture.cpp:49](../src/common/nv12_picture.cpp#L49)：每次 `fread` 只读 `width` 字节，写到 `rowIndex * horStride` 的位置。两边一帧大小不一样，所以不能一次 `fread` 一整帧，只能一行一行搬，把填充跳过去。
 
 填充里是什么：没有人写，M1 实测里是 0（见 M1 篇第 5 节）。编码器和 RGA 都不会把填充当成画面，**只要 stride 告诉它们的是对的**。
 ## 6. 找第 (x, y) 个像素

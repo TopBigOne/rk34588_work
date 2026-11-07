@@ -1,7 +1,7 @@
 # 具体编码 day4_rga 的流程
 
 > 2026-11-03 写。参考代码已经交叉编译通过（`-Wall -Wextra` 0 warning，最高只用到 GLIBC_2.34）。
-> 2026-11-06 更新：M1、M2 已经上板跑通（用户手写的版本在 `src/`），第 4.5、5.2 节的输出换成了实测数据。逐段讲解和更多实测见 [doc/1_理解M1的需求和代码.md](doc/1_理解M1的需求和代码.md)、[doc/1_理解M2的需求和代码.md](doc/1_理解M2的需求和代码.md)。NV12 的 Y、UV 在内存里怎么排、stride 填充在哪，见 [doc/2_NV12内存排布.md](doc/2_NV12内存排布.md)。
+> 2026-11-08 更新：M1、M2、M3 都已经上板跑通，代码重构过（目录见第 3.1 节）。逐段讲解和更多实测见 [doc/1_理解M1的需求和代码.md](doc/1_理解M1的需求和代码.md)、[doc/2_理解M2的需求和代码.md](doc/2_理解M2的需求和代码.md)、[doc/3_理解M3的需求和代码.md](doc/3_理解M3的需求和代码.md)。NV12 的 Y、UV 在内存里怎么排、stride 填充在哪，见 [doc/0_base_NV12内存排布.md](doc/0_base_NV12内存排布.md)。
 
 ## 0. 今天学完，能回答什么
 
@@ -46,19 +46,45 @@ in_1080p_60f.nv12（Day 1 的 60 帧）
 
 ### 3.1 目录
 
+> 2026-11-08 重构：M1～M3 跑通以后，main.cpp 有 470 行，按"一个文件做一件事"拆开了。下面是重构后的样子；第 4～6 节贴的是重构**前**的代码（写的时候都在 main.cpp 里），逻辑和现在一样，对照下表找。
+
 ```
 day4_rga/
 ├── CMakeLists.txt
-├── run_on_board_with_mac.sh     从 day3_cam2h264 复制，把 BIN_NAME 改成 day4_rga
+├── run_on_board_with_mac.sh
 └── src/
-    ├── main.cpp                 M1、M2 都在这里（面条代码，先跑通）
-    ├── encoder/mpp_encoder.h/.cpp   从 day3_cam2h264/src/encoder/ 原样复制，不用改
-    ├── common/log.h、mpp_utils.h    从 day3_cam2h264/src/common/ 原样复制
-    ├── rga/rga_resizer.h/.cpp   新写：用 RGA 缩放一帧 NV12（第 4 节）
-    └── camera/camera_capture.h/.cpp  M3 新写：摄像头采集，从 Day 3 main.cpp 收拢过来（第 6 节）
+    ├── main.cpp                         只看参数 m1 / m2 / m3，调对应的函数
+    ├── app/
+    │   ├── app_config.h                 共用常量：宽高、板子上的文件路径、录多少帧
+    │   ├── milestones.h                 声明 run_m1/m2/m3
+    │   ├── m1_resize_one_frame.cpp      M1：RGA 缩放一帧
+    │   ├── m2_dual_stream_from_file.cpp M2：文件双码流
+    │   └── m3_dual_stream_from_camera.cpp M3：摄像头双码流
+    ├── common/
+    │   ├── log.h、mpp_utils.h           日志；MPP_CHECK、ALIGN、FilePtr / MppBufferPtr 等 RAII 句柄
+    │   ├── nv12_picture.h/.cpp          Nv12Picture 结构体；申请 buffer、按 stride 读写一帧
+    │   └── time_utils.h                 get_now_ms
+    ├── encoder/
+    │   ├── mpp_encoder.h/.cpp           一个 MPP 编码器（用户手写）
+    │   └── dual_stream_encoder.h/.cpp   M2、M3 共用：两个编码器 + 子码流 buffer + 两个码流文件
+    ├── rga/rga_resizer.h/.cpp           用 RGA 缩放一帧 NV12
+    └── camera/camera_capture.h/.cpp     摄像头采集（M3）
 ```
 
-现在 `day4_rga/` 里的 `main.cpp`、`CMakeLists.txt` 是 CLion 生成的模板，整个替换掉。
+| 重构前（`603dbee` 的 main.cpp） | 重构后 |
+|---|---|
+| `alloc_nv12_picture` | `common/nv12_picture.cpp` 的 `alloc_nv12_buffer`：返回 `MppBufferPtr`，离开作用域自动 `mpp_buffer_put` |
+| 手写 `{nullptr, w, h, ALIGN(w,16), ALIGN(h,16)}` | `make_aligned_nv12_picture(w, h)` |
+| `read_nv12_frame`、`write_nv12_frame` | `common/nv12_picture.cpp`，代码没改 |
+| `get_now_ms` | `common/time_utils.h` |
+| `write_packet`、`init_encoder_and_write_header`、`drain_encoder` | `encoder/dual_stream_encoder.cpp`，代码没改 |
+| M2、M3 里各写一遍的"两个编码器 + 子码流 buffer + 两个文件 + 统计字节数" | `DualStreamEncoder`：`open` → 每帧 `encode_main_and_resize_to_sub` + `encode_sub` → `drain_both` |
+| 每个 run 函数结尾一项项 `mpp_buffer_put`、`fclose`、`mpp_buffer_group_put` | 用 `mpp_utils.h` 里的 `FilePtr`、`MppBufferPtr`、`MppBufferGroupPtr`，函数返回时自动释放 |
+| `run_m1_*`、`run_m2_*`、`run_m3_*` | `app/` 下各一个文件 |
+
+M3 里 QBUF 夹在 `encode_main_and_resize_to_sub` 和 `encode_sub` 之间，`DualStreamEncoder` 拆成这两步就是为了它（见 6.2）。
+
+重构后 2026-11-08 上板验证：M1 输出 md5 还是 `d00d3d5e92a2b7dcab9e580a2b6ff6db`；M2 两个码流和重构前**逐字节相同**（md5 `da5d76fe…`、`4ec9db88…`，和 `result_from_board/` 里的一样）；M3 300 帧 30.0 fps。
 
 ### 3.2 CMakeLists.txt
 
@@ -606,7 +632,7 @@ I Main: 子码流 1280x720：337734 字节 -> /userdata/av/sub_720p.h264
 - [x] 两个文件都能播放，内容一样，只是清晰度不同
 - [x] 两个文件的大小比（38%），和码率比（1.5 ÷ 4 = 37.5%）接近
 
-顺带的对照实验：子码流码率设成和主码流一样的 4 Mbps 时，子码流 859,490 字节（主码流的 96%），几乎一样大。**分辨率降了、码率不降，子码流就白做了**。详见 [doc/1_理解M2的需求和代码.md](doc/1_理解M2的需求和代码.md) 第 3.6 节
+顺带的对照实验：子码流码率设成和主码流一样的 4 Mbps 时，子码流 859,490 字节（主码流的 96%），几乎一样大。**分辨率降了、码率不降，子码流就白做了**。详见 [doc/1_理解M2的需求和代码.md](doc/2_理解M2的需求和代码.md) 第 3.6 节
 
 ### 5.3 要回答的问题
 
@@ -616,15 +642,15 @@ I Main: 子码流 1280x720：337734 字节 -> /userdata/av/sub_720p.h264
 
 ## 6. M3：摄像头双码流（摄像头装回后再做）
 
-> 2026-11-06 写。下面的代码已经交叉编译通过（`-Wall -Wextra` 0 warning），**还没上板跑过**（摄像头没装回）。6.6 的输出是按 Day 3、M2 的实测推断的，跑完换成实测。
+> 2026-11-06 写，交叉编译通过（`-Wall -Wextra` 0 warning）。2026-11-08 用户照着写进 `src/`，上板跑通，6.7 换成了实测。
 
 ### 6.1 和 M2 比，只差 3 处
 
-|        | M2                                  | M3                                                                       |
-|--------|-------------------------------------|--------------------------------------------------------------------------|
-| 输入   | 每帧从文件读进 `pictureMain.mppBuf` | 摄像头 DQBUF 出来的那块 buffer（Day 3 的 `mpp_buffer_import`）           |
-| stride | 自己申请，1920 × **1088**           | 用摄像头驱动给的，1920 × **1080**（Day 3 实测）                          |
-| 旋转   | 不用                                | 两个编码器都设 `rotation = 3`；主码流转正后 1080 × 1920，子码流 720 × 1280 |
+|          | M2                                      | M3                                                                         |
+|----------|-----------------------------------------|----------------------------------------------------------------------------|
+| 输入     | 每帧从文件读进 `pictureMain.mppBuf`     | 摄像头 DQBUF 出来的那块 buffer（Day 3 的 `mpp_buffer_import`）             |
+| stride   | 自己申请，1920 × **1088**               | 用摄像头驱动给的，1920 × **1080**（Day 3 实测）                            |
+| 旋转     | 不用                                    | 两个编码器都设 `rotation = 3`；主码流转正后 1080 × 1920，子码流 720 × 1280 |
 
 其他（两个编码器、RGA 缩放、写 SPS/PPS、drain）都和 M2 一样，直接复用 `main.cpp` 里已有的函数。
 
@@ -648,11 +674,11 @@ CPU 从头到尾不碰画面，所以：不用 `mmap` 摄像头的 buffer，也�
 
 ### 6.3 要写的东西
 
-| 文件 | 做什么 |
-|---|---|
+| 文件                                     | 做什么                                                                                                                      |
+|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | `src/camera/camera_capture.h/.cpp`（新） | 把 Day 3 `main.cpp` 里的 V4L2 步骤收进 `CameraCapture` 类：开摄像头、取一帧、还一帧，析构时自动释放。去掉了 mmap 和拷贝版本 |
-| `src/main.cpp`（加） | 加 `run_m3_dual_stream_from_camera()`，`main()` 里加 `m3` |
-| `CMakeLists.txt`（加） | `add_executable` 里加 camera 的两个文件 |
+| `src/main.cpp`（加）                     | 加 `run_m3_dual_stream_from_camera()`，`main()` 里加 `m3`                                                                   |
+| `CMakeLists.txt`（加）                   | `add_executable` 里加 camera 的两个文件                                                                                     |
 
 `CMakeLists.txt` 的 `add_executable` 改成：
 
@@ -1123,19 +1149,30 @@ ffprobe -v error -show_entries stream=width,height,nb_read_frames -count_frames 
 ffplay cam_sub_720p.h264
 ```
 
-期望输出（⚠️ 推断，还没跑过；跑完换成实测）：
+实测输出（2026-11-08）：
 
 ```
+I Main: ===== M3：摄像头双码流（1080p 主码流 + 720p 子码流）=====
 I Camera: /dev/video22: 1920x1080 NV12，stride 1920x1080，sizeimage 3110400
-I Main: 300 帧，用时 10.0 s 左右，实际 30 fps 左右
-I Main: 主码流（转正后 1080x1920）：xxx 字节 -> /userdata/av/cam_main_1080p.h264
-I Main: 子码流（转正后 720x1280）：xxx 字节 -> /userdata/av/cam_sub_720p.h264
+rga_api version 1.10.0_[8]
+I Main: 300 帧，用时 10.01 s，实际 30.0 fps
+I Main: 主码流（转正后 1080x1920）：4831950 字节 -> /userdata/av/cam_main_1080p.h264
+I Main: 子码流（转正后 720x1280）：1788451 字节 -> /userdata/av/cam_sub_720p.h264
 ```
 
-验收：
-- [ ] 两个文件 ffprobe 都是 300 帧，宽高分别是 1080x1920、720x1280（竖的，画面是正的）
-- [ ] 实际帧率接近 30 fps（摄像头是 30 fps；低很多说明两路编码 + RGA 跟不上）
-- [ ] 两个文件内容一样，子码流只是小一些
+| | 文件大小 | 实际码率（÷ 10 s） | profile / level | 宽 × 高 | 帧数 | ffmpeg 完整解码 |
+|---|---|---|---|---|---|---|
+| cam_main_1080p.h264 | 4,831,990 字节 | 3.87 Mbps（设 4） | High / 4.0 | 1080 × 1920 | 300 | 无错 |
+| cam_sub_720p.h264 | 1,788,490 字节 | 1.43 Mbps（设 1.5） | High / 3.1 | 720 × 1280 | 300 | 无错 |
+
+（程序打印的字节数比文件少 40 和 39 字节，和 M2 一样，是开头的 SPS/PPS 没算进统计）
+
+验收（2026-11-08 都通过）：
+- [x] 两个文件 ffprobe 都是 300 帧，宽高分别是 1080x1920、720x1280；抽第 150 帧看，画面是正的，颜色正常，没有绿边
+- [x] 实际帧率 30.0 fps：两路编码 + RGA 跟得上摄像头
+- [x] 两个文件内容一样，子码流是主码流的 37%（码率比 1.5 ÷ 4 = 37.5%）
+
+和 M2 比：10 秒比 2 秒长，码率控制有时间收敛，实际码率离设定值更近（M2 主码流只有 3.6 Mbps）。
 
 ### 6.8 要回答的问题
 

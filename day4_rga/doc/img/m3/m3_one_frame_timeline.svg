@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="470" viewBox="0 0 1000 470" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1000" height="470" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+
+  <text x="500" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">M3 主循环的一圈：摄像头的 buffer 什么时候能还</text>
+
+  <!-- 步骤方框 -->
+  <g font-size="14" text-anchor="middle" fill="#222">
+    <rect x="30" y="60" width="170" height="70" rx="8" fill="#f2f2f2" stroke="#888"/>
+    <text x="115" y="88" font-weight="bold">5.1 DQBUF</text>
+    <text x="115" y="110" font-size="12" fill="#555">取第 k 块（摄像头写好的）</text>
+
+    <rect x="230" y="60" width="200" height="70" rx="8" fill="#ffe3c2" stroke="#d08a3a"/>
+    <text x="330" y="84" font-weight="bold">5.2 ① 编码器 #1</text>
+    <text x="330" y="104" font-size="12" fill="#555">读第 k 块 → 主码流</text>
+    <text x="330" y="121" font-size="12" fill="#555">（零拷贝，转 270°）</text>
+
+    <rect x="460" y="60" width="180" height="70" rx="8" fill="#ffe3c2" stroke="#d08a3a"/>
+    <text x="550" y="84" font-weight="bold">5.2 ② RGA</text>
+    <text x="550" y="104" font-size="12" fill="#555">读第 k 块，缩成 720p</text>
+    <text x="550" y="121" font-size="12" fill="#555">写进 subPicture_</text>
+
+    <rect x="670" y="60" width="120" height="70" rx="8" fill="#dff3d6" stroke="#4e9a3a" stroke-width="2"/>
+    <text x="730" y="88" font-weight="bold">5.3 QBUF</text>
+    <text x="730" y="110" font-size="12" fill="#2f6b22">还第 k 块 ⭐</text>
+
+    <rect x="820" y="60" width="160" height="70" rx="8" fill="#d6ecff" stroke="#3d82c4"/>
+    <text x="900" y="84" font-weight="bold">5.4 编码器 #2</text>
+    <text x="900" y="104" font-size="12" fill="#555">读 subPicture_</text>
+    <text x="900" y="121" font-size="12" fill="#555">→ 子码流（转 270°）</text>
+  </g>
+  <g stroke="#444" stroke-width="2">
+    <line x1="200" y1="95" x2="226" y2="95" marker-end="url(#arrow)"/>
+    <line x1="430" y1="95" x2="456" y2="95" marker-end="url(#arrow)"/>
+    <line x1="640" y1="95" x2="666" y2="95" marker-end="url(#arrow)"/>
+    <line x1="790" y1="95" x2="816" y2="95" marker-end="url(#arrow)"/>
+  </g>
+  <text x="440" y="150" font-size="12" text-anchor="middle" fill="#555">①② 在 encode_main_and_resize_to_sub() 里，两个调用都是同步的：返回时硬件已经读完第 k 块</text>
+
+  <!-- 谁在用哪块 buffer -->
+  <text x="30" y="200" font-size="15" font-weight="bold" fill="#222">这一圈里，谁在用哪块 buffer</text>
+
+  <text x="30" y="240" font-size="13" fill="#222">摄像头第 k 块</text>
+  <rect x="140" y="226" width="590" height="22" rx="4" fill="#ffd9b0" stroke="#d08a3a"/>
+  <text x="435" y="242" font-size="12" text-anchor="middle" fill="#7a4a12">在程序手里：编码器 #1、RGA 在读，摄像头不能往里写</text>
+  <rect x="730" y="226" width="250" height="22" rx="4" fill="#eeeeee" stroke="#aaa" stroke-dasharray="4,3"/>
+  <text x="855" y="242" font-size="12" text-anchor="middle" fill="#666">回到驱动手里，等着写下一帧</text>
+
+  <text x="30" y="290" font-size="13" fill="#222">subPicture_</text>
+  <rect x="460" y="276" width="520" height="22" rx="4" fill="#cfe6ff" stroke="#3d82c4"/>
+  <text x="595" y="292" font-size="12" text-anchor="middle" fill="#1f4f80">RGA 写 → 编码器 #2 读（和摄像头无关）</text>
+
+  <!-- 分界线 -->
+  <line x1="730" y1="180" x2="730" y2="320" stroke="#2f6b22" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="724" y="318" font-size="12" text-anchor="end" fill="#2f6b22">QBUF：第 k 块最后一个读者（RGA）已经读完</text>
+
+  <!-- 结论 -->
+  <rect x="30" y="345" width="950" height="105" rx="8" fill="#f7f7f7" stroke="#bbb"/>
+  <g font-size="13" fill="#222">
+    <text x="45" y="372">• QBUF 早了（比如 RGA 之前）：摄像头可能开始往第 k 块写下一帧，RGA 读到半新半旧的画面（推断，没实测）</text>
+    <text x="45" y="398">• QBUF 晚了（等编码器 #2 编完）：也对，但第 k 块在程序手里多待了一次编码的时间，驱动可写的空 buffer 少一块的时间更长</text>
+    <text x="45" y="424">• 4 块 buffer 轮流转：任何时候程序手里最多 1 块，驱动手里至少 3 块，所以 30 fps 下不丢帧（实测 300 帧 10.01 s）</text>
+  </g>
+</svg>

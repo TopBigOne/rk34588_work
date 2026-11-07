@@ -27,7 +27,7 @@
   <text x="435" y="215" font-size="12" text-anchor="middle" fill="#555">一行一行 fread</text>
   <text x="435" y="260" font-size="11" text-anchor="middle" fill="#555">每行读 width 字节</text>
   <text x="435" y="276" font-size="11" text-anchor="middle" fill="#555">写到 行号 × horStride</text>
-  <text x="435" y="292" font-size="11" text-anchor="middle" fill="#555">main.cpp:69、75</text>
+  <text x="435" y="292" font-size="11" text-anchor="middle" fill="#555">nv12_picture.cpp:43、49</text>
 
   <!-- 右：buffer -->
   <text x="720" y="68" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">MppBuffer 里的一帧</text>
@@ -44,7 +44,7 @@
   <text x="570" y="104" font-size="11" text-anchor="end" fill="#555">0</text>
   <text x="570" y="374" font-size="11" text-anchor="end" fill="#555">1920 × 1080</text>
   <text x="570" y="390" font-size="11" text-anchor="end" fill="#2c5d93" font-weight="bold">1920 × 1088 = 2,088,960</text>
-  <text x="570" y="406" font-size="11" text-anchor="end" fill="#2c5d93">↑ uvStart（main.cpp:73）</text>
-  <text x="720" y="552" font-size="13" text-anchor="middle" fill="#222">一帧 1920 × 1088 × 1.5 = 3,133,440 字节（main.cpp:44）</text>
+  <text x="570" y="406" font-size="11" text-anchor="end" fill="#2c5d93">↑ uvStart（nv12_picture.cpp:47）</text>
+  <text x="720" y="552" font-size="13" text-anchor="middle" fill="#222">一帧 1920 × 1088 × 1.5 = 3,133,440 字节（nv12_picture.cpp:20）</text>
   </g>
 </svg>
