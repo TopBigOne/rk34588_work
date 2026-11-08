@@ -6,7 +6,7 @@
 - [新技术点都写文档](feedback_new_tech_point_doc.md) — 聊天里讲到的新命令/概念，主动整理成单独的 md，放当天工程 doc/ 并加导航
 - [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
 - [Day 3 进度断点](project_day3_status.md) — 2026-11-02：day3_mmap M1～M4 代码都已提交，M4 还没上板（11-03 跑）；板子 11-01 洒啤酒在清洗，摄像头已拆下
-- [Day 4 进度断点](project_day4_status.md) — 2026-11-08：M1、M2 已提交；M3 摄像头双码流上板跑通（30 fps），代码未提交；下一步 Day 5 转码器
+- [Day 4 进度断点](project_day4_status.md) — 2026-11-08：M1～M3 都跑通并已提交（9758b47、497a637），代码已重构；下一步 Day 5 转码器
 - [关键文档和位置](reference_rk_work_docs.md) — 速查表、Day 2 文档、板子参考程序、会话记录 jsonl 路径
 - [代码质量：命名和注释不能误导](feedback_code_quality_naming_comments.md) — 2026-10-31 用户指出多次被带偏；注释先写字面意思再写作用，名字说是什么、从哪来；规则在 CLAUDE.md
 - [聊天语言](feedback_chat_in_simple_english.md) — 10-22 起曾用简单英语，但用户多次要求中文（最近 2026-11-07）；默认用中文。文档、注释、提交信息用中文
