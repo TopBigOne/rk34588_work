@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1000" height="640" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+  </defs>
+
+  <text x="500" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">day5_transcoder 的分层：箭头只能往下</text>
+  <text x="500" y="54" font-size="13" text-anchor="middle" fill="#555">上层调用下层；同一层的部件互相不 include（解码器不知道编码器存在）</text>
+
+  <!-- 第 4 层 app -->
+  <rect x="20" y="72" width="960" height="92" rx="10" fill="#fff4e0" stroke="#d08a3a"/>
+  <text x="34" y="94" font-size="14" font-weight="bold" fill="#8a5a1c">第 4 层 app/：决定"怎么跑"</text>
+  <rect x="180" y="104" width="300" height="48" rx="6" fill="#ffffff" stroke="#d08a3a"/>
+  <text x="330" y="125" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">M1 单线程</text>
+  <text x="330" y="143" font-size="11" text-anchor="middle" fill="#555">一个循环：取一帧 → 缩放并编码</text>
+  <rect x="520" y="104" width="300" height="48" rx="6" fill="#ffffff" stroke="#d08a3a" stroke-dasharray="5,3"/>
+  <text x="670" y="125" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">M2 双线程（以后）</text>
+  <text x="670" y="143" font-size="11" text-anchor="middle" fill="#555">线程 1 取帧 → 队列 → 线程 2 缩放并编码</text>
+
+  <!-- 第 3 层 pipeline -->
+  <rect x="20" y="190" width="960" height="120" rx="10" fill="#eef6ee" stroke="#4e9a3a"/>
+  <text x="34" y="212" font-size="14" font-weight="bold" fill="#2f6b22">第 3 层 pipeline/：把部件组装成两段</text>
+  <rect x="60" y="224" width="330" height="72" rx="6" fill="#ffffff" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="225" y="248" font-size="14" font-weight="bold" text-anchor="middle" fill="#222">DecodeStage 解码段</text>
+  <text x="225" y="268" font-size="12" text-anchor="middle" fill="#333">readNextFrame(decodedFrame)</text>
+  <text x="225" y="286" font-size="11" text-anchor="middle" fill="#666">读码流 + 解码，每次交出一帧 1080p</text>
+  <rect x="610" y="224" width="330" height="72" rx="6" fill="#ffffff" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="775" y="248" font-size="14" font-weight="bold" text-anchor="middle" fill="#222">ResizeEncodeStage 缩放编码段</text>
+  <text x="775" y="268" font-size="12" text-anchor="middle" fill="#333">resizeAndEncode(decodedFrame)</text>
+  <text x="775" y="286" font-size="11" text-anchor="middle" fill="#666">RGA 缩到 720p + H.265 编码 + 写文件</text>
+  <line x1="390" y1="260" x2="606" y2="260" stroke="#2c6fb0" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="498" y="250" font-size="12" text-anchor="middle" fill="#2c6fb0">MppFrame（解码出来的一帧）</text>
+  <text x="498" y="280" font-size="11" text-anchor="middle" fill="#2c6fb0">M2 的队列就插在这里</text>
+
+  <!-- 第 2 层 部件 -->
+  <rect x="20" y="336" width="960" height="150" rx="10" fill="#f6f9ff" stroke="#9db8d9"/>
+  <text x="322" y="358" font-size="14" font-weight="bold" fill="#2c5d93">第 2 层 部件：只依赖 common</text>
+  <rect x="40" y="372" width="170" height="96" rx="6" fill="#ffffff" stroke="#3d82c4"/>
+  <text x="125" y="396" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">source/</text>
+  <text x="125" y="416" font-size="12" text-anchor="middle" fill="#333">StreamFileReader</text>
+  <text x="125" y="436" font-size="11" text-anchor="middle" fill="#666">按 64KB 读 .h264</text>
+  <rect x="226" y="372" width="170" height="96" rx="6" fill="#ffffff" stroke="#3d82c4"/>
+  <text x="311" y="396" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">decoder/</text>
+  <text x="311" y="416" font-size="12" text-anchor="middle" fill="#333">MppDecoder</text>
+  <text x="311" y="436" font-size="11" text-anchor="middle" fill="#666">feed / getFrame</text>
+  <text x="311" y="454" font-size="11" text-anchor="middle" fill="#666">info change、内存池</text>
+  <rect x="412" y="372" width="170" height="96" rx="6" fill="#ffffff" stroke="#3d82c4"/>
+  <text x="497" y="396" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">rga/</text>
+  <text x="497" y="416" font-size="12" text-anchor="middle" fill="#333">resizeNv12ByRga</text>
+  <text x="497" y="436" font-size="11" text-anchor="middle" fill="#666">Day 4 复制过来</text>
+  <rect x="598" y="372" width="170" height="96" rx="6" fill="#ffffff" stroke="#3d82c4"/>
+  <text x="683" y="396" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">encoder/</text>
+  <text x="683" y="416" font-size="12" text-anchor="middle" fill="#333">MppEncoder</text>
+  <text x="683" y="436" font-size="11" text-anchor="middle" fill="#666">Day 4 复制，改成 H.265</text>
+  <rect x="784" y="372" width="170" height="96" rx="6" fill="#ffffff" stroke="#3d82c4"/>
+  <text x="869" y="396" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">sink/</text>
+  <text x="869" y="416" font-size="12" text-anchor="middle" fill="#333">StreamFileWriter</text>
+  <text x="869" y="436" font-size="11" text-anchor="middle" fill="#666">把码流写进 .h265</text>
+
+  <!-- 第 3 层 → 第 2 层 -->
+  <line x1="160" y1="296" x2="130" y2="368" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="290" y1="296" x2="308" y2="368" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="720" y1="296" x2="520" y2="368" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="775" y1="296" x2="690" y2="368" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="850" y1="296" x2="866" y2="368" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- 第 4 层 → 第 3 层 -->
+  <line x1="330" y1="152" x2="330" y2="220" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="400" y1="152" x2="700" y2="220" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 第 1 层 common -->
+  <rect x="20" y="512" width="960" height="70" rx="10" fill="#f2f2f2" stroke="#999"/>
+  <text x="34" y="534" font-size="14" font-weight="bold" fill="#444">第 1 层 common/：谁都能用，它不依赖任何人</text>
+  <text x="34" y="560" font-size="12" fill="#333">log.h　mpp_utils.h（MPP_CHECK、各种 RAII 指针）　nv12_picture.h（Nv12Picture，以及把解码帧描述成 Nv12Picture 的函数）　time_utils.h</text>
+
+  <text x="500" y="612" font-size="12" text-anchor="middle" fill="#555">换输入（比如以后改成 RTSP 拉流）只动 source/ 和 DecodeStage；换编码格式只动 encoder/ 的配置；从单线程改双线程只动 app/</text>
+</svg>

@@ -10,7 +10,7 @@ metadata:
 
 每个 Day 的工作方式（用户在 Day 2 开始时选定，"和 Day 1 一样"）：
 - 我写文档（readme、guide、M1～M6 流程文档、重构方案），用户写代码，每个里程碑写完我 review。
-- 先在一个文件里写面条代码（goto CLEANUP 风格）跑通 M1～M6，再单独开分支重构成类（照 Day 1 的目录结构：app / common / decoder|encoder / source / sink / pipeline）。
+- （Day 1～4 的做法，Day 5 起作废，见 [[feedback-architecture-first]]）先在一个文件里写面条代码（goto CLEANUP 风格）跑通 M1～M6，再单独开分支重构成类（照 Day 1 的目录结构：app / common / decoder|encoder / source / sink / pipeline）。
 - 用户说"快速推进，只要不是 bug 就行"时，review 只报 bug，不报代码质量问题。
 - 后来调整为：**MPP 核心流程（init、info change、主循环、取帧判断）用户自己写/手抄；样板代码（参数解析、CLEANUP、统计）可以由我写**。Day 2 重构代码是用户让我直接写的，然后给了"哪些手抄、哪些精读、哪些扫一眼"的清单。
 

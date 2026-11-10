@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1000" height="560" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <text x="500" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">M1 一帧怎么走：数据在哪块 buffer 里，谁拥有它</text>
+  <text x="500" y="54" font-size="13" text-anchor="middle" fill="#555">全程只有硬件在搬数据，CPU 不复制画面</text>
+
+  <!-- 文件 -->
+  <rect x="20" y="90" width="130" height="70" rx="6" fill="#f2f2f2" stroke="#888"/>
+  <text x="85" y="118" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">aaa.264</text>
+  <text x="85" y="140" font-size="11" text-anchor="middle" fill="#555">1080p H.264</text>
+  <line x1="150" y1="125" x2="196" y2="125" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="173" y="116" font-size="11" text-anchor="middle" fill="#555">64KB</text>
+
+  <!-- 解码器 -->
+  <rect x="200" y="80" width="180" height="90" rx="8" fill="#eef6ee" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="290" y="108" font-size="14" font-weight="bold" text-anchor="middle" fill="#222">MPP 解码器</text>
+  <text x="290" y="130" font-size="11" text-anchor="middle" fill="#555">decode_put_packet</text>
+  <text x="290" y="148" font-size="11" text-anchor="middle" fill="#555">decode_get_frame</text>
+
+  <!-- 解码内存池 -->
+  <rect x="200" y="200" width="180" height="150" rx="8" fill="#fff4e0" stroke="#d08a3a"/>
+  <text x="290" y="224" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">解码器的内存池</text>
+  <text x="290" y="240" font-size="11" text-anchor="middle" fill="#555">MppDecoder 拥有，最多 24 块</text>
+  <rect x="216" y="252" width="148" height="34" rx="4" fill="#ffd9a8" stroke="#d08a3a" stroke-width="2"/>
+  <text x="290" y="274" font-size="12" text-anchor="middle" fill="#222">这一帧的 buffer</text>
+  <rect x="216" y="294" width="148" height="20" rx="4" fill="#ffffff" stroke="#d8b98f"/>
+  <rect x="216" y="320" width="148" height="20" rx="4" fill="#ffffff" stroke="#d8b98f"/>
+  <text x="290" y="309" font-size="10" text-anchor="middle" fill="#999">参考帧 / 空闲</text>
+  <text x="290" y="335" font-size="10" text-anchor="middle" fill="#999">……</text>
+  <line x1="290" y1="170" x2="290" y2="196" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="298" y="188" font-size="11" fill="#555">硬件写进其中一块</text>
+
+  <!-- MppFrame -->
+  <rect x="440" y="80" width="200" height="110" rx="8" fill="#ffffff" stroke="#3d82c4" stroke-width="2"/>
+  <text x="540" y="104" font-size="14" font-weight="bold" text-anchor="middle" fill="#222">MppFramePtr decodedFrame</text>
+  <text x="456" y="126" font-size="11" fill="#333">width 1920　height 1080</text>
+  <text x="456" y="144" font-size="11" fill="#333">hor_stride 1920　ver_stride 1088</text>
+  <text x="456" y="162" font-size="11" fill="#333">fmt NV12　buffer → 左边那块</text>
+  <text x="456" y="180" font-size="10" fill="#8a5a1c">数值按 Day 2 代码注释，M1 上板时打印确认</text>
+  <line x1="380" y1="125" x2="436" y2="125" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 440 170 L 410 170 L 410 262 L 368 262" stroke="#3d82c4" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <text x="414" y="226" font-size="10" fill="#2c6fb0">指向</text>
+
+  <!-- RGA -->
+  <rect x="440" y="230" width="200" height="80" rx="8" fill="#eef6ee" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="540" y="256" font-size="14" font-weight="bold" text-anchor="middle" fill="#222">RGA imresize（同步）</text>
+  <text x="540" y="278" font-size="11" text-anchor="middle" fill="#555">读 1920×1080，写 1280×720</text>
+  <text x="540" y="296" font-size="11" text-anchor="middle" fill="#555">返回时已经写完</text>
+  <line x1="364" y1="280" x2="436" y2="280" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="400" y="296" font-size="10" text-anchor="middle" fill="#555">读</text>
+
+  <!-- 720p buffer -->
+  <rect x="700" y="230" width="270" height="80" rx="8" fill="#fff4e0" stroke="#d08a3a"/>
+  <text x="835" y="256" font-size="13" font-weight="bold" text-anchor="middle" fill="#222">720p buffer（只有 1 块）</text>
+  <text x="835" y="276" font-size="11" text-anchor="middle" fill="#555">ResizeEncodeStage 拥有</text>
+  <text x="835" y="294" font-size="11" text-anchor="middle" fill="#555">1280×720，stride 1280×720</text>
+  <line x1="640" y1="270" x2="696" y2="270" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="668" y="262" font-size="10" text-anchor="middle" fill="#555">写</text>
+
+  <!-- 编码器 -->
+  <rect x="700" y="80" width="270" height="90" rx="8" fill="#eef6ee" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="835" y="108" font-size="14" font-weight="bold" text-anchor="middle" fill="#222">MPP 编码器（H.265）</text>
+  <text x="835" y="130" font-size="11" text-anchor="middle" fill="#555">encode_put_frame(720p buffer)</text>
+  <text x="835" y="148" font-size="11" text-anchor="middle" fill="#555">encode_get_packet → 写 out_720p.h265</text>
+  <line x1="835" y1="230" x2="835" y2="174" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="843" y="206" font-size="10" fill="#555">读</text>
+
+  <!-- 时间线 -->
+  <rect x="20" y="380" width="960" height="160" rx="10" fill="#fbf6ef" stroke="#c9a77a" stroke-dasharray="6,4"/>
+  <text x="34" y="404" font-size="14" font-weight="bold" fill="#8a5a1c">这一帧的 buffer 什么时候还给解码器</text>
+  <line x1="60" y1="460" x2="940" y2="460" stroke="#888" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <circle cx="110" cy="460" r="5" fill="#555"/>
+  <text x="110" y="440" font-size="12" text-anchor="middle" fill="#222">① getFrame 拿到</text>
+  <circle cx="330" cy="460" r="5" fill="#555"/>
+  <text x="330" y="440" font-size="12" text-anchor="middle" fill="#222">② RGA 读完（imresize 返回）</text>
+  <circle cx="560" cy="460" r="7" fill="#c0392b"/>
+  <text x="560" y="440" font-size="12" font-weight="bold" text-anchor="middle" fill="#c0392b">③ 最早可以释放</text>
+  <circle cx="800" cy="460" r="5" fill="#555"/>
+  <text x="800" y="440" font-size="12" text-anchor="middle" fill="#222">④ 编码完 720p</text>
+  <rect x="110" y="472" width="450" height="16" fill="#ffd9a8"/>
+  <text x="335" y="485" font-size="11" text-anchor="middle" fill="#222">1080p buffer 被占用</text>
+  <rect x="560" y="472" width="240" height="16" fill="#fff0dc" stroke="#e0b67a" stroke-dasharray="3,2"/>
+  <text x="680" y="485" font-size="10" text-anchor="middle" fill="#8a5a1c">M1 里多占一会儿，不影响结果</text>
+  <rect x="330" y="494" width="470" height="16" fill="#d6ecff"/>
+  <text x="565" y="507" font-size="11" text-anchor="middle" fill="#222">720p buffer 被占用</text>
+  <text x="500" y="530" font-size="12" text-anchor="middle" fill="#333">编码器只读 720p buffer，所以 1080p 的帧在 ③ 就能还；M1 图简单，等这一圈循环结束时 MppFramePtr 析构，自动还回内存池</text>
+</svg>

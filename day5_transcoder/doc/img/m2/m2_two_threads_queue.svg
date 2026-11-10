@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1000" height="560" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <text x="500" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">M2：两个线程，中间一个队列</text>
+  <text x="500" y="54" font-size="13" text-anchor="middle" fill="#555">两个 Stage 类和 M1 一模一样，只是分到了两个线程里</text>
+
+  <!-- 解码线程 -->
+  <rect x="20" y="80" width="280" height="200" rx="10" fill="#eef6ee" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="160" y="106" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">解码线程（生产者）</text>
+  <text x="40" y="134" font-size="12" fill="#333">while (true)</text>
+  <text x="56" y="156" font-size="12" fill="#333">decodeStage.readNextFrame(frame)</text>
+  <text x="56" y="178" font-size="12" fill="#333">frameQueue.push(std::move(frame))</text>
+  <text x="40" y="208" font-size="12" fill="#333">EndOfStream → closeInput()</text>
+  <text x="40" y="230" font-size="12" fill="#333">Error → abort()</text>
+  <text x="40" y="262" font-size="11" fill="#666">只有这个线程碰 DecodeStage</text>
+
+  <!-- 队列 -->
+  <rect x="350" y="110" width="300" height="110" rx="10" fill="#fff4e0" stroke="#d08a3a" stroke-width="2"/>
+  <text x="500" y="134" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">FrameQueue（容量 4）</text>
+  <rect x="372" y="150" width="56" height="44" rx="4" fill="#ffd9a8" stroke="#d08a3a"/>
+  <rect x="436" y="150" width="56" height="44" rx="4" fill="#ffd9a8" stroke="#d08a3a"/>
+  <rect x="500" y="150" width="56" height="44" rx="4" fill="#ffd9a8" stroke="#d08a3a"/>
+  <rect x="564" y="150" width="56" height="44" rx="4" fill="#ffffff" stroke="#d8b98f" stroke-dasharray="3,2"/>
+  <text x="400" y="177" font-size="11" text-anchor="middle" fill="#222">帧 7</text>
+  <text x="464" y="177" font-size="11" text-anchor="middle" fill="#222">帧 6</text>
+  <text x="528" y="177" font-size="11" text-anchor="middle" fill="#222">帧 5</text>
+  <text x="592" y="177" font-size="11" text-anchor="middle" fill="#999">空位</text>
+  <text x="500" y="212" font-size="11" text-anchor="middle" fill="#555">mutex 保护；两个条件变量：notFull、notEmpty</text>
+
+  <line x1="300" y1="168" x2="346" y2="168" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="323" y="160" font-size="11" text-anchor="middle" fill="#555">push</text>
+  <line x1="650" y1="168" x2="696" y2="168" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="673" y="160" font-size="11" text-anchor="middle" fill="#555">pop</text>
+
+  <!-- 缩放编码线程 -->
+  <rect x="700" y="80" width="280" height="200" rx="10" fill="#eef6ee" stroke="#4e9a3a" stroke-width="2"/>
+  <text x="840" y="106" font-size="15" font-weight="bold" text-anchor="middle" fill="#222">缩放编码线程（消费者）</text>
+  <text x="720" y="134" font-size="12" fill="#333">while (true)</text>
+  <text x="736" y="156" font-size="12" fill="#333">frameQueue.pop(frame)</text>
+  <text x="736" y="178" font-size="12" fill="#333">resizeAndEncode(frame.get())</text>
+  <text x="720" y="208" font-size="12" fill="#333">EndOfStream → drainEncoder()</text>
+  <text x="720" y="230" font-size="12" fill="#333">出错 → abort()</text>
+  <text x="720" y="262" font-size="11" fill="#666">只有这个线程碰 ResizeEncodeStage</text>
+
+  <!-- 三种情况 -->
+  <rect x="20" y="310" width="960" height="230" rx="10" fill="#f6f9ff" stroke="#9db8d9" stroke-dasharray="6,4"/>
+  <text x="34" y="334" font-size="14" font-weight="bold" fill="#2c5d93">队列要处理的三种情况</text>
+
+  <text x="40" y="366" font-size="13" font-weight="bold" fill="#222">① 满了：背压</text>
+  <text x="56" y="388" font-size="12" fill="#333">解码比编码快时，队列排满 4 帧，push 在 notFull 上等着，解码线程停下来。pop 取走一帧后 notify，解码线程才继续。</text>
+  <text x="56" y="408" font-size="12" fill="#333">没有这个上限的话，解码线程会一直往里塞，直到解码器内存池的 24 块 buffer 全被队列占住。</text>
+
+  <text x="40" y="440" font-size="13" font-weight="bold" fill="#222">② 正常结束：EOS 往下传</text>
+  <text x="56" y="462" font-size="12" fill="#333">解码线程拿到 EndOfStream → closeInput()。缩放编码线程把队列里剩下的帧取完，pop 才返回 EndOfStream → drainEncoder()。</text>
+
+  <text x="40" y="494" font-size="13" font-weight="bold" fill="#c0392b">③ 一边出错：abort 叫醒另一边</text>
+  <text x="56" y="516" font-size="12" fill="#333">另一边可能正卡在 push 或 pop 里等。abort() 把两个条件变量都 notify_all，push 返回 false、pop 返回 Aborted，两个线程都能退出、被 join。</text>
+</svg>

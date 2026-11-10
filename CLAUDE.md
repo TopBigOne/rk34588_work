@@ -80,15 +80,17 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 
 写代码、改代码、review 用户的代码时都按这份规范。完整版（每条的理由、反例、现有代码待改清单）见 `代码规范.md`。格式交给各工程的 `.clang-format`。
 
-**总原则**：读代码的是入门者。名字要说清**是什么、处于什么状态、单位是什么**，宁长勿缩。把一行代码念出来，要像一句话：`int filledBufIndex = dequeue_buffer(&bytesUsed);`
+> 2026-11-11 用户定下：从 Day 5 起，函数、方法用驼峰，私有成员不加结尾的 `_`。Day 1～4 已经提交的代码保持原来的 snake_case 和 `_`，不回头改。
+
+**总原则**：读代码的是入门者。名字要说清**是什么、处于什么状态、单位是什么**，宁长勿缩。把一行代码念出来，要像一句话：`int filledBufIndex = dequeueBuffer(&bytesUsed);`
 
 | 类别 | 写法 | 例子 |
 |---|---|---|
 | 文件、目录 | `snake_case` | `mpp_encoder.cpp`、`src/encoder/` |
 | 类、结构体 | `PascalCase`，**名词** | `MppEncoder`、`EncoderConfig`、`CameraNode` |
-| 函数、方法 | `snake_case`，**动词开头** | `queue_buffer`、`get_header`、`read_frame` |
+| 函数、方法 | `camelCase`，**动词开头** | `queueBuffer`、`getHeader`、`readFrame` |
 | 局部变量、参数 | `camelCase` | `filledBufIndex`、`bytesUsed` |
-| 私有成员变量 | `camelCase_` | `encoderCtx_`、`cfg_` |
+| 私有成员变量 | `camelCase`，**结尾不加 `_`** | `encoderCtx`、`encoderCfg` |
 | 结构体公开字段 | `camelCase` | `horStride`、`dmaFd` |
 | 常量 | `kPascalCase` | `kBufCount`、`kOutputFilePath` |
 | 全局变量（只在面条代码里） | `g_camelCase` | `g_videoFd` |
@@ -99,7 +101,9 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 - **带单位**：`timeoutMs`、`dqbufWaitUs`、`sizeBytes`、`fps`
 - **固定用词**：第几个用 `Index`，一共几个用 `Count`，字节数用 `Bytes` / `Size` / `Length`；不用 `idx`、`num`、`cnt`、`n`
 - **bool 用 `is` / `has` / `can` / `should` 开头**：`isStreaming`、`hasCamera`；不用否定名字（`notReady`）
-- **函数名说实话**：只打印不返回的叫 `print_xxx`，不叫 `get_xxx`；不用 `process`、`handle`、`do_work` 这类空泛的名字
+- **函数名说实话**：只打印不返回的叫 `printXxx`，不叫 `getXxx`；不用 `process`、`handle`、`doWork` 这类空泛的名字
+- **参数不和成员同名**：私有成员不加 `_`，参数要是和成员同名，`chunkSizeBytes = chunkSizeBytes;` 就成了参数自己赋给自己，成员一直是 0，编译还不报错。参数统一叫 `requestedXxx`（`requestedChunkSizeBytes`、`requestedConfig`）；CMake 加 `-Wshadow`，同名时编译器会警告
+- **MPP、V4L2、RGA 的 API 名字保持原样**（`mpp_create`、`decode_get_frame`），只有我们自己写的函数用驼峰
 - **同一个东西全工程一个名字**：`struct v4l2_buffer` 变量统一叫 `v4l2Buf`；文件描述符以 `Fd` 结尾（`videoFd`、`dmaFd`）
 - **V4L2 / MPP 结构体变量用类型名去掉前缀**：`capability`、`format`、`requestBufs`、`exportBuf`、`v4l2Buf`、`bufInfo`；不用官方示例里的 `cap`、`fmt`、`req`、`exp`
 - **缩写只用白名单**：`fd`、`buf`（只在词组里）、`ctx`、`cfg`、`fps`、`ret`（只接返回码），以及 `MPP`、`V4L2`、`DMA`、`ISP`、`SPS`、`PPS`、`EOS`、`NV12`、`YUV`、`UV`；其他缩写写全称
@@ -113,7 +117,7 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 用户反复被 Claude 起的名字和写的注释带偏过（例：`cpuAddrs` 区分不出是哪次 mmap 得到的，后来改成 `mmapAddresses`；`exportBuf.type` 注释写成"哪个队列"，用户以为 type 就是队列，其实它是"buffer 类型"，只是内核顺带用它找队列）。所以 Claude 写或改的每个名字、每条注释，交出去之前都要过下面这几条。
 
 **函数**
-- 一个函数只做一件事，名字动词开头，说清做了什么、对谁做（`open_camera_and_map_buffers`，不叫 `init`、`setup`）
+- 一个函数只做一件事，名字动词开头，说清做了什么、对谁做（`openCameraAndMapBuffers`，不叫 `init`、`setup`）
 - Doxygen 四项写全：`@brief` 一句话说做什么；`@param` 标 `[in]` / `[out]` / `[in,out]`，说清单位和取值；`@return` 说清每个值的意思（`0 = 通过，1 = 失败`，`true = 成功`）；`@note` 写调用前提、谁负责释放
 - 返回类型和返回值一致（`int` 函数不 `return true`）；每条失败路径都把已拿到的资源释放掉
 

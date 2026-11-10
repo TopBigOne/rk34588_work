@@ -13,3 +13,6 @@
 - [实验设计要有明显对比](feedback_experiment_design.md) — 2026-10-31 M3 两边 sync 都≈0，用户觉得白学；先 probe 确认现象明显，先说清学完能回答什么
 - [别学偏：主线是 MPP 编解码 API](feedback_stay_on_codec_transport.md) — 支撑知识只讲到看懂 MPP 代码为止；不主动做 A/B、性能实验，不写顺便一提的推断（2026-11-06 再次强调）
 - [里程碑文档的结构](feedback_milestone_doc_structure.md) — 理解 Mx 文档要独立直白：干了什么/输入/输出/技术点（MPP、V4L2、RGA、Linux）/业务场景；不和前面的里程碑扯在一起
+- [从 Day 5 起先设计架构](feedback_architecture_first.md) — 2026-11-08：不写面条代码，一开始就按 Day 4 的分层目录写；接口按后面里程碑的切分点设计
+- [Day 5 进度断点](project_day5_status.md) — 2026-11-11：M1 第一批代码（common、StreamFileReader、MppDecoder）已提交 240ce69；下一步 DecodeStage，全部未上板
+- [Day 5 起用驼峰命名](feedback_naming_camelcase.md) — 2026-11-11：函数、方法驼峰，私有成员不加 _；参数叫 requestedXxx，CMake 加 -Wshadow
