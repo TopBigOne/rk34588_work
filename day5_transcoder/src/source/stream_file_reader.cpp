@@ -26,7 +26,8 @@ bool StreamFileReader::readChunk(std::vector<uint8_t> &chunk, bool &isLastChunk)
         LOGE(kTag, "fread 出错：%s", strerror(errno));
         return false;
     }
-    // todo 这里调用resize 解决了什么问题？
+    // fread 绕过了 vector，直接往它的内存里写，所以 size 不会变，因此需要调用：resize()
+    // Note :所以 chunk.resize(readSizeBytes) 的作用相当于 Java 的 ByteBuffer.limit(n)：告诉后面用这块数据的人，有效的只有前 readSizeBytes 个字节。
     chunk.resize(readSizeBytes);
     isLastChunk = readSizeBytes<chunkSizeBytes;
     readBytes+=static_cast<int64_t>(readSizeBytes);
