@@ -44,7 +44,7 @@
   <text x="456" y="126" font-size="11" fill="#333">width 1920　height 1080</text>
   <text x="456" y="144" font-size="11" fill="#333">hor_stride 1920　ver_stride 1088</text>
   <text x="456" y="162" font-size="11" fill="#333">fmt NV12　buffer → 左边那块</text>
-  <text x="456" y="180" font-size="10" fill="#8a5a1c">数值按 Day 2 代码注释，M1 上板时打印确认</text>
+  <text x="456" y="180" font-size="10" fill="#8a5a1c">数值是 2026-11-12 上板实测</text>
   <line x1="380" y1="125" x2="436" y2="125" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
   <path d="M 440 170 L 410 170 L 410 262 L 368 262" stroke="#3d82c4" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
   <text x="414" y="226" font-size="10" fill="#2c6fb0">指向</text>

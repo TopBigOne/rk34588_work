@@ -3,7 +3,7 @@
 - [文档风格](feedback_docs_style.md) — 详细、SVG 图渲染检查、源码行号和实测数据要核对
 - [提交信息前缀](feedback_commit_msg_prefix.md) — Day 4 起用 "[day4_rga_M1] xxx"（方括号 + 分支名）；以前是 "day3_cam2h264: xxx"
 - [提交后直接 push](feedback_commit_then_push.md) — 2026-11-04 起，用户让提交时，提交完紧接着 push，不 force push
-- [新技术点都写文档](feedback_new_tech_point_doc.md) — 聊天里讲到的新命令/概念，主动整理成单独的 md，放当天工程 doc/ 并加导航
+- [新技术点都写文档](feedback_new_tech_point_doc.md) — 主线上的新命令/概念主动整理成 md 放当天 doc/；随口问的旁支疑问只在聊天里答，不写也不问
 - [Day 2 进度断点](project_day2_status.md) — 2026-10-15：M1～M6 完成，重构代码已验收，用户已读完（b8825fd），下一步 Day 3
 - [Day 3 进度断点](project_day3_status.md) — 2026-11-02：day3_mmap M1～M4 代码都已提交，M4 还没上板（11-03 跑）；板子 11-01 洒啤酒在清洗，摄像头已拆下
 - [Day 4 进度断点](project_day4_status.md) — 2026-11-08：M1～M3 都跑通并已提交（9758b47、497a637），代码已重构；下一步 Day 5 转码器
@@ -14,5 +14,5 @@
 - [别学偏：主线是 MPP 编解码 API](feedback_stay_on_codec_transport.md) — 支撑知识只讲到看懂 MPP 代码为止；不主动做 A/B、性能实验，不写顺便一提的推断（2026-11-06 再次强调）
 - [里程碑文档的结构](feedback_milestone_doc_structure.md) — 理解 Mx 文档要独立直白：干了什么/输入/输出/技术点（MPP、V4L2、RGA、Linux）/业务场景；不和前面的里程碑扯在一起
 - [从 Day 5 起先设计架构](feedback_architecture_first.md) — 2026-11-08：不写面条代码，一开始就按 Day 4 的分层目录写；接口按后面里程碑的切分点设计
-- [Day 5 进度断点](project_day5_status.md) — 2026-11-11：M1 第一批代码（common、StreamFileReader、MppDecoder）已提交 240ce69；下一步 DecodeStage，全部未上板
+- [Day 5 进度断点](project_day5_status.md) — 2026-11-12：M1 解码段上板通过（1803 帧、错误帧 0、stride 1920×1088），代码未提交；下一步 RGA、编码器
 - [Day 5 起用驼峰命名](feedback_naming_camelcase.md) — 2026-11-11：函数、方法驼峰，私有成员不加 _；参数叫 requestedXxx，CMake 加 -Wshadow
