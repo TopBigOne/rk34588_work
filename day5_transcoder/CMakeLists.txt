@@ -12,7 +12,10 @@ add_executable(day5_transcoder src/main.cpp
         src/source/stream_file_reader.cpp
         src/source/stream_file_reader.h
         src/decoder/mpp_decoder.cpp
-        src/decoder/mpp_decoder.h)
+        src/decoder/mpp_decoder.h
+        src/pipeline/decode_stage.cpp
+        src/pipeline/decode_stage.h
+        src/app/m1_decode_only_check.cpp)
 
 target_include_directories(day5_transcoder PRIVATE src)
 
