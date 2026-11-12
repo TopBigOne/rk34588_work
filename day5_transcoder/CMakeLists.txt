@@ -15,7 +15,9 @@ add_executable(day5_transcoder src/main.cpp
         src/decoder/mpp_decoder.h
         src/pipeline/decode_stage.cpp
         src/pipeline/decode_stage.h
-        src/app/m1_decode_only_check.cpp)
+        src/app/m1_decode_only_check.cpp
+        src/encoder/mpp_encoder.cpp
+        src/encoder/mpp_encoder.h)
 
 target_include_directories(day5_transcoder PRIVATE src)
 

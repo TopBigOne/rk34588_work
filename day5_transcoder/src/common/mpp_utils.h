@@ -31,6 +31,23 @@ struct FileCloser {
 using FilePtr = std::unique_ptr<FILE, FileCloser>;
 
 
+/**
+* 第 1 步  bufferGroupPtr 析构 → 调用 unique_ptr 的析构函数 ~unique_ptr()
+
+第 2 步  ~unique_ptr() 里（标准库写好的代码，简化）：
+             if (storedPointer != nullptr)
+                 deleter(storedPointer);      ← 用 () 去“调用”删除器对象
+
+第 3 步  编译器把 deleter(storedPointer) 翻译成
+             deleter.operator()(storedPointer);
+         也就是调用你写的那个名叫 operator() 的成员函数
+
+第 4 步  operator() 的函数体执行：
+             mpp_buffer_group_put(storedPointer);
+
+第 5 步  unique_ptr 的成员 deleter 跟着析构（空结构体，什么都不做）
+ *
+ */
 struct MppBufferGroupDeleter {
     void operator()(MppBufferGroup mppBufferGroup) const { mpp_buffer_group_put(mppBufferGroup); }
 };
