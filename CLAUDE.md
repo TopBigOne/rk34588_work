@@ -76,6 +76,28 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 | iep_test / iep2_test | 图像增强（去隔行扫描） |
 | vdpp_test | 视频显示后处理 |
 
+## 学习方式：每个知识点只学到“够用线”
+
+2026-11-13 用户定。目标是把 RK3588 的 MPP 弄明白，但路上的陌生知识点（V4L2、mmap、dma-buf、C++）很多，每个都往下挖会拖住主线。
+
+**判断标准**：不懂它，能不能看懂、写出眼前这段 MPP 相关的代码？
+
+| 知识点 | 够用线 | 先不学 |
+|---|---|---|
+| mmap | 把内核 buffer 映射到用户态拿到地址；失败返回 `MAP_FAILED`；不分配新内存 | 页表、VMA、缺页中断 |
+| V4L2 | REQBUFS → QBUF/DQBUF 循环 → STREAMON；EXPBUF 拿 dma-buf fd | media controller 拓扑、驱动怎么写 |
+| dma-buf | 一个 fd 代表一块物理内存，可以在摄像头、RGA、MPP 之间零拷贝传递 | 内核里的 attach/map 实现 |
+| C++ | 能看懂、能写出 RAII、`unique_ptr` 加删除器、引用、`const` | 模板元编程、标准库内部实现 |
+
+新碰到的知识点，先按同样的标准定够用线。
+
+**Claude 怎么做**：
+- 用户提问时，先说一句“这条在够用线以内 / 以外”
+- 线以内：照常讲清楚
+- 线以外：只给一句结论，在当天 `doc/我不理解的代码.md` 的“以后再挖”区记一行（日期 + 够用线结论），不展开
+- 当天的主线做完后，提醒用户回清单挑一两条专门挖
+- review 代码一次给全清单，分“必须改 / 建议改”，用户改完直接验证，不分多轮补
+
 ## 代码规范：名字要让入门者一眼看懂
 
 写代码、改代码、review 用户的代码时都按这份规范。完整版（每条的理由、反例、现有代码待改清单）见 `代码规范.md`。格式交给各工程的 `.clang-format`。
@@ -99,6 +121,7 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 **必须遵守的规则**：
 - **带状态**：`filledBufIndex` 而不是 `index`；`encodedPacket` 而不是 `packet`
 - **带单位**：`timeoutMs`、`dqbufWaitUs`、`sizeBytes`、`fps`
+- **智能指针变量以 `Ptr` 结尾**（2026-11-12 用户定）：类型是 `std::unique_ptr` 或它的别名（`MppPacketPtr`、`MppFramePtr`、`MppBufferGroupPtr`、`FilePtr`……）的变量、成员，名字都以 `Ptr` 结尾：`MppPacketPtr packetPtr(rawPacket);`、`MppBufferGroupPtr frameGroupPtr;`。一看就知道它是把裸句柄又包了一层，用的时候要 `.get()`。裸句柄不加 `Ptr`（`rawPacket`、`MppFrame frame`）
 - **固定用词**：第几个用 `Index`，一共几个用 `Count`，字节数用 `Bytes` / `Size` / `Length`；不用 `idx`、`num`、`cnt`、`n`
 - **bool 用 `is` / `has` / `can` / `should` 开头**：`isStreaming`、`hasCamera`；不用否定名字（`notReady`）
 - **函数名说实话**：只打印不返回的叫 `printXxx`，不叫 `getXxx`；不用 `process`、`handle`、`doWork` 这类空泛的名字

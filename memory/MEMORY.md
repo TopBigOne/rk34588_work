@@ -16,3 +16,5 @@
 - [从 Day 5 起先设计架构](feedback_architecture_first.md) — 2026-11-08：不写面条代码，一开始就按 Day 4 的分层目录写；接口按后面里程碑的切分点设计
 - [Day 5 进度断点](project_day5_status.md) — 2026-11-12：M1 解码段上板通过（1803 帧、错误帧 0、stride 1920×1088），代码未提交；下一步 RGA、编码器
 - [Day 5 起用驼峰命名](feedback_naming_camelcase.md) — 2026-11-11：函数、方法驼峰，私有成员不加 _；参数叫 requestedXxx，CMake 加 -Wshadow
+- [智能指针变量以 Ptr 结尾](feedback_naming_smart_ptr_suffix.md) — 2026-11-12：unique_ptr 及别名（MppPacketPtr 等）的变量、成员叫 packetPtr、frameGroupPtr
+- [每个知识点划够用线](feedback_learning_depth_line.md) — 2026-11-13：标准是“不懂它能不能看懂眼前的 MPP 代码”；线外只给一句结论，记进“以后再挖”清单
