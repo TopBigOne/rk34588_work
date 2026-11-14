@@ -9,6 +9,7 @@ add_executable(day5_transcoder src/main.cpp
         src/common/time_utils.h
         src/common/mpp_utils.h
         src/common/nv12_picture.h
+        src/common/nv12_picture.cpp
         src/source/stream_file_reader.cpp
         src/source/stream_file_reader.h
         src/decoder/mpp_decoder.cpp
@@ -17,7 +18,14 @@ add_executable(day5_transcoder src/main.cpp
         src/pipeline/decode_stage.h
         src/app/m1_decode_only_check.cpp
         src/encoder/mpp_encoder.cpp
-        src/encoder/mpp_encoder.h)
+        src/encoder/mpp_encoder.h
+        src/rga/rga_resizer.cpp
+        src/rga/rga_resizer.h
+        src/sink/stream_file_writer.cpp
+        src/sink/stream_file_writer.h
+        src/pipeline/resize_encode_stage.cpp
+        src/pipeline/resize_encode_stage.h
+        src/app/m1_transcode_single_thread.cpp)
 
 target_include_directories(day5_transcoder PRIVATE src)
 

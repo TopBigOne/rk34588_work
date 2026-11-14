@@ -1,10 +1,13 @@
 #include <cstring> // strcmp
 #include <iostream>
 
-#include "app/milestones.h"
+#include "app/m1_transcode_single_thread.h"
+
 #include "common/log.h"
 
 static const char *const kTag = "Main";
+
+
 
 /**
  * @brief 程序入口：按第一个参数选择跑哪一项
@@ -16,7 +19,7 @@ static const char *const kTag = "Main";
 int main(int argc, char **argv) {
     const char *milestoneName = argc > 1 ? argv[1] : "decode";
     if (strcmp(milestoneName, "decode") == 0) {
-        return runM1DecodeOnlyCheck();
+        return runM1TranscodeSingleThread();
     }
     LOGE(kTag, "用法：%s decode", argv[0]);
     return 1;
