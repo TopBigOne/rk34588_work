@@ -1,6 +1,6 @@
 ---
 name: project-day5-status
-description: 2026-11-12：M1 解码段上板通过（1803 帧、错误帧 0、stride 1920×1088）；DecodeStage 和解码测试未提交；下一步写 RGA、编码器
+description: 2026-11-14：M1 单线程转码上板验收通过（1803→1803 帧、207 fps、ffmpeg 解码 0 报错）；M1 后半段代码未提交；下一步收尾建议项后提交，再做 M2
 metadata:
   type: project
 ---
@@ -12,7 +12,11 @@ metadata:
   - 用户代码里还没改的小问题：`reqChunkSizeBytes` 是缩写（应为 requestedChunkSizeBytes，.h 声明也要改）；CMake 还是 C++17、没加 -Wshadow；多数函数 Doxygen 只写了一半；mpp_decoder.cpp 的 `// step N:` 后面是空的。
   - 2026-11-12：用户写完 pipeline/DecodeStage 和 app/m1_decode_only_check.cpp（main 参数 `decode`），**上板通过**：正常帧 1803、错误帧 0、读入 58449590 字节（= Mac 上 aaa.264 的大小）、info change 1920x1080 stride 1920x1088 buf_size 4177920、第 1 帧 fmt 0x0。m1 文档和 m1_one_frame_buffers.svg 的 stride 已改成实测。这批代码还没提交。
   - 用户在 MppDecoder::getFrame 里加了调试日志（`decode nothing` 每次轮询打一行 LOGE），一次运行 1 万多行，把 stride 日志挤出了 CLion 窗口；建议删掉。
-  - 下一步：rga_resizer → mpp_encoder → stream_file_writer → resize_encode_stage → m1_transcode_single_thread。
+  - 2026-11-13：MppEncoder 提交 545083d。
+  - 2026-11-14：用户写完 rga_resizer、stream_file_writer、resize_encode_stage、m1_transcode_single_thread，**M1 上板验收通过**：解码 1803 帧、错误帧 0、编码 1803 帧，8670 ms（207.9 fps），58449590 → 15028188 字节；Mac 上 ffprobe hevc 1280×720 1803 帧，`ffmpeg -f null` 0 报错，文件开头是 VPS。
+    - 踩过的坑：`imcheck` 是宏、展开用 memset，要 `#include <cstring>`（用户写成 `<string>`）；CMake 漏 nv12_picture.cpp；`getEncodedFrameCount` 没定义；`encode` 判断少了 `!`；**调了 MPP_ENC_GET_HDR_SYNC 必须把码流头写进文件**，否则 MPP 认为头已交给用户（mpp_enc_impl.cpp:1007 added_by_ctrl，:1540 跳过），第一个 IDR 不带 VPS/SPS/PPS，前 60 帧解不出（实测 120 条 PPS id out of range）。
+    - 还没改的建议项：main.cpp 参数 `decode` 现在跑的是转码（应加 `transcode` 分支，保留 decode）；命名（`FilePtr file`→filePtr、writenBytes 拼错、bufferPtr→resizedBufPtr、resizePicture→resizedPicture、decodeFrame→decodedFrame、drain 的 30 → 常量）；app_config.h 两个 #pragma once；stream_file_writer.cpp 重复 include；空的 `// step N:`、Doxygen。
+    - 这批代码还没提交。
 - 文档：`day5_transcoder/day5编码流程/m1流程.md`～`m4流程.md`。原来的 `具体编码day5_transcoder的流程.md` 已经拆进这 4 份，删掉了。
   - m1：Day 5 架构（4 层、两个 Stage）+ M1 的需求、技术点 + 3.6 节全部 25 个文件的完整代码。
   - m2：FrameQueue（mutex + 两个条件变量、容量 4、close_input / abort）+ m2_transcode_two_threads.cpp 的完整代码，以及改动的 4 个文件。FrameQueue 在 Mac 上用假帧类型测过（顺序、背压、两边叫停）。输出 out_720p_m2.h265，预计和 M1 的 md5 一样（推断）。
