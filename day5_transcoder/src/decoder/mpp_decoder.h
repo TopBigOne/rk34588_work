@@ -47,10 +47,10 @@ public:
 
     /**
      * 取一个输出帧
-     * @param outputFrame
+     * @param outputFramePtr
      * @return
      */
-    GetFrameResult getFrame(MppFramePtr &outputFrame);
+    GetFrameResult getFrame(MppFramePtr &outputFramePtr);
 
     int getInfoChangeCount() const { return infoChangeCount; }
 

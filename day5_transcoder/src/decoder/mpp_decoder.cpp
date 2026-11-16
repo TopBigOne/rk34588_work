@@ -49,7 +49,7 @@ FeedResult MppDecoder::feed(const uint8_t *data, size_t sizeBytes, bool isEos) {
     return FeedResult::Error;
 }
 
-GetFrameResult MppDecoder::getFrame(MppFramePtr &outputFrame) {
+GetFrameResult MppDecoder::getFrame(MppFramePtr &outputFramePtr) {
     // LOGD(kTag, "getFrame()");
     while (true) {
         MppFrame rawFrame = nullptr;
@@ -67,7 +67,7 @@ GetFrameResult MppDecoder::getFrame(MppFramePtr &outputFrame) {
             continue;
         }
 
-        outputFrame = std::move(frame);
+        outputFramePtr = std::move(frame);
         //LOGI(kTag, "    decode one frame in success ✅✅✅✅");
         //LOGI(kTag, "    ");
         return GetFrameResult::Frame;

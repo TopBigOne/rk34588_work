@@ -27,13 +27,13 @@ ReadFrameResult DecodeStage::readNextFrame(MppFramePtr &decodedFrame) {
         }
 
         // step 1： 先取
-        MppFramePtr outputFrame;
-        auto getFrameResult = decoder.getFrame(outputFrame);
+        MppFramePtr outputFramePtr;
+        auto getFrameResult = decoder.getFrame(outputFramePtr);
         if (getFrameResult == GetFrameResult::Error) {
             return ReadFrameResult::Error;
         }
         if (getFrameResult == GetFrameResult::Frame) {
-            MppFrame rawFrame = outputFrame.get();
+            MppFrame rawFrame = outputFramePtr.get();
             if (mpp_frame_get_eos(rawFrame)) {
                 isOutputEos = true;
             }
@@ -47,7 +47,7 @@ ReadFrameResult DecodeStage::readNextFrame(MppFramePtr &decodedFrame) {
             }
             if (mpp_frame_get_buffer(rawFrame)) {
                 decodedFrameCount++;
-                decodedFrame = std::move(outputFrame);
+                decodedFrame = std::move(outputFramePtr);
                 return ReadFrameResult::Frame;
             }
             continue;
