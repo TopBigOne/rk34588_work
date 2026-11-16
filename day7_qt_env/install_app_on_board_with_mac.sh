@@ -8,7 +8,7 @@
 #   它全屏盖在 weston 上面。weston 自己的桌面是空的（02-desktop.ini 关了任务栏，[desktop-launcher] 全被注释）。
 #   systemui 启动时读 /opt/ui/src/ATK-DLRK3588/apk1~3.cfg：apk1 = 第 1 页，apk2 = 第 2 页，apk3 = 底部 Dock（只放得下 4 个）。
 #   每行一个 app：appicons/<图标>.png <显示名> <程序名>，图标在 /opt/ui/src/appicons/，程序在 /opt/ui/src/apps/<程序名>
-#
+#adb shell cat /userdata/apps/day7_qt_env/day7_qt_env.log
 # 做的事情：
 #   1. 编译
 #   2. 程序、启动脚本、图标 → 板子 /userdata/apps/day7_qt_env/（/userdata 是数据分区，重启不会清空；/tmp 会）
@@ -78,7 +78,7 @@ echo "=== 重启 systemui（板子桌面会刷新一下） ==="
 $ADB shell "killall systemui sysvolume 2>/dev/null; sleep 0.5; setsid /etc/init.d/S50systemui start > /dev/null 2>&1" < /dev/null
 sleep 3
 if $ADB shell "pidof systemui" < /dev/null >/dev/null 2>&1; then
-    echo "=== 装好了：板子桌面第 2 页上有 NVR 图标，点它启动；程序输出在板子的 /tmp/day7_qt_env.log ==="
+    echo "=== 装好了：板子桌面第 2 页上有 NVR 图标，点它启动；日志：adb shell cat /userdata/apps/day7_qt_env/day7_qt_env.log ==="
 else
     echo "systemui 没起来，在板子上执行 /etc/init.d/S50systemui start 或重启板子" >&2
     exit 1
