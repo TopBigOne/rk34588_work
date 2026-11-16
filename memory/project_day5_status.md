@@ -1,6 +1,6 @@
 ---
 name: project-day5-status
-description: 2026-11-14：M1 单线程转码上板验收通过（1803→1803 帧、207 fps、ffmpeg 解码 0 报错）；M1 后半段代码未提交；下一步收尾建议项后提交，再做 M2
+description: 2026-11-17：M2 双线程转码上板验收通过（1803 帧、225 fps、md5 和 M1 相同），代码未提交；M1 已提交（87b84e5）；下一步 M3 RTSP
 metadata:
   type: project
 ---
@@ -17,6 +17,9 @@ metadata:
     - 踩过的坑：`imcheck` 是宏、展开用 memset，要 `#include <cstring>`（用户写成 `<string>`）；CMake 漏 nv12_picture.cpp；`getEncodedFrameCount` 没定义；`encode` 判断少了 `!`；**调了 MPP_ENC_GET_HDR_SYNC 必须把码流头写进文件**，否则 MPP 认为头已交给用户（mpp_enc_impl.cpp:1007 added_by_ctrl，:1540 跳过），第一个 IDR 不带 VPS/SPS/PPS，前 60 帧解不出（实测 120 条 PPS id out of range）。
     - 还没改的建议项：main.cpp 参数 `decode` 现在跑的是转码（应加 `transcode` 分支，保留 decode）；命名（`FilePtr file`→filePtr、writenBytes 拼错、bufferPtr→resizedBufPtr、resizePicture→resizedPicture、decodeFrame→decodedFrame、drain 的 30 → 常量）；app_config.h 两个 #pragma once；stream_file_writer.cpp 重复 include；空的 `// step N:`、Doxygen。
     - 这批代码还没提交。
+  - 2026-11-17：用户写完 M2（frame_queue、m2_transcode_two_threads.h/.cpp，main 分 decode / m1 / m2），**上板验收通过**：1803 帧进 1803 帧出、错误帧 0，8009 ms（225.1 fps），最多排过 4 帧，输出 md5 和 M1 相同（2b8634412e7b12bfb1af066701b9e9f9）。代码还没提交。
+    - review 时踩过的坑：解码出错分支 `return true`；pop 的第二个判断写成 EndOfStream（应为 Aborted）；没用 drainEncoder 的返回值；`double isDecodeOk`。都已改。
+    - 2026-11-17 用户让 Claude 直接补完：-Wshadow 挪到编译选项并加注释、Threads::Threads（工具链 libc 自带 pthread，不加也能链接）、frame_queue / m2 / main 的 Doxygen 和步骤注释、app_config 的队列容量注释。重新编译 0 警告，再上板 1803 帧、228.1 fps、md5 不变。
 - 文档：`day5_transcoder/day5编码流程/m1流程.md`～`m4流程.md`。原来的 `具体编码day5_transcoder的流程.md` 已经拆进这 4 份，删掉了。
   - m1：Day 5 架构（4 层、两个 Stage）+ M1 的需求、技术点 + 3.6 节全部 25 个文件的完整代码。
   - m2：FrameQueue（mutex + 两个条件变量、容量 4、close_input / abort）+ m2_transcode_two_threads.cpp 的完整代码，以及改动的 4 个文件。FrameQueue 在 Mac 上用假帧类型测过（顺序、背压、两边叫停）。输出 out_720p_m2.h265，预计和 M1 的 md5 一样（推断）。
