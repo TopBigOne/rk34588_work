@@ -1,6 +1,6 @@
 ---
 name: project-day5-status
-description: 2026-11-17：M2 双线程转码上板验收通过（1803 帧、225 fps、md5 和 M1 相同），代码未提交；M1 已提交（87b84e5）；下一步 M3 RTSP
+description: 2026-11-17：M1～M2 已提交（b41fccc），M3 RTSP 用户确认 OK；M4 抓包可选、先跳过；下一步 Day 6 NVR 多路预览
 metadata:
   type: project
 ---
@@ -33,5 +33,8 @@ metadata:
   - `EncoderConfigArg` 改名成 `EncoderConfig`，`type` 改名成 `codingType`
   - 2026-11-11 按用户要求全部改成驼峰（函数、方法），私有成员不加 `_`，参数叫 requestedXxx，见 [[feedback-naming-camelcase]]
   - 修了 Day 4 `init` 重复调用时打了错误日志却不 return 的 bug
-- 下一步：用户照 m1 敲代码；我 review、上板验证，然后依次做 M2、M3、M4。上板时把文档里所有标"推断"的地方核对一遍。
+- 2026-11-17：M2 代码已提交（b41fccc、3adc2eb、db350e5）。M3（run_rtsp_server_via_usb.sh + ffplay 播 RTSP）用户说“已经 OK 了”。工作区还有没提交的：m1～m3 文档改名、m4 文档改动、run_rtsp_server_via_usb.sh（用户没让提交）。
+- 2026-11-17 用户定的顺序：做完 M3 → Day 6 NVR 多路预览。M4 抓包是可选的，用户没提，先跳过。
+  - Day 6 NVR 的初步设想（还没写文档）：N 个 MppDecoder 各一个线程（复用 M2 的线程和队列）→ RGA 把 N 路缩小贴进一张 2×2 大图 → 显示到 HDMI。参考 test/mpi_dec_multi_test.c。输入先用 /userdata/av 里的现成文件。
+  - 板子显示相关（2026-11-17 实测）：板子跑着 weston，HDMI-A-1 接了屏；`export XDG_RUNTIME_DIR=/var/run; gst-launch-1.0 filesrc location=/userdata/av/out_720p.h265 ! h265parse ! mppvideodec ! waylandsink` 能进入 PLAYING、没报错（画面有没有出来用户还没确认）。板子上有 gst-play-1.0、ffplay、kmssink、waylandsink。
 - 相关：[[feedback-architecture-first]]、[[project-day4-status]]

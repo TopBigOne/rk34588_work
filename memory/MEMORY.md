@@ -14,7 +14,7 @@
 - [别学偏：主线是 MPP 编解码 API](feedback_stay_on_codec_transport.md) — 支撑知识只讲到看懂 MPP 代码为止；不主动做 A/B、性能实验，不写顺便一提的推断（2026-11-06 再次强调）
 - [里程碑文档的结构](feedback_milestone_doc_structure.md) — 理解 Mx 文档要独立直白：干了什么/输入/输出/技术点（MPP、V4L2、RGA、Linux）/业务场景；不和前面的里程碑扯在一起
 - [从 Day 5 起先设计架构](feedback_architecture_first.md) — 2026-11-08：不写面条代码，一开始就按 Day 4 的分层目录写；接口按后面里程碑的切分点设计
-- [Day 5 进度断点](project_day5_status.md) — 2026-11-17：M2 双线程转码上板验收通过（225 fps、md5 和 M1 相同），代码未提交；下一步 M3 RTSP
+- [Day 5 进度断点](project_day5_status.md) — 2026-11-17：M1～M2 已提交，M3 RTSP 用户确认 OK，M4 先跳过；下一步 Day 6 NVR 多路预览
 - [Day 5 起用驼峰命名](feedback_naming_camelcase.md) — 2026-11-11：函数、方法驼峰，私有成员不加 _；参数叫 requestedXxx，CMake 加 -Wshadow
 - [智能指针变量以 Ptr 结尾](feedback_naming_smart_ptr_suffix.md) — 2026-11-12：unique_ptr 及别名（MppPacketPtr 等）的变量、成员叫 packetPtr、frameGroupPtr
 - [每个知识点划够用线](feedback_learning_depth_line.md) — 2026-11-13：标准是“不懂它能不能看懂眼前的 MPP 代码”；线外只给一句结论，记进“以后再挖”清单
