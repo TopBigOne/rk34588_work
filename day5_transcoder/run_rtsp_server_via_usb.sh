@@ -30,10 +30,23 @@ adb shell "killall live555MediaServer" < /dev/null >/dev/null 2>&1
 # 第 4 步 端口转发：Mac 的 localhost:8554 ←USB→ 板子的 554
 # adb forward 只转 TCP，所以播放器要用"RTP over TCP"（RTSP 命令和视频数据走同一条 TCP 连接）
 adb forward tcp:$LOCAL_RTSP_PORT tcp:$BOARD_RTSP_PORT >/dev/null || exit 1
-echo "端口转发：Mac localhost:$LOCAL_RTSP_PORT → 板子 $BOARD_RTSP_PORT"
+# 变量写成 ${变量名}：Mac 的 /bin/sh（bash 3.2）在 UTF-8 环境下，$MEDIA_DIR 后面紧跟中文"）"时，会把"）"的前几个字节当成变量名的一部分，打印出空值加乱码（2026-11-17 实测）
+echo "端口转发：Mac localhost:${LOCAL_RTSP_PORT} → 板子 ${BOARD_RTSP_PORT}"
 
-# 第 5 步 在 MEDIA_DIR 里启动 live555（板子自带，在 /usr/bin 下）；前台运行，日志直接显示在这个终端
+# 第 5 步 列出能播的文件，直接打印成完整的 ffplay 命令，复制到另一个终端就能用
+# live555 启动日志里的 rtsp://<板子IP>/<filename> 只是占位符：它不会列出目录里有哪些文件，IP 也不能用（只走 USB）
+# 能播的条件：在 MEDIA_DIR 里，并且扩展名是 live555 认识的 .264 / .265（.h264、.h265 不认，会 404）
+# ls 2>/dev/null：某种扩展名一个文件都没有时，ls 会报"No such file"，丢掉不看
+# tr -d '\r'：adb shell 输出的每行末尾可能带 \r（回车符），不去掉的话拼出来的地址末尾多一个看不见的字符
+PLAYABLE_FILE_NAMES=$(adb shell "cd $MEDIA_DIR && ls *.264 *.265 2>/dev/null" < /dev/null | tr -d '\r')
+echo ""
+echo "=== 能播的文件（在另一个终端执行下面的命令）==="
+for fileName in $PLAYABLE_FILE_NAMES; do
+    echo "    ffplay -rtsp_transport tcp rtsp://localhost:${LOCAL_RTSP_PORT}/${fileName}"
+done
+echo ""
+
+# 第 6 步 在 MEDIA_DIR 里启动 live555（板子自带，在 /usr/bin 下）；前台运行，日志直接显示在这个终端
 # exec：用 adb 这个进程替换掉脚本本身，Ctrl+C 直接作用在 adb 上
-echo "=== 板子上启动 live555MediaServer（目录 $MEDIA_DIR）==="
-echo "    启动日志里的 rtsp://<板子IP>/ 不要用；Mac 上一律连 rtsp://localhost:$LOCAL_RTSP_PORT/文件名"
+echo "=== 板子上启动 live555MediaServer（目录 ${MEDIA_DIR}）==="
 exec adb shell "cd $MEDIA_DIR && live555MediaServer" < /dev/null
