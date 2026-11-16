@@ -19,6 +19,7 @@ metadata:
   - 正确方式：systemui 读 /opt/ui/src/ATK-DLRK3588/apk1~3.cfg（apk1 第 1 页、apk2 第 2 页、apk3 = Dock 只放得下 4 个，放第 5 个会溢出），每行 `appicons/x.png 显示名 程序名`，程序 = /opt/ui/src/apps/程序名。
   - `install_app_on_board_with_mac.sh` 现在：装到 /userdata/apps/day7_qt_env/，appicons/day7_nvr.png，apps/day7_nvr → 启动脚本软链接，apk2.cfg 加一行（备份 apk2.cfg.bak_before_day7），只重启 systemui（先 killall systemui sysvolume）。实测从图标点开的 NVR 父进程是 systemui。
   - 截屏方法：weston 要带 --debug 启动才允许 weston-screenshooter（否则 unauthorized）。2026-11-17 板子上的 weston 是我用 --debug 启动的，重启板子后恢复正常。
-  - 用户一次点了 4 下图标，开了 4 个 NVR（02:24:53～02:25:05），原因待问（可能点了没反应）。
+  - 用户一次点了 4 下图标，开了 4 个 NVR（02:24:53～02:25:05），后来又有 6 个同时在跑，状态都是 S、dmesg 无段错误。用户说"有崩溃"——查日志：02:30:21 两个 NVR 退出码 143（SIGTERM），02:30:22 systemui 和 sysvolume 同时重启，用户确认是自己在 CLion 里跑了安装脚本（脚本会 pkill 旧程序再重启 systemui），不是崩溃。为什么会连点两次图标（02:30:03、02:30:12）还没问清。
+  - 启动脚本原来用 `>` 写 /tmp 日志，每次启动清空，看不到上一次的记录。2026-11-17 改成：先 `. /etc/profile`（TZ=CST-8 在 /etc/profile.d/extra.sh），程序放后台、`>>` 追加到 /userdata/apps/day7_qt_env/day7_qt_env.log，记"开始 pid"和"结束 退出码"（139=段错误，134=abort，143=被 kill）。已装到板子，还没提交。
 - 还没做：gdbserver 调试 Qt 程序、Mac 本机预览配置。
 - 和主线的关系：以后 NVR 的界面可以用 Qt 做，视频仍走 MPP 解码 + RGA 拼接。
