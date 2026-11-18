@@ -96,9 +96,16 @@ bool AlsaAudioOutput::write(const int16_t *samples, int frameCount) {
 /**
  * @brief 还有多少没播
  * @return 微秒
- * @note snd_pcm_delay 在 underrun 状态下返回 -EPIPE，这时缓冲区已经空了，按 0 算
+ * @note 缓冲区播空（underrun）以后按 0 算。直接操作硬件声卡时，snd_pcm_delay 这时返回 -EPIPE；
+ *       但板子上的 "default" 走 PulseAudio 的 ALSA 插件，播空以后 snd_pcm_state 变成 XRUN，
+ *       snd_pcm_delay 却仍然返回 0（成功），delay 停在一个正数不再变（2026-11-19 探针实测：一直是 1644 帧）。
+ *       所以先看状态：XRUN 就直接返回 0，否则"等播完"的循环永远等不到
  */
 int64_t AlsaAudioOutput::getQueuedDurationUs() {
+    // snd_pcm_state：设备当前状态。SND_PCM_STATE_XRUN = 缓冲区里的数据已经播完、没有新数据补上
+    if (snd_pcm_state(pcmPtr.get()) == SND_PCM_STATE_XRUN) {
+        return 0;
+    }
     snd_pcm_sframes_t delayFrameCount = 0;
     if (snd_pcm_delay(pcmPtr.get(), &delayFrameCount) < 0 || delayFrameCount < 0) {
         return 0;

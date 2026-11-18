@@ -63,8 +63,11 @@ if [ $# -eq 0 ]; then
 fi
 
 # 第 4 步 测试视频不在板子上就推上去。所有 adb shell 都加 < /dev/null：不让 adb 读终端输入
+#   注意：这块板子的 adbd 不把板子上命令的退出码传回来（2026-11-18 实测：adb shell 'test -f /不存在' 在 Mac 上 $? 也是 0），
+#   所以不能写 if adb shell "test -f ..."，要让板子 echo 出结果，在 Mac 上比较输出的文字
 $ADB shell "mkdir -p $REMOTE_DIR $REMOTE_MEDIA_DIR" < /dev/null || exit 1
-if ! $ADB shell "test -f $REMOTE_MEDIA_DIR/sync_test_1080p.mp4" < /dev/null; then
+MEDIA_STATE=$($ADB shell "test -f $REMOTE_MEDIA_DIR/sync_test_1080p.mp4 && echo yes || echo no" < /dev/null | tr -d '\r')
+if [ "$MEDIA_STATE" != "yes" ]; then
     if [ ! -f "$LOCAL_TEST_MEDIA" ]; then
         echo "板子上和本地都没有测试视频，先运行 ./make_test_media.sh" >&2
         exit 1
@@ -75,7 +78,9 @@ fi
 
 # 第 5 步 播放器模式要有 weston（m1、m3 不需要）
 if [ "$1" != "m1" ] && [ "$1" != "m3" ]; then
-    if ! $ADB shell "pidof weston" < /dev/null >/dev/null 2>&1; then
+    # pidof 找到进程时输出 pid，找不到时什么都不输出（退出码传不回来，同第 4 步），所以看输出是不是空的
+    WESTON_PID=$($ADB shell "pidof weston" < /dev/null | tr -d '\r')
+    if [ -z "$WESTON_PID" ]; then
         echo "板子上的 weston（桌面）没在运行，窗口没地方显示。先在板子上执行 /etc/init.d/S49weston start 或重启板子" >&2
         exit 1
     fi

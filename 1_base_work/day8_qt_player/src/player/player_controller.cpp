@@ -198,7 +198,8 @@ void PlayerController::handlePictureFromWorker(RgbxPicture picture) {
     // 第 2 步 QImage(像素地址, 宽, 高, 一行字节数, 格式, 清理函数, 清理函数的参数)：
     //   QImage 不复制像素，直接用这块内存；最后一个引用它的 QImage 析构时调用清理函数。
     //   我们 new 一个 shared_ptr 的副本当参数，让这块内存至少活到 QImage 不用为止，清理函数里 delete 这个副本。
-    //   Format_RGBX8888：内存里每个像素依次是 R、G、B、X 四个字节，和 RGA 的 RK_FORMAT_RGBX_8888 一样
+    //   Format_RGBX8888：内存里每个像素依次是 R、G、B、X 四个字节，第 4 个字节不看（按不透明显示）。
+    //   RGA 那边写的是 RK_FORMAT_RGBA_8888（排列一样，原因见 rga_color_converter.cpp），第 4 字节写什么都不影响
     using PixelBufferPtr = std::shared_ptr<std::vector<uint8_t>>;
     auto *pixelBufferHolder = new PixelBufferPtr(picture.pixelBufferPtr);
     QImage image(pixelBufferHolder->get()->data(), picture.width, picture.height, picture.strideBytes,

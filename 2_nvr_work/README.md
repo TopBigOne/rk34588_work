@@ -450,7 +450,7 @@ JD 2 额外对应：N9（GB28181）、N10（RKNN，“解码 → 推理 → 后�
 |---|---|---|
 | N1、N2 | live555 是正点原子默认配置里启用的（Day 5 用的 `live555MediaServer` 就来自这里） | `alientek_rk3588_defconfig` 第 70 行 `BR2_PACKAGE_LIVE555=y` |
 | N3、N4 | FFmpeg 在默认配置里启用了 | `buildroot/configs/rockchip/alientek.config` 第 56 行 `BR2_PACKAGE_FFMPEG=y` |
-| N3 | SQLite 有 Buildroot 包（`buildroot/package/sqlite/`）；默认配置里是否启用、板子上有没有，**未核对** | — |
+| N3 | SQLite 有 Buildroot 包（`buildroot/package/sqlite/`）；交叉编译工具链的 sysroot 里有 SQLite 3.39.2（头文件 `usr/include/sqlite3.h` 和 `usr/lib/libsqlite3.so`，2026-11-19 核对）；板子上有没有 `libsqlite3.so`，**未实测** | — |
 | N5 | perf 由 `rockchip/debug.config` 启用，而默认配置 `#include` 了 `debug.config`；板子上能不能直接用 `perf`，**未实测** | `debug.config` 第 12 行 `BR2_PACKAGE_LINUX_TOOLS_PERF=y` |
 | N5 | 板子上抓包用的 tcpdump 只在 `rockchip/tools/extra.config` 里启用，默认配置没有 `#include` 它 → 板子上大概率没有，抓包先在 Mac 上做 | `tools/extra.config` 第 7 行 |
 

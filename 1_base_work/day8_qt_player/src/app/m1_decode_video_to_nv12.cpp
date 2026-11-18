@@ -51,14 +51,17 @@ static bool writeCompactNv12(MppFrame frame, FILE *outputFile) {
  * @brief 把解码器里现在能取的帧都取出来写文件
  * @param[in]     decoder            解码器
  * @param[in]     outputFile         输出文件
+ * @param[in]     maxFrameCount      最多写几帧，0 = 不限
  * @param[in,out] writtenFrameCount  已经写了几帧，每写一帧加 1
  * @param[out]    hasReachedEos      取到带 EOS 标志的帧时设成 true
- * @return true = 正常；false = 出错
- * @note 带错误标志的帧也照写（保持帧数对得上），但打一条警告
+ * @return true = 正常（包括写够了帧数提前返回）；false = 出错
+ * @note 带错误标志的帧也照写（保持帧数对得上），但打一条警告。
+ *       写够 maxFrameCount 帧就停：解码器里可能一次攒着好几帧，不在这里停的话会多写
+ *       （2026-11-18 上板实测：要 300 帧写出了 306 帧）
  */
-static bool drainFramesToFile(MppVideoDecoder &decoder, FILE *outputFile, int &writtenFrameCount,
+static bool drainFramesToFile(MppVideoDecoder &decoder, FILE *outputFile, int maxFrameCount, int &writtenFrameCount,
                               bool &hasReachedEos) {
-    while (true) {
+    while (maxFrameCount <= 0 || writtenFrameCount < maxFrameCount) {
         MppFramePtr framePtr;
         const GetFrameResult getResult = decoder.getFrame(framePtr);
         if (getResult == GetFrameResult::None) {
@@ -83,6 +86,7 @@ static bool drainFramesToFile(MppVideoDecoder &decoder, FILE *outputFile, int &w
         }
         writtenFrameCount++;
     }
+    return true; // 写够了
 }
 
 /**
@@ -156,13 +160,13 @@ int runM1DecodeVideoToNv12(const char *inputPath, const char *outputPath, int ma
                 if (feedResult == FeedResult::Error) {
                     return 1;
                 }
-                if (!drainFramesToFile(decoder, outputFilePtr.get(), writtenFrameCount, hasReachedEos)) {
+                if (!drainFramesToFile(decoder, outputFilePtr.get(), maxFrameCount, writtenFrameCount, hasReachedEos)) {
                     return 1;
                 }
                 sleepForUs(1000);
             }
         }
-        if (!drainFramesToFile(decoder, outputFilePtr.get(), writtenFrameCount, hasReachedEos)) {
+        if (!drainFramesToFile(decoder, outputFilePtr.get(), maxFrameCount, writtenFrameCount, hasReachedEos)) {
             return 1;
         }
     }
@@ -170,13 +174,13 @@ int runM1DecodeVideoToNv12(const char *inputPath, const char *outputPath, int ma
     // 第 3 步 送 EOS，取完剩下的帧（限制了帧数时就不等了）
     if (maxFrameCount <= 0) {
         while (decoder.feedEndOfStream() == FeedResult::Full) {
-            drainFramesToFile(decoder, outputFilePtr.get(), writtenFrameCount, hasReachedEos);
+            drainFramesToFile(decoder, outputFilePtr.get(), maxFrameCount, writtenFrameCount, hasReachedEos);
             sleepForUs(1000);
         }
         int64_t lastProgressTimeUs = getSteadyTimeUs();
         while (!hasReachedEos && getSteadyTimeUs() - lastProgressTimeUs < 2 * 1000 * 1000) {
             const int frameCountBefore = writtenFrameCount;
-            if (!drainFramesToFile(decoder, outputFilePtr.get(), writtenFrameCount, hasReachedEos)) {
+            if (!drainFramesToFile(decoder, outputFilePtr.get(), maxFrameCount, writtenFrameCount, hasReachedEos)) {
                 return 1;
             }
             if (writtenFrameCount != frameCountBefore) {

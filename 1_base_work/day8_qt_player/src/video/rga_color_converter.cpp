@@ -58,8 +58,14 @@ bool convertNv12FrameToRgbxByRga(MppFrame nv12Frame, int outputWidth, int output
     const int frameVerStride = static_cast<int>(mpp_frame_get_ver_stride(nv12Frame));
     rga_buffer_t srcImage = wrapbuffer_handle(srcHandle, frameWidth, frameHeight, RK_FORMAT_YCbCr_420_SP,
                                               frameHorStride, frameVerStride);
+    //   目标格式用 RGBA_8888，不用 RGBX_8888：两者每个像素都是 R、G、B、第 4 字节，内存排列一样；
+    //   但 RK3588 的两个 RGA3 核心输出格式里只有 RGBA 没有 RGBX（内核 drivers/video/rockchip/rga3/rga_hw_config.c
+    //   第 37 行 rga3_output_raster_format），写 RGBX 只能交给 RGA2，而 RGA2 只能访问 4G 以内的内存，
+    //   我们 new 出来的目标内存在 16G 的板子上常在 4G 以上 → 驱动报 "RGA2 only support under 4G memory!"、
+    //   "invalid function policy"，每帧都失败（2026-11-19 上板实测，开 /sys/kernel/debug/rkrga/debug 的 msg 日志看到）。
+    //   第 4 字节 RGA 写什么都无所谓：界面那边 QImage 用 Format_RGBX8888，不看第 4 字节
     rga_buffer_t dstImage =
-            wrapbuffer_handle(dstHandle, outputWidth, outputHeight, RK_FORMAT_RGBX_8888, outputWidth, outputHeight);
+            wrapbuffer_handle(dstHandle, outputWidth, outputHeight, RK_FORMAT_RGBA_8888, outputWidth, outputHeight);
     // color_space_mode：YUV 转 RGB 用哪套公式。BT.709 LIMIT = 高清视频的标准（Y 的范围 16～235）。
     // 不设的话默认按 BT.601（标清的标准）算，颜色会稍微偏。imcvtcolor 内部也是这样设在目标图像上的
     // （linux-rga/im2d_api/src/im2d.cpp 第 885 行）
