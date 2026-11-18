@@ -122,7 +122,7 @@
 
 ### 外部资料
 
-- 总计划：`/Users/dev/Documents/AV/rk_work/国庆5天的学习计划/README.md` 的 Day 3 一节
+- 总计划：`/Users/dev/Documents/AV/rk_work/1_base_work/国庆5天的学习计划/README.md` 的 Day 3 一节
 - 参考源码（MPP 官方源码，读源码以它为准）：
   - `rk_code/external/mpp/utils/camera_source.c`（V4L2 采集，441 行）
   - `rk_code/external/mpp/test/mpi_enc_test.c`（摄像头作为编码输入）

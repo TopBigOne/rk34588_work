@@ -97,7 +97,7 @@ file /tmp/build-test/rk_test_env          # ELF 64-bit LSB shared object, ARM aa
 # 板子 IP  ： 192.168.1.5
 # 登录板子 ： ssh root@192.168.1.5
 
-../../common_shell/get_board_ip.sh           # 公共脚本，只输出 IP，给别的脚本用：BOARD_IP=$(.../get_board_ip.sh)
+../../../common_shell/get_board_ip.sh           # 公共脚本，只输出 IP，给别的脚本用：BOARD_IP=$(.../get_board_ip.sh)
 # 192.168.1.5
 ```
 公共脚本 `rk34588_work/common_shell/get_board_ip.sh` 做了这些处理：自动找 adb（Mac 上会去 `~/Documents/Android_Env/sdk/platform-tools/adb` 找）、自动启动 adb 服务（不用执行两次）、按 `wlan0 → eth0 → eth1` 的顺序查、去掉 adb 输出里的 `\r`；失败时返回 1 并提示原因。
@@ -151,7 +151,7 @@ ssh root@192.168.1.5 hostname         # 不用输密码，直接输出 ATK-DLRK3
 
 脚本 [run_on_board_with_ubuntu.sh](../run_on_board_with_ubuntu.sh)：**编译 → 上传到板子 → 在板子上运行 → 把输出显示回来**。和 Mac 版只有 `CMAKE=` 那一行不一样（用 CLion 自带的 cmake：`/home/dev/Documents/IDE/clion-2026.1.2/bin/cmake/linux/x64/bin/cmake`）。
 
-**板子 IP**：没有设置 `BOARD_IP` 时，脚本会调用 `../../common_shell/get_board_ip.sh` **自动获取**；也可以手动指定。
+**板子 IP**：没有设置 `BOARD_IP` 时，脚本会调用 `../../../common_shell/get_board_ip.sh` **自动获取**；也可以手动指定。
 
 **命令行运行**（✅ 已验证，自动获取 IP 和手动指定 IP 都试过）：
 ```bash
@@ -292,7 +292,7 @@ Process finished with exit code 0
 /usr/bin/cmake --build build -j
 
 # 获取板子 IP
-BOARD_IP=$(../../common_shell/get_board_ip.sh)
+BOARD_IP=$(../../../common_shell/get_board_ip.sh)
 
 # 上传并运行
 scp build/rk_test_env root@$BOARD_IP:/tmp/ && ssh root@$BOARD_IP /tmp/rk_test_env

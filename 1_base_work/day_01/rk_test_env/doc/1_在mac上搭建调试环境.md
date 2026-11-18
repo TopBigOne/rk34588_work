@@ -72,7 +72,7 @@ inet 192.168.1.63/24 brd 192.168.1.255 scope global wlan0     ← 板子的 IP
 > 💡 **建议**：在路由器里给板子**绑定固定 IP**（按 MAC 地址做 DHCP 静态分配），这样 CLion 里的配置就不用反复改。
 > IP 变了以后，要改两个地方：**SSH Credentials 的 Host**，以及 **'target remote' args**。（一键运行脚本会自动获取 IP，不用改）
 
-**用脚本查（2026-10-01 新增）**：`./run_get_board_ip.sh`，或者公共脚本 `../../common_shell/get_board_ip.sh`（只输出 IP）。脚本会自动去 `~/Documents/Android_Env/sdk/platform-tools/adb` 找 adb，Mac 上不用把 adb 加进 PATH。
+**用脚本查（2026-10-01 新增）**：`./run_get_board_ip.sh`，或者公共脚本 `../../../common_shell/get_board_ip.sh`（只输出 IP）。脚本会自动去 `~/Documents/Android_Env/sdk/platform-tools/adb` 找 adb，Mac 上不用把 adb 加进 PATH。
 > ⏳ 这两个脚本是在 Ubuntu 上写和测试的，用的是 POSIX sh 语法，Mac 上理论上能直接用，**还没在 Mac 上实测**
 
 ### 配置 SSH 免密登录（只需要做一次）
@@ -247,7 +247,7 @@ C++ standard: 201703
 MPP: H.264 hardware encoder created OK
 ```
 
-> 板子 IP：脚本默认通过 adb **自动获取**（调用 `../../common_shell/get_board_ip.sh`，OTG 线要插在 Mac 上），IP 变了不用改；也可以手动指定：`BOARD_IP=192.168.1.xx ./run_on_board_with_mac.sh`。⏳ 自动获取 IP 在 Mac 上还没实测。
+> 板子 IP：脚本默认通过 adb **自动获取**（调用 `../../../common_shell/get_board_ip.sh`，OTG 线要插在 Mac 上），IP 变了不用改；也可以手动指定：`BOARD_IP=192.168.1.xx ./run_on_board_with_mac.sh`。⏳ 自动获取 IP 在 Mac 上还没实测。
 > 两个运行配置的分工：**`rk_test_env@板子` 用来调试（🐞）**，**`rk_test_env@板子(运行)` 用来运行（▶）**。
 
 ---

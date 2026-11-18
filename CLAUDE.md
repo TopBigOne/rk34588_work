@@ -10,19 +10,19 @@ RK3588 MPP 学习项目。代码在 Mac 上用 CLion 交叉编译，放到板子
 
 ### 运行
 
-- Mac：`day1_yuv2h264/run_on_board_with_mac.sh`，做的事情是：编译 → `adb push` 到 `/tmp/CLion/run` → `adb shell` 运行
-- Ubuntu：`day1_yuv2h264/run_on_board_with_ubuntu.sh`，保持 `USE_USB=1`（默认值）
+- Mac：`1_base_work/day1_yuv2h264/run_on_board_with_mac.sh`，做的事情是：编译 → `adb push` 到 `/tmp/CLion/run` → `adb shell` 运行
+- Ubuntu：`1_base_work/day1_yuv2h264/run_on_board_with_ubuntu.sh`，保持 `USE_USB=1`（默认值）
 - 板子出厂的 `/usr/lib/librockchip_mpp` 太旧，要用 `/userdata/mpp_build/lib` 里的库。程序已经通过 rpath 写进了这个路径，脚本里也设置了 `LD_LIBRARY_PATH`
 
 ### 调试
 
-- 脚本：`day1_yuv2h264/debug_on_board_via_usb.sh`
+- 脚本：`1_base_work/day1_yuv2h264/debug_on_board_via_usb.sh`
 - 原理：Mac 上 `adb forward tcp:1234 tcp:1234`，板子上 `gdbserver :1234`
 - 在 CLion 里：
   - 先运行脚本，看到 `Listening on port 1234`
   - 再启动 Remote Debug 配置，target 填 `localhost:1234`
   - Debug Profile 必须选 GDB（RK3588-GDB），不能用 LLDB
-- 完整说明见 `day1_yuv2h264/doc/用usb连接并调试板子.md`
+- 完整说明见 `1_base_work/day1_yuv2h264/doc/用usb连接并调试板子.md`
 
 新写的运行或调试脚本也一样默认走 USB/adb。
 

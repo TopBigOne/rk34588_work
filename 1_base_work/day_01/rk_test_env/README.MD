@@ -17,7 +17,7 @@
 | `main.cpp` / `CMakeLists.txt` | 测试程序：C++17 + 链接 MPP，在板子上创建 H.264 硬件编码器 |
 | `run_on_board_with_mac.sh` / `run_on_board_with_ubuntu.sh` | 一键运行：编译 → 上传 → 在板子上运行。两个版本只有 `CMAKE=` 路径不一样。板子 IP 自动获取 |
 | `run_get_board_ip.sh` | 查板子 IP（调用公共脚本） |
-| `../../common_shell/get_board_ip.sh` | **公共脚本**：通过 adb 获取板子 IP，只输出 IP，所有工程共用 |
+| `../../../common_shell/get_board_ip.sh` | **公共脚本**：通过 adb 获取板子 IP，只输出 IP，所有工程共用 |
 | `doc/`、`img/` | 文档和截图 |
 
 ## 运行结果（在开发板上）

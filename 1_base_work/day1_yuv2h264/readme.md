@@ -122,7 +122,7 @@ M4 就是把 ④⑤ 放进循环重复 60 次，最后送一个 EOS 告诉编码
 ### 4.5 外部资料
 
 - MPP 笔记：`/Users/dev/Documents/AV/openedv/Tone_rk358/doc/MPP开发指南_学习笔记.md`
-- 总计划：`/Users/dev/Documents/AV/rk_work/国庆5天的学习计划/README.md`
+- 总计划：`/Users/dev/Documents/AV/rk_work/1_base_work/国庆5天的学习计划/README.md`
 - 参考源码（软链接，见 [01_环境准备.md](guide/01_环境准备.md)）：
   - `demo_code_mmp/` → `rk_code/external/mpp`（MPP 官方源码，读源码以它为准）
   - `demo_code/` → 正点原子 A 盘里的 demo 源码
