@@ -21,4 +21,5 @@
 - [Day 7 Qt 开发环境](project_day7_qt_env.md) — 2026-11-17：用工具链里的 Qt 5.15.8 + CLion，moc 等转发到 rk-dev；上板窗口和按钮 OK，还没提交
 - [Qt 播放器计划](project_qt_player_plan.md) — 2026-11-18：mp4 播放器，MPP 硬解视频 + AAC 软解走 ALSA，全部由 Claude 写；分支 day8_qt_player；11-18 代码写完编译通过，未上板
 - [Day 6 进度断点](project_day6_status.md) — 2026-11-17：day6_nvr_mosaic 分支的进度（文件未跟踪，随工作区带过来）；Day 6 的 MEMORY.md 改动存在 stash "day6-memory-index-before-day8-switch-20261118"，切回 day6 时 apply
-- [NVR 阶段（下一阶段主线）](project_nvr_phase.md) — 2026-11-18 起重点辅导基于 RK3588 做 mini NVR；计划在 2_nvr_work/README.md（N0～N10，主干 N1→N2→N3→N5→N6），核心代码用户写
+- [NVR 阶段（下一阶段主线）](project_nvr_phase.md) — 2026-11-18：总纲 音视频研发培养计划.md + 2_nvr_work/README.md（N0～N14）+ JD分析.md；主干 N1→N2→N3→N10→N5；每周 20 小时
+- [每个能力多种技术实现](feedback_multi_tech_per_capability.md) — 2026-11-18：一深多浅，一种手写其他用库，实测对比；主干够用线提到"追问三层"
