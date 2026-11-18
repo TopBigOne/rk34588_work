@@ -9,6 +9,25 @@
 static const char *const kTag = "AudioWorker";
 
 /**
+ * @brief 按音量把 S16 采样等比例缩小（软件音量）
+ * @param[in,out] samples       S16 交错采样（左、右、左、右……），原地修改
+ * @param[in]     sampleCount   采样个数 = 帧数 × 声道数
+ * @param[in]     volumePercent 音量百分比 0～100；100 = 原样，0 = 静音
+ * @return 无
+ * @note 线性缩放：每个采样乘以 volumePercent / 100。正点原子桌面的音量文件只给一个 0～100 的数字，
+ *       没说按什么曲线，这里用最简单的线性（人耳对响度的感觉接近对数，所以低音量那一段听起来变化会比较快）。
+ *       先转成 int32 再乘：int16 最大 32767，乘 100 会超出 int16 的范围；除以 100 后不会超过原值，再放回 int16 是安全的
+ */
+static void scaleSamplesByVolume(int16_t *samples, int sampleCount, int volumePercent) {
+    if (volumePercent >= 100) {
+        return; // 原样，省掉一次循环
+    }
+    for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+        samples[sampleIndex] = static_cast<int16_t>(static_cast<int32_t>(samples[sampleIndex]) * volumePercent / 100);
+    }
+}
+
+/**
  * @brief 记下要用的对象
  * @param[in] requestedAudioStream  音频流
  * @param[in] requestedPacketQueue  音频包队列
@@ -156,6 +175,9 @@ void AudioWorker::playFrame(const AVFrame *decodedFrame) {
     if (outputFrameCount <= 0) {
         return;
     }
+
+    // 第 3.5 步 按正点原子桌面的音量（板子上的音量键）把采样缩小。音量变了，下一帧就用新的值
+    scaleSamplesByVolume(outputSamples.data(), outputFrameCount * kOutputChannelCount, state.volumePercent.load());
 
     // 第 4 步 写声卡；缓冲区满了这里会阻塞，线程就被声卡牵着走
     if (!output.write(outputSamples.data(), outputFrameCount)) {

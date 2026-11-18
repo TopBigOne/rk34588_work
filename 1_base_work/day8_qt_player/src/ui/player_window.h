@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
@@ -7,6 +8,7 @@
 #include <QWidget>
 
 #include "player/player_controller.h"
+#include "ui/touch_seek_slider.h"
 #include "ui/video_widget.h"
 
 /**
@@ -33,6 +35,13 @@ public:
     ~PlayerWindow() override;
 
     /**
+     * @brief 停止播放：停掉解封装、解码、声音线程，关掉声卡
+     * @return 无
+     * @note 点了「退出」、事件循环结束后，main 先调它让声音立刻停，再做别的收尾（请桌面显示回来）。可以重复调用
+     */
+    void stopPlayback();
+
+    /**
      * @brief 打开文件开始播放
      * @param[in] filePath         mp4 路径
      * @param[in] shouldPlayAudio  false = 只播画面
@@ -52,9 +61,17 @@ private slots:
     /**
      * @brief 松开进度条：跳到松手的位置
      * @return 无
-     * @note 拖动过程中不 seek，只在松手时 seek 一次
+     * @note 拖动过程中 handleSliderMoved 已经隔一段时间 seek 过，松手时再按最终位置 seek 一次
      */
     void handleSliderReleased();
+
+    /**
+     * @brief 手指拖着进度条在动：时间文字跟着手指走，每隔 kDragSeekIntervalMs 毫秒 seek 一次，画面跟着变
+     * @param[in] positionMs  滑块现在的位置，毫秒
+     * @return 无
+     * @note 不是每动一下都 seek：每次 seek 都要清空队列、重置解码器、从关键帧重新解，太频繁画面反而一直出不来
+     */
+    void handleSliderMoved(int positionMs);
 
     /**
      * @brief 点了进度条的空白处（翻页）：跳到新位置
@@ -98,10 +115,13 @@ private:
     PlayerController *playerController; // 播放器总控（子对象，Qt 负责 delete）
     VideoWidget *videoWidget;           // 画面
     QPushButton *playPauseButton;       // 播放 / 暂停 / 重播
-    QSlider *positionSlider;            // 进度条，单位毫秒
+    TouchSeekSlider *positionSlider;    // 进度条，单位毫秒（按哪里跳哪里，适合手指）
     QLabel *timeLabel;                  // "当前 / 总长"
     QPushButton *exitButton;            // 退出
     QLabel *statusLabel;                // 状态提示（错误、播完了）
     QTimer *progressTimer;              // 刷新进度的定时器
     bool isPlaybackFinished = false;    // 已经播完了（按钮是"重播"）
+    QElapsedTimer dragSeekTimer;        // 拖动时距离上一次 seek 过了多久
+
+    static constexpr int kDragSeekIntervalMs = 250; // 拖动时最快每 250 ms seek 一次
 };

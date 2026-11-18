@@ -10,11 +10,17 @@
 static const char *const kTag = "PlayerController";
 
 /**
- * @brief 构造
+ * @brief 构造：设好初始音量，并在桌面音量变化时更新
  * @param[in] parent  Qt 父对象
- * @note 只把 parent 交给 QObject
+ * @note desktopVolumeWatcher 是成员对象，不设 Qt 父对象（成员会自动析构，设了父对象会被删两次）。
+ *       音频线程每写一次声卡前读 state.volumePercent，所以这里改完，最多一帧（约 20 ms）后就生效
  */
-PlayerController::PlayerController(QObject *parent) : QObject(parent) {}
+PlayerController::PlayerController(QObject *parent) : QObject(parent) {
+    state.volumePercent = desktopVolumeWatcher.readVolumePercent();
+    // [this](int volumePercent) {...}：lambda 当槽用；第 3 个参数 this 表示 lambda 在本对象所在的线程（界面线程）里执行
+    connect(&desktopVolumeWatcher, &DesktopVolumeWatcher::volumeChanged, this,
+            [this](int volumePercent) { state.volumePercent = volumePercent; });
+}
 
 /**
  * @brief 析构
@@ -176,6 +182,8 @@ void PlayerController::stop() {
             thread->join(); // 等这个线程的 run() 返回
         }
     }
+    // 第 4 步 线程都退出了，没人再用 audioWorker：reset 析构它，里面的 AlsaAudioOutput 跟着关掉声卡
+    audioWorkerPtr.reset();
     if (droppedPendingPictureCount > 0) {
         LOGI(kTag, "界面来不及显示而丢掉的画面：%d 帧", droppedPendingPictureCount.load());
     }

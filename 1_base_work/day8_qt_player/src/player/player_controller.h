@@ -14,6 +14,7 @@
 #include "pipeline/packet_queue.h"
 #include "pipeline/playback_state.h"
 #include "pipeline/video_worker.h"
+#include "player/desktop_volume_watcher.h"
 #include "sync/media_clock.h"
 #include "video/rgbx_picture.h"
 
@@ -101,7 +102,8 @@ public:
     /**
      * @brief 停掉所有线程（可以重复调用）
      * @return 无
-     * @note 第 1 步 设 shouldStop；第 2 步 叫停两个队列，把在 push / pop 里等的线程叫醒；第 3 步 等三个线程退出
+     * @note 第 1 步 设 shouldStop；第 2 步 叫停两个队列，把在 push / pop 里等的线程叫醒；第 3 步 等三个线程退出；
+     *       第 4 步 释放音频线程的对象：它拿着打开的声卡，释放了声卡才关（不然要等本对象析构才关）
      */
     void stop();
 
@@ -155,6 +157,7 @@ private:
     Mp4Demuxer demuxer;                          // 拆封装（解封装线程用）
     MediaClock clock;                            // 播放时钟
     PlaybackState state;                         // 共用状态
+    DesktopVolumeWatcher desktopVolumeWatcher;   // 盯着正点原子桌面的音量文件（板子上的音量键改的是它）
     std::unique_ptr<PacketQueue> videoQueuePtr;  // 视频包队列；没有视频时是空的
     std::unique_ptr<PacketQueue> audioQueuePtr;  // 音频包队列；没有音频或不播声音时是空的
     std::unique_ptr<DemuxWorker> demuxWorkerPtr; // 解封装线程要做的事

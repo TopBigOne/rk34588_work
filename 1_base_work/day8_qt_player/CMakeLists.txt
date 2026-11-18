@@ -42,6 +42,12 @@ add_executable(day8_qt_player
         src/pipeline/audio_worker.cpp
         src/player/player_controller.h
         src/player/player_controller.cpp
+        src/player/desktop_volume_watcher.h
+        src/player/desktop_volume_watcher.cpp
+        src/ui/systemui_client.h
+        src/ui/systemui_client.cpp
+        src/ui/touch_seek_slider.h
+        src/ui/touch_seek_slider.cpp
         src/ui/video_widget.h
         src/ui/video_widget.cpp
         src/ui/player_window.h
@@ -58,7 +64,18 @@ target_include_directories(day8_qt_player PRIVATE src)
 target_compile_options(day8_qt_player PRIVATE -Wall -Wextra -Wshadow)
 
 # Qt5：在 sysroot 里找 usr/lib/cmake/Qt5Widgets/Qt5WidgetsConfig.cmake，Widgets 会顺带找到 Core、Gui
-find_package(Qt5 REQUIRED COMPONENTS Widgets)
+# RemoteObjects：和正点原子桌面 systemui 通信（ui/systemui_client.h）。
+# sysroot 里 Qt5RemoteObjectsConfigExtras.cmake 把代码生成工具 repc 的路径写死成 /opt/atk-dlrk3588-toolchain/bin/repc，
+# Mac 上没有这个文件，find_package 会报"文件不存在"。它写的是 if (NOT TARGET Qt5::repc) 才去检查，
+# 我们用"动态副本"不需要 repc，所以先建一个空的 Qt5::repc 占位，让它跳过检查（和工具链文件处理 moc 的办法一样）。
+# 另外 Qt5RemoteObjectsMacros.cmake 第 55 行还要求变量 Qt5RemoteObjects_REPC_EXECUTABLE 不为空，否则报
+# "repc executable not found"，也给它一个占位值（只有调用 qt5_generate_repc 时才会真的去执行它，我们不调用）
+if (NOT TARGET Qt5::repc)
+    add_executable(Qt5::repc IMPORTED)
+    set_target_properties(Qt5::repc PROPERTIES IMPORTED_LOCATION /repc_not_used)
+endif ()
+set(Qt5RemoteObjects_REPC_EXECUTABLE /repc_not_used)
+find_package(Qt5 REQUIRED COMPONENTS Widgets RemoteObjects)
 
 # ffmpeg 和 ALSA 没有 CMake 配置文件，只有 pkg-config 的 .pc 文件（sysroot/usr/lib/pkgconfig/libavformat.pc 等）。
 # pkg_check_modules(变量前缀 REQUIRED IMPORTED_TARGET 模块...)：读这些 .pc，生成一个导入的 target
@@ -74,6 +91,7 @@ find_package(Threads REQUIRED)
 # rockchip_mpp → -lrockchip_mpp（视频硬解）；rga → -lrga（颜色转换 + 缩放）
 target_link_libraries(day8_qt_player PRIVATE
         Qt5::Widgets
+        Qt5::RemoteObjects
         PkgConfig::FFMPEG
         PkgConfig::ALSA
         rockchip_mpp

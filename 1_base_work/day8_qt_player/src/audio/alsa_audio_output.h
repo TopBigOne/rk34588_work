@@ -10,9 +10,14 @@ struct SndPcmCloser {
      * @brief 关闭 PCM 设备
      * @param[in] pcm  snd_pcm_open 打开的设备
      * @return 无
-     * @note snd_pcm_close 会先停止播放（缓冲区里没播完的声音直接丢掉），再关设备
+     * @note 先 snd_pcm_drop：立刻停止，缓冲区里没播完的声音直接丢掉；再 snd_pcm_close 关设备。
+     *       直接操作硬件声卡时 snd_pcm_close 自己就会丢掉缓冲区，但板子上的 "default" 走 PulseAudio 插件，
+     *       这一点没实测过，所以显式 drop 一次，保证点了退出声音马上停
      */
-    void operator()(snd_pcm_t *pcm) const { snd_pcm_close(pcm); }
+    void operator()(snd_pcm_t *pcm) const {
+        snd_pcm_drop(pcm);
+        snd_pcm_close(pcm);
+    }
 };
 using SndPcmPtr = std::unique_ptr<snd_pcm_t, SndPcmCloser>;
 

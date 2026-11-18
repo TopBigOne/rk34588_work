@@ -14,14 +14,20 @@ PlayerWindow::PlayerWindow(QWidget *parent) : QWidget(parent) {
     playerController = new PlayerController(this);
     videoWidget = new VideoWidget(this);
     playPauseButton = new QPushButton(QStringLiteral("暂停"), this);
-    positionSlider = new QSlider(Qt::Horizontal, this); // 横向进度条
+    positionSlider = new TouchSeekSlider(this); // 横向进度条，按哪里跳哪里（见 touch_seek_slider.h）
     timeLabel = new QLabel(QStringLiteral("00:00 / 00:00"), this);
     exitButton = new QPushButton(QStringLiteral("退出"), this);
     statusLabel = new QLabel(this);
     progressTimer = new QTimer(this);
 
-    // 触摸屏上手指点按钮：按钮做高一点、字大一点
-    const QString buttonStyle = QStringLiteral("font-size: 36px; min-height: 96px; min-width: 160px;");
+    // 触摸屏上手指点按钮：按钮做高一点、字大一点。
+    // 文字颜色、背景色要写明：窗口的样式表 background-color: black 会传给所有子控件，按钮背景也变成黑的，
+    // 而按钮文字默认是黑色 → 黑底黑字，只看得见边框（2026-11-19 上板截图发现）。
+    // 字设成白色，背景用深灰 #333333 和窗口的黑色区分开；按下时（:pressed）变成更浅的灰，手指按下去有反馈
+    const QString buttonStyle = QStringLiteral(
+            "QPushButton { font-size: 36px; min-height: 96px; min-width: 160px; color: white;"
+            " background-color: #333333; border: 2px solid #888888; border-radius: 12px; }"
+            "QPushButton:pressed { background-color: #555555; }");
     playPauseButton->setStyleSheet(buttonStyle);
     exitButton->setStyleSheet(buttonStyle);
     timeLabel->setStyleSheet(QStringLiteral("font-size: 32px; color: white;"));
@@ -57,6 +63,12 @@ PlayerWindow::PlayerWindow(QWidget *parent) : QWidget(parent) {
             [this](int width, int height) { playerController->setVideoBoxSize(width, height); });
     connect(playPauseButton, &QPushButton::clicked, this, &PlayerWindow::handlePlayPauseClicked);
     connect(positionSlider, &QSlider::sliderReleased, this, &PlayerWindow::handleSliderReleased);
+    connect(positionSlider, &QSlider::sliderMoved, this, &PlayerWindow::handleSliderMoved);
+    // sliderPressed：按下的那一刻（TouchSeekSlider 已经把滑块挪到手指下了）就 seek 一次，点一下也能跳过去
+    connect(positionSlider, &QSlider::sliderPressed, this, [this]() {
+        dragSeekTimer.start();
+        playerController->seekTo(static_cast<int64_t>(positionSlider->sliderPosition()) * 1000);
+    });
     connect(positionSlider, &QSlider::actionTriggered, this, &PlayerWindow::handleSliderAction);
     // 退出：QApplication::quit 让 main 里的 app.exec() 返回
     connect(exitButton, &QPushButton::clicked, qApp, &QApplication::quit);
@@ -72,6 +84,13 @@ PlayerWindow::PlayerWindow(QWidget *parent) : QWidget(parent) {
  * @note 先停线程，再让 Qt 删子控件
  */
 PlayerWindow::~PlayerWindow() { playerController->stop(); }
+
+/**
+ * @brief 停止播放
+ * @return 无
+ * @note 交给 PlayerController::stop()，它可以重复调用（析构时还会再调一次，不会出问题）
+ */
+void PlayerWindow::stopPlayback() { playerController->stop(); }
 
 /**
  * @brief 打开文件
@@ -124,6 +143,21 @@ void PlayerWindow::handleSliderReleased() {
 }
 
 /**
+ * @brief 拖动中：时间文字跟着手指，隔一段时间 seek 一次
+ * @param[in] positionMs  滑块位置，毫秒
+ * @return 无
+ * @note QElapsedTimer::elapsed()：从上次 start() 到现在过了多少毫秒；restart() 返回同样的值并重新计时
+ */
+void PlayerWindow::handleSliderMoved(int positionMs) {
+    const int64_t positionUs = static_cast<int64_t>(positionMs) * 1000;
+    timeLabel->setText(formatTime(positionUs) + QStringLiteral(" / ") + formatTime(playerController->getDurationUs()));
+    if (dragSeekTimer.elapsed() >= kDragSeekIntervalMs) {
+        dragSeekTimer.restart();
+        playerController->seekTo(positionUs);
+    }
+}
+
+/**
  * @brief 进度条翻页
  * @param[in] action  动作类型
  * @return 无
@@ -141,10 +175,11 @@ void PlayerWindow::handleSliderAction(int action) {
  * @note isSliderDown()：手指正按着滑块
  */
 void PlayerWindow::refreshProgress() {
-    const int64_t positionUs = playerController->getPositionUs();
-    if (!positionSlider->isSliderDown()) {
-        positionSlider->setValue(static_cast<int>(positionUs / 1000));
+    if (positionSlider->isSliderDown()) {
+        return; // 手指按着：进度条和时间文字都由 handleSliderMoved 跟着手指更新，这里不抢
     }
+    const int64_t positionUs = playerController->getPositionUs();
+    positionSlider->setValue(static_cast<int>(positionUs / 1000));
     timeLabel->setText(formatTime(positionUs) + QStringLiteral(" / ") + formatTime(playerController->getDurationUs()));
 }
 

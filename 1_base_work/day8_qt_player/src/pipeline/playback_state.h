@@ -22,6 +22,7 @@ struct PlaybackState {
     std::atomic<int64_t> seekTargetUs{0};            // 当前 serial 的目标时间，微秒；早于它的帧和声音都丢掉
 
     std::atomic<bool> hasAudioOutput{false};         // 有声音在播（时钟由音频驱动）；没有音轨或声卡打不开时是 false
+    std::atomic<int> volumePercent{100};             // 音量百分比 0～100（界面线程按正点原子桌面的音量写，音频线程读）
 
     std::atomic<int> videoBoxWidth{0};               // 画面区域有多宽，像素（界面告诉视频线程，RGA 按它缩放）
     std::atomic<int> videoBoxHeight{0};              // 画面区域有多高，像素
