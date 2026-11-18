@@ -7,7 +7,7 @@
 #   0：走网络（scp / ssh），需要板子 IP
 #   临时指定：USE_USB=0 ./run_on_board_with_ubuntu.sh
 #
-# 走 scp 时的板子 IP：默认通过 adb 自动获取（调用 ../common_shell/get_board_ip.sh）；
+# 走 scp 时的板子 IP：默认通过 adb 自动获取（调用 ../../common_shell/get_board_ip.sh）；
 #          也可以手动指定：BOARD_IP=192.168.1.xx USE_USB=0 ./run_on_board_with_ubuntu.sh
 # 走 USB 时的可选环境变量：
 #   ADB=/path/to/adb    adb 不在 PATH 里时指定
@@ -48,7 +48,7 @@ if [ "$USE_USB" = "1" ]; then
     fi
 elif [ -z "$BOARD_IP" ]; then
     # 走 scp 且没有手动指定 BOARD_IP 时，自动获取
-    BOARD_IP=$(../common_shell/get_board_ip.sh) || exit 1
+    BOARD_IP=$(../../common_shell/get_board_ip.sh) || exit 1
     echo "=== 自动获取到板子 IP：$BOARD_IP ==="
 fi
 

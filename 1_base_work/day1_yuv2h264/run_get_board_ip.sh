@@ -3,7 +3,7 @@
 # 用法：./run_get_board_ip.sh
 
 cd "$(dirname "$0")" || exit 1
-GET_BOARD_IP=../common_shell/get_board_ip.sh
+GET_BOARD_IP=../../common_shell/get_board_ip.sh
 
 BOARD_IP=$("$GET_BOARD_IP") || exit 1
 echo "板子 IP  ： $BOARD_IP"
