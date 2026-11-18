@@ -12,6 +12,7 @@
 # 可选环境变量：
 #   ADB_SERIAL=xxxx               同时连了多台 adb 设备时，指定板子的序列号（adb devices 第一列）
 #   PLAYER_ALSA_DEVICE=plughw:1,0 指定声卡，原样传给板子上的程序
+#   PLAYER_SCREENSHOT_PATH=/tmp/day8_player.png  调试用：播放器启动 3 秒后把窗口截图存到板子上的这个路径
 
 BIN_NAME=day8_qt_player
 BUILD_DIR=cmake-build-rk3588-debug
@@ -27,6 +28,9 @@ LOCAL_TEST_MEDIA=test_media/sync_test_1080p.mp4
 BOARD_ENV="XDG_RUNTIME_DIR=/var/run WAYLAND_DISPLAY=wayland-0 QT_QPA_PLATFORM=wayland LD_LIBRARY_PATH=/userdata/mpp_build/lib"
 if [ -n "$PLAYER_ALSA_DEVICE" ]; then
     BOARD_ENV="$BOARD_ENV PLAYER_ALSA_DEVICE=$PLAYER_ALSA_DEVICE"
+fi
+if [ -n "$PLAYER_SCREENSHOT_PATH" ]; then
+    BOARD_ENV="$BOARD_ENV PLAYER_SCREENSHOT_PATH=$PLAYER_SCREENSHOT_PATH"
 fi
 
 cd "$(dirname "$0")" || exit 1
