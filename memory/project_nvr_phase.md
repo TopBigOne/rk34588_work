@@ -19,5 +19,6 @@ metadata:
 - 沿用 [[feedback-learning-depth-line]]、[[feedback-architecture-first]]、[[feedback-milestone-doc-structure]]。
 - **2026-11-18 计划升级**：总纲 `rk_work/音视频研发培养计划.md`（目标：一年左右把能力和作品练到 3～5 年音视频研发水平；T 型；六条线 A 嵌入式多媒体 / B 传输 / C 存储和媒体处理 / D AI / E 原理工具 / F 面试基本功；练经验的五个办法：故障注入、问题案例库、模拟面试追问、带问题读开源、资深标准 review）。依据 `2_nvr_work/JD分析.md`（18 份 JD）。
 - 新顺序：N0 → **N1 → N2 → N3 → N10 YOLO → N5**（= mini NVR v1，做完开始投 1～3 年岗位）→ N6（加 QP、smart GOP、x264 对比）→ N11 RTMP → N7（可选）→ N12 WebRTC（libdatachannel）→ N13 摄像头链路 → N9/N8 → N4 → N14 手机当 IPC。README 第 3、4、5、6、8 节已按这个改。
+- **按周执行**：`rk_work/一年学习计划.md`（概览 + 第 7 节进度表）+ `一年学习计划/第NN周_*.md` 共 52 份（39b0df0）。第 1 周 = 2026-11-23。用户说"开始第 N 周"时：先核对上周、更新进度表，再把本周任务拆成 2～3 小时一块；第 25～52 周是草案，开始前细化。代码由谁写的 C 方案（主干用户写核心，浅的部分 Claude 写）**用户还没确认**。
 - 用户定：每周约 20 小时（主线 15 + 并行 5）；Android 先用手机；Camera HAL 先不学，N13 后再定；不加 LVGL。
 - 2026-11-18 状态：所有阶段 ⬜，N0 未开始（Day 6 M3 未上板、M4 未写；Day 8 未上板）。
