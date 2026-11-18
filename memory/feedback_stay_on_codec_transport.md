@@ -16,7 +16,7 @@ metadata:
 **How to apply:**
 - 每个新实验、新文档，开头先写一句：它服务于哪个编解码或传输问题。答不上来就不做，或者压到一两段说明。
 - 用户追问底层原理时照常讲清楚，但不主动扩展成新的里程碑。
-- 按 国庆5天的学习计划/README.md 的主线走：Day 4 RGA（为编码服务：缩放、双码流），Day 5 转码 + RTSP 传输。
+- 按 1_base_work/国庆5天的学习计划/README.md 的主线走：Day 4 RGA（为编码服务：缩放、双码流），Day 5 转码 + RTSP 传输。
 - 主线上还没碰的点要优先：GOP / I P B 帧、码率控制、SPS/PPS/NAL、PTS/DTS、RTP/RTSP 打包。
 
 相关：[[feedback-experiment-design]]
