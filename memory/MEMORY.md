@@ -19,7 +19,8 @@
 - [智能指针变量以 Ptr 结尾](feedback_naming_smart_ptr_suffix.md) — 2026-11-12：unique_ptr 及别名（MppPacketPtr 等）的变量、成员叫 packetPtr、frameGroupPtr
 - [每个知识点划够用线](feedback_learning_depth_line.md) — 2026-11-13：标准是“不懂它能不能看懂眼前的 MPP 代码”；线外只给一句结论，记进“以后再挖”清单
 - [Day 7 Qt 开发环境](project_day7_qt_env.md) — 2026-11-17：用工具链里的 Qt 5.15.8 + CLion，moc 等转发到 rk-dev；上板窗口和按钮 OK，还没提交
-- [Qt 播放器计划](project_qt_player_plan.md) — 2026-11-18：mp4 播放器，MPP 硬解视频 + AAC 软解走 ALSA，全部由 Claude 写；分支 day8_qt_player；11-18 代码写完编译通过，未上板
+- [Qt 播放器计划](project_qt_player_plan.md) — 界面名 TOnePlayer，MPP 硬解 + AAC 软解走 ALSA，全部由 Claude 写；2026-11-19 上板全部通过并提交（含桌面图标、音量键、systemui 对接）；板子上的坑记在里面
 - [Day 6 进度断点](project_day6_status.md) — 2026-11-17：day6_nvr_mosaic 分支的进度（文件未跟踪，随工作区带过来）；Day 6 的 MEMORY.md 改动存在 stash "day6-memory-index-before-day8-switch-20261118"，切回 day6 时 apply
 - [NVR 阶段（下一阶段主线）](project_nvr_phase.md) — 2026-11-18：总纲 音视频研发培养计划.md + 2_nvr_work/README.md（N0～N14）+ JD分析.md；主干 N1→N2→N3→N10→N5；每周 20 小时
 - [每个能力多种技术实现](feedback_multi_tech_per_capability.md) — 2026-11-18：一深多浅，一种手写其他用库，实测对比；主干够用线提到"追问三层"
+- [板子出声前先问](feedback_ask_before_sound.md) — 2026-11-19：喇叭放任何声音（测试滴滴声、带声音播放、解除静音）前先问用户；默认保持静音，用 PCM 比对代替听
