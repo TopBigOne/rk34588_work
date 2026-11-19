@@ -13,7 +13,7 @@
 #   3. 登记到 systemui：图标拷进 appicons/，apps/mppplayer 软链接到启动脚本，apk2.cfg 加一行（改之前备份一次）
 #   4. 重启 systemui，让它重新读 apk2.cfg
 #
-# 触摸操作（板子没有键盘）：点右上角退出；点底部一条按位置跳转；点其他地方暂停 / 继续（见 src/ui/touch_control.h）
+# 操作（板子没有键盘）：底部控制栏有进度条、播放时间 / 总时间、播放 / 暂停、退出；点画面显示 / 隐藏控制栏（见 src/ui/control_bar.h）
 #
 # 图标 assets/mppplayer_icon.png 是用 ffmpeg 画的：256×256，渐变底色 + 白色播放三角，四角半径 51 的圆角（透明）：
 #   ffmpeg -f lavfi -i "color=c=black:s=256x256" -vf "format=rgba,
