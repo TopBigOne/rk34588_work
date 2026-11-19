@@ -25,7 +25,7 @@ float seek_interval = 10;
 int display_disable;
 int borderless;
 int alwaysontop;
-int startup_volume = 100;
+int startup_volume = 10; // MppPlayer：默认音量 10%（原版 100）。板载喇叭 100% 太响，2026-11-19 用户定；命令行 -volume N 仍可改
 int show_status = -1;
 int av_sync_type = AV_SYNC_AUDIO_MASTER;
 int64_t start_time = AV_NOPTS_VALUE;

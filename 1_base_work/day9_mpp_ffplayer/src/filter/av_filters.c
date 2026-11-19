@@ -65,9 +65,19 @@ int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vf
     int i, j;
 
     for (i = 0; i < renderer_info.num_texture_formats; i++) {
+        av_log(NULL, AV_LOG_VERBOSE, "SDL 渲染器支持的纹理格式[%d]：%s\n", i,
+               SDL_GetPixelFormatName(renderer_info.texture_formats[i])); // MppPlayer：上板排查用
         for (j = 0; j < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; j++) {
             if (renderer_info.texture_formats[i] == sdl_texture_format_map[j].texture_fmt) {
-                pix_fmts[nb_pix_fmts++] = sdl_texture_format_map[j].format;
+                // MppPlayer：去重。渲染器报的格式里有重复时，原版会往列表里加两次同一个格式，
+                // buffersink 报 "Duplicated pixel format"、视频滤镜建不起来、播放器直接退出（2026-11-19 板子上实测）；
+                // 重复多了还会写出 pix_fmts 数组（数组只有对照表那么长）
+                int k, is_duplicated = 0;
+                for (k = 0; k < nb_pix_fmts; k++)
+                    if (pix_fmts[k] == sdl_texture_format_map[j].format)
+                        is_duplicated = 1;
+                if (!is_duplicated)
+                    pix_fmts[nb_pix_fmts++] = sdl_texture_format_map[j].format;
                 break;
             }
         }
