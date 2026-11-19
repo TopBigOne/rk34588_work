@@ -1,6 +1,6 @@
 ---
 name: project-day9-status
-description: Day 9 MppPlayer（SimpleFFPlay6.0 移植到板子 + MPP 硬解）进度断点；2026-11-19 代码写完、交叉编译通过，还没上板
+description: Day 9 MppPlayer（SimpleFFPlay6.0 移植到板子 + MPP 硬解）进度断点；2026-11-19 上板播放（画面+声音+桌面图标）通过并提交，下一步加控制栏
 metadata:
   type: project
 ---
@@ -15,8 +15,14 @@ metadata:
 - MppPlayer 交叉编译通过，新文件 0 警告；rpath = /userdata/ffmpeg6/lib:/userdata/mpp_build/lib。
 - 改动点都标了 "MppPlayer"：video/mpp_video_decoder.*（新增，引用计数让帧比解码器晚释放）、pipeline/decoder.*、demux/stream.c、NV12 纹理（SDL_UpdateNVTexture）、ui/touch_control.*（新增触摸：右上角退出/底部跳转/其他暂停）、-nomppdec 选项。
 - 桌面图标：install_app_on_board_with_mac.sh + board/start_mppplayer.sh（setsid 脱离 systemui → 停 systemui/sysvolume → 播 → 重启 systemui）。
-- **还没上板**：写代码时 adb 只连着一部三星手机（SM_A5460，序列号 R5CWA1RSV3T），板子没连。同时连着时要 ADB_SERIAL。
-- 都还没提交（用户没要求）。
+- 同时连着手机等别的 adb 设备时要 ADB_SERIAL。
+
+## 上板（2026-11-19 晚，板子 adb 序列号 3a6aff9a20ba7de4，adb 显示成 Nexus_4；4ecdd6fc unauthorized 不是板子）
+- 坑 1：FFmpeg 库要 fmod/fmodf@GLIBC_2.38，板子 glibc 2.37 → glibc237_fmod_compat.h（.symver 绑 GLIBC_2.17）+ --extra-cflags=-include，重编；脚本最后 objdump 检查。
+- 坑 2：板子 SDL（2.0.22，sysroot 是 2.28.5）GLES2 渲染器把 IYUV/YV12/NV12/NV21 各报两次 → av_filters.c 去重，否则 Duplicated pixel format 直接退出。
+- sync_test 1080p：NV12 纹理直传；60 s 播完退出码 0，fd=4～5 都在开头 0.3 s；带声音 A-V -0.035 s；用户听到声音。
+- 默认音量改 10%（用户定，startup_volume）。桌面图标用户试过 OK。
+- 以上已提交。
 
 ## 下一步
-- 板子连上后先跑 `-an`（不出声；带声音播放前先问用户，见 feedback_ask_before_sound.md），按 README「还没验证」清单逐条验。
+- 用户要求（2026-11-19）：加进度条、播放时间/总时间、播放/暂停按钮、退出按钮（SDL 里自己画）。
