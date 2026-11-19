@@ -23,6 +23,8 @@ FFMPEG6_SOURCE_DIR=/Users/dev/rk-toolchain/ffmpeg6-src
 FFMPEG6_INSTALL_DIR=/Users/dev/rk-toolchain/ffmpeg6-rk3588
 RK_TOOLCHAIN_ROOT=/Users/dev/rk-toolchain/atk-dlrk3588-toolchain
 RK_SYSROOT=$RK_TOOLCHAIN_ROOT/aarch64-buildroot-linux-gnu/sysroot
+# 板子是 glibc 2.37、sysroot 是 2.38：把 fmod / fmodf 绑到老版本，否则板子上报 GLIBC_2.38 not found（见文件里的说明）
+GLIBC_COMPAT_HEADER="$(cd "$(dirname "$0")" && pwd)/glibc237_fmod_compat.h"
 
 # 第 1 步 导出干净源码
 if [ ! -f "$FFMPEG6_SOURCE_DIR/configure" ]; then
@@ -43,6 +45,7 @@ fi
 #   --enable-zlib：mov/mp4 拆封装遇到压缩的 moov 头要用
 #   --disable-programs --disable-doc：不编 ffmpeg/ffprobe/ffplay 命令行工具和文档
 #   --enable-debug=3 --disable-stripping：保留调试符号，gdb 能进到 FFmpeg 函数里
+#   --extra-cflags="-include ..."：每个 .c 文件最前面先包含 glibc237_fmod_compat.h（2026-11-19 上板踩坑后加的）
 echo "==> 在 rk-dev 里 configure + make"
 orb -m rk-dev bash -c "
 set -e
@@ -64,10 +67,18 @@ cd $FFMPEG6_SOURCE_DIR/build-aarch64
     --disable-programs \
     --disable-doc \
     --enable-debug=3 \
-    --disable-stripping
+    --disable-stripping \
+    --extra-cflags=\"-include $GLIBC_COMPAT_HEADER\"
 make -j\$(nproc)
 make install
 "
+
+# 第 3 步 检查：不能有板子 glibc 2.37 里没有的符号版本（GLIBC_2.38 及以上）
+echo "==> 检查 GLIBC_2.38 依赖"
+if orb -m rk-dev bash -c "$RK_TOOLCHAIN_ROOT/bin/aarch64-buildroot-linux-gnu-objdump -T $FFMPEG6_INSTALL_DIR/lib/*.so.*.*.* | grep -E 'GLIBC_2\.(3[89]|[4-9][0-9])'"; then
+    echo "上面这些符号需要 glibc >= 2.38，板子上运行会失败" >&2
+    exit 1
+fi
 
 echo "==> 完成，库在 $FFMPEG6_INSTALL_DIR/lib"
 ls "$FFMPEG6_INSTALL_DIR/lib"
