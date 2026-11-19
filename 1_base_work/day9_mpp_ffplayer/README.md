@@ -18,7 +18,7 @@ SimpleFFPlay6.0（FFmpeg 6.0 的 ffplay 拆分版）移植到 RK3588 板子，�
 | FFmpeg | 本机编的 6.0 | 交叉编译的 6.0，见 [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md) |
 | 视频解码 | avcodec 软解 | **H.264 / H.265 用 MPP 硬解**，其他格式照旧软解；`-nomppdec` 强制软解 |
 | 显示格式 | YUV420P | NV12 直接上传 SDL 纹理（GPU 做颜色转换），不经过 swscale |
-| 操作 | 键盘、鼠标 | 另加触摸：点右上角退出、点底部一条按位置跳转、点其他地方暂停 / 继续 |
+| 操作 | 键盘、鼠标 | 另加底部控制栏：进度条（拖动跳转）、播放时间 / 总时间、播放 / 暂停按钮、退出按钮；触摸和鼠标左键都能用 |
 | 窗口标题 / 程序名 | ffplay | MppPlayer |
 
 ffplay 原版的代码只改了下面这几处，每处都标了 `MppPlayer`（`grep -rn MppPlayer src` 能全部找出来）：
@@ -29,7 +29,7 @@ ffplay 原版的代码只改了下面这几处，每处都标了 `MppPlayer`（`
 | [src/pipeline/decoder.h/.c](src/pipeline/decoder.c) | `Decoder` 加 `mppDecoder`；视频的 receive / send / flush 换成 MPP 的 |
 | [src/demux/stream.c](src/demux/stream.c) | 打开视频流时创建 MPP 解码器，不再 `avcodec_open2` |
 | [src/video/sdl_texture_format.h](src/video/sdl_texture_format.h)、[video_render.c](src/video/video_render.c) | 支持 NV12 纹理，用 `SDL_UpdateNVTexture` 上传 |
-| [src/ui/touch_control.h/.c](src/ui/touch_control.h)、[event_loop.c](src/ui/event_loop.c) | **新增**触摸操作；鼠标处理忽略触摸模拟出来的鼠标事件 |
+| [src/ui/control_bar.h/.c](src/ui/control_bar.h)、[event_loop.c](src/ui/event_loop.c)、[video_render.c](src/video/video_render.c) | **新增**控制栏（用 SDL 矩形 + 内置 5×7 点阵字画，不依赖字体文件）；触摸和鼠标左键先交给控制栏；`video_display` 上屏前画控制栏；`MPPPLAYER_SCREENSHOT_PATH` 调试截图 |
 | [src/common/player_options.*](src/common/player_options.h)、[src/app/ffplay_options.c](src/app/ffplay_options.c) | 新增 `-nomppdec` 选项；默认音量改成 10%（原版 100%，板载喇叭太响），`-volume N` 仍可改 |
 | [src/app/main.c](src/app/main.c) | `program_name` 改成 `MppPlayer` |
 | [src/filter/av_filters.c](src/filter/av_filters.c) | 像素格式列表去重：板子的 GLES2 渲染器把 IYUV、YV12、NV12、NV21 各报两次，原版会报 `Duplicated pixel format`，播放器直接退出 |
@@ -56,6 +56,20 @@ read_thread ──AVPacket（avcC）──▶ videoq ──▶ video_thread
 - **seek / 播完**：`mppVideoDecoderFlush` → `MppApi::reset`
 - **cache**：内存池用 `MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE`，CPU 读之前 `mpp_buffer_sync_ro_begin`，读完 `sync_ro_end`
 - 只支持 8 bit 4:2:0（NV12）；10 bit 片源 MPP 输出 NV15，SDL 不认，会报错
+
+## 控制栏
+
+```
+  ━━━━━━━━━━━━━━━●─────────────────────────   进度条：按住拖动，松手跳过去
+  [▶/❚❚]  01:23 / 04:56                [✕]   播放/暂停、播放时间/总时间、退出
+```
+
+- 启动时显示；播放中 4 秒没操作自动隐藏；暂停时一直显示
+- 点画面：显示 / 隐藏控制栏。隐藏时第一下点击只把它叫出来，不会误触按钮
+- 按钮要在同一个按钮上按下、抬起才算点击（按下后滑走就当没点）
+- 尺寸按屏幕短边缩放（竖屏 1080×1920 时按钮约 130 像素）
+
+调试截图：`MPPPLAYER_SCREENSHOT_PATH=/tmp/shot.bmp ./MppPlayer ...`，第一次显示画面 3 秒后把整个画面（视频 + 控制栏）存成 BMP，`adb pull` 回来看。
 
 ## 怎么用
 
@@ -109,4 +123,13 @@ read_thread ──AVPacket（avcC）──▶ videoq ──▶ video_thread
 2. `Duplicated pixel format`，播放器一启动就退出 → av_filters.c 去重（上表）
 
 桌面图标（2026-11-19 用户在板子上点开试过，说“可以了”）：日志 `参数=[-fs -autoexit .../yequ_640x480.mp4]`，
-MPP 硬解 640x480（stride 640x480），23:23:48 开始 → 23:25:26 结束，退出码 0
+MPP 硬解 640x480（stride 640x480），片长 3:53.97，23:23:48 开始 → 23:25:26 结束，退出码 0。
+那次（旧版：底部触摸条跳转）用户跳转了 7 次（83%、77%、85%、79%、81%、84%、0%），每次都接着播 → seek + MPP reset 路径上板通过
+
+控制栏截图（2026-11-19，`-an -fs -t 6`，1080×1920 竖屏）：进度条、`00:03 / 01:00`（和测试视频画面里的数字 3 对得上）、暂停 / 退出按钮位置都对；
+测试图彩条顺序（青、品红、蓝、黄、绿、红）正常 → NV12 的 UV 平面位置对，颜色没问题
+
+## 还没验证
+
+1. 控制栏的触摸交互：拖进度条、播放 / 暂停、退出、点画面显示 / 隐藏、4 秒自动隐藏。
+   用户 2026-11-19 说“可以了”，但桌面日志里装控制栏版之后没有新的启动记录，以日志为准算“没验”
