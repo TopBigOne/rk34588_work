@@ -120,6 +120,7 @@ configure 参数：
 | `--disable-programs` | 不编 `ffmpeg`、`ffprobe`、`ffplay` 命令行工具（我们自己的播放器就是 ffplay） |
 | `--disable-doc` | 不生成文档 |
 | `--enable-debug=3` `--disable-stripping` | 保留完整调试信息，`make install` 时不 strip。gdb 调 MppPlayer 时能单步进到 FFmpeg 函数里 |
+| `--extra-cflags="-include .../glibc237_fmod_compat.h"` | 每个 `.c` 最前面先包含这个头文件，把 `fmod` / `fmodf` 绑到老的符号版本，板子的 glibc 2.37 才能加载（见第 9 节第 1 行，2026-11-19 上板踩坑后加的） |
 
 没加 `--disable-optimizations`：保留 `-O3`（`ffbuild/config.mak` 的 CFLAGS 里核对过）和 NEON 汇编，音频重采样、滤镜在板子上跑得快一些。代价是在 FFmpeg 函数里单步时，有些变量会显示 `<optimized out>`。
 
@@ -208,20 +209,22 @@ aarch64-buildroot-linux-gnu-readelf -d cmake-build-rk3588-debug/MppPlayer | grep
 | 依赖只有 libc / libm / libz | `readelf -d` 看 NEEDED | ✅（2026-11-19） |
 | MppPlayer 链接的是 6.0 | `readelf -d MppPlayer` 看 NEEDED | ✅ `libavcodec.so.60`、`libavformat.so.60`……（2026-11-19） |
 | MppPlayer 的 rpath | `readelf -d MppPlayer` 看 RPATH | ✅ 只有 `/userdata/ffmpeg6/lib:/userdata/mpp_build/lib`（2026-11-19） |
-| 板子上能加载 | 板子上 `LD_DEBUG=libs /tmp/CLion/run/MppPlayer -version` 或者直接 `-version` 看版本号 | ⏳ 还没上板（写文档时板子没连） |
+| 没有板子 glibc 2.37 里没有的符号 | 脚本最后自动 `objdump -T ... \| grep GLIBC_2.38` | ✅ 加了 `glibc237_fmod_compat.h` 以后没有（2026-11-19） |
+| 板子上能加载 | 板子上 `/tmp/CLion/run/MppPlayer -version` | ✅ 打印 `MppPlayer version 6.0.2`、`libavutil 58. 2.100`（2026-11-19） |
 
 ## 8. 换电脑 / 重新编
 
 1. 装好正点原子工具链、OrbStack 的 rk-dev（见 `rk_code/RK3588开发流程_Mac+Ubuntu.md`）
 2. 有 FFmpeg-6.0 源码仓库；路径不一样就改 `build_ffmpeg6_for_board.sh` 开头的 `FFMPEG_SOURCE_REPO`
 3. `./build_ffmpeg6_for_board.sh`
-4. 把 `build-aarch64/config.h`、`config_components.h` 拷到 `src/fftools/`（见 5.2）
+4. 把 `build-aarch64/config.h`、`config_components.h` 拷到 `src/fftools/`（见 5.2）。忘了拷也能编过，只是 `-version` 打印的 configuration 还是旧参数
 5. 改了 configure 参数要从头编：`rm -rf /Users/dev/rk-toolchain/ffmpeg6-src/build-aarch64` 再跑脚本
 
 ## 9. 踩过的坑
 
 | 现象 | 原因 | 办法 |
 |---|---|---|
+| 板子上运行报 `/lib/libm.so.6: version 'GLIBC_2.38' not found (required by /userdata/ffmpeg6/lib/libavutil.so.58)` | 板子 rootfs 是 glibc **2.37**，工具链 sysroot 是 2.38。glibc 2.38 给 `fmod`、`fmodf` 加了新的符号版本 `@GLIBC_2.38`，链接时默认绑到最新的。sysroot 的 libm 里老版本 `@GLIBC_2.17` 也在（`objdump -T` 看到两个） | [glibc237_fmod_compat.h](../glibc237_fmod_compat.h) 里用 `__asm__(".symver fmod,fmod@GLIBC_2.17")` 把引用绑到老版本，`--extra-cflags="-include ..."` 加给每个文件；脚本最后检查不能再有 `GLIBC_2.38`。工具链目录里的 `glibc237_compat.h` 管的是 `sscanf`/`strtol` 那一类，管不到 `fmod` |
 | out-of-tree configure 报 `Out of tree builds are impossible with config.h in source dir` | 原源码目录给 Mac 编过，里面有 `config.h` | `git archive` 导出干净副本（4.1） |
 | rk-dev 里没有 `pkg-config` | rk-dev 只装了编 C 的基本工具 | `--disable-autodetect` + 只 `--enable-zlib`，zlib 靠 `--sysroot` 找头文件和库，不需要 pkg-config |
 | CMake 找不到 `${FFMPEG_PREFIX}/lib` 里的库 | 工具链文件让 `find_library` 只在 sysroot 里找 | `NO_CMAKE_FIND_ROOT_PATH`（5.1） |

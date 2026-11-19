@@ -1,7 +1,7 @@
 ### todo
 * 1. 把/Users/dev/Documents/AV/W_3/SimpleFFPlay6.0 项目移植到当前项目中 —— ✅ 代码已移植，交叉编译通过
-* 2. 解码用mpp的硬解； —— ✅ 代码已写（H.264 / H.265 走 MPP，其他格式照旧软解），⏳ 还没上板验证
-* 3. 在开发板上可以播放视频，像day8_qt_player 一样， —— ✅ run 脚本、桌面图标安装脚本已写，⏳ 还没上板验证
+* 2. 解码用mpp的硬解； —— ✅ H.264 / H.265 走 MPP，其他格式照旧软解；2026-11-19 上板播 1080p 测试视频通过（不出声）
+* 3. 在开发板上可以播放视频，像day8_qt_player 一样， —— ✅ run 脚本上板通过（画面 + 声音）；✅ 桌面图标用户试过 OK（2026-11-19）
 * 4. 播放器名称叫：MppPlayer —— ✅
 
 ---
@@ -30,8 +30,9 @@ ffplay 原版的代码只改了下面这几处，每处都标了 `MppPlayer`（`
 | [src/demux/stream.c](src/demux/stream.c) | 打开视频流时创建 MPP 解码器，不再 `avcodec_open2` |
 | [src/video/sdl_texture_format.h](src/video/sdl_texture_format.h)、[video_render.c](src/video/video_render.c) | 支持 NV12 纹理，用 `SDL_UpdateNVTexture` 上传 |
 | [src/ui/touch_control.h/.c](src/ui/touch_control.h)、[event_loop.c](src/ui/event_loop.c) | **新增**触摸操作；鼠标处理忽略触摸模拟出来的鼠标事件 |
-| [src/common/player_options.*](src/common/player_options.h)、[src/app/ffplay_options.c](src/app/ffplay_options.c) | 新增 `-nomppdec` 选项 |
+| [src/common/player_options.*](src/common/player_options.h)、[src/app/ffplay_options.c](src/app/ffplay_options.c) | 新增 `-nomppdec` 选项；默认音量改成 10%（原版 100%，板载喇叭太响），`-volume N` 仍可改 |
 | [src/app/main.c](src/app/main.c) | `program_name` 改成 `MppPlayer` |
+| [src/filter/av_filters.c](src/filter/av_filters.c) | 像素格式列表去重：板子的 GLES2 渲染器把 IYUV、YV12、NV12、NV21 各报两次，原版会报 `Duplicated pixel format`，播放器直接退出 |
 | [src/fftools/config.h](src/fftools/config.h)、`config_components.h` | 换成 aarch64 交叉编译时生成的那份 |
 
 `origin/ffplay.c` 是 FFmpeg 6.0 原版，不参与编译，对照用。
@@ -91,10 +92,21 @@ read_thread ──AVPacket（avcC）──▶ videoq ──▶ video_thread
 | [assets/mppplayer_icon.png](assets/mppplayer_icon.png) | 桌面图标 |
 | [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md) | 交叉编译 FFmpeg 6.0 的完整说明 |
 
-## 还没验证（等板子连上）
+## 上板结果（2026-11-19，板子 adb 序列号 3a6aff9a20ba7de4）
 
-1. `./run_on_board_with_mac.sh -an ...`：画面正常、颜色对（NV12 的 UV 平面位置）、日志里有 `[MppVideoDecoder] 使用 MPP 硬解`
-2. 带声音播放，音画同步
-3. 触摸：暂停、底部跳转（seek 后 MPP reset）、右上角退出
-4. 播完自动退出没有崩溃（帧比解码器晚释放的那条路径）
-5. 桌面图标：启动、退出后桌面回来
+`-an -autoexit sync_test_1080p.mp4`（H.264 High 1920×1080 30 fps，60 秒）：
+- 日志：`使用 MPP 硬解 h264`；info change `1920x1080，stride 1920x1088，buf_size 4177920`
+- 显示路径：滤镜输出 `pixfmt:nv12`，`Created 1920x1080 texture with SDL_PIXELFORMAT_NV12`（没经过 swscale）
+- 播到 59.94 秒，退出码 0；退出时打印 `[MppVideoDecoder] 已销毁`（帧比解码器晚释放的路径没崩）
+- 丢帧 `fd=5`，都在开头 0.3 秒内，之后不再丢；结束时 `M-V -0.016`
+- 板子的 SDL 是 2.0.22（sysroot 是 2.28.5，soname 一样）；MppPlayer 用到的 55 个 SDL 函数板子上都有
+
+带声音（`-volume 20 -autoexit`，同一个视频）：声音正常（用户听过）；音频 AAC 软解 → aresample（fltp → s16，48 kHz）→ SDL → ALSA；
+`A-V` 全程 -0.034～-0.038 秒（画面比声音早约 35 ms），丢帧 4 帧都在开头 0.3 秒内；退出码 0
+
+上板踩的坑：
+1. FFmpeg 库报 `GLIBC_2.38 not found` → 见 [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md) 第 9 节
+2. `Duplicated pixel format`，播放器一启动就退出 → av_filters.c 去重（上表）
+
+桌面图标（2026-11-19 用户在板子上点开试过，说“可以了”）：日志 `参数=[-fs -autoexit .../yequ_640x480.mp4]`，
+MPP 硬解 640x480（stride 640x480），23:23:48 开始 → 23:25:26 结束，退出码 0
