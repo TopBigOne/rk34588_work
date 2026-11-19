@@ -2,8 +2,8 @@
  * 本文件拆自 FFmpeg 6.0 fftools/ffplay.c（Copyright (c) 2003 Fabrice Bellard），
  * 遵循 GNU LGPL 2.1 或更高版本。函数体保持原样，仅调整 static 和 #include。
  *
- * MppPlayer 改动（标了“MppPlayer”）：加上触摸屏操作（ui/touch_control.h），
- * 并让鼠标处理忽略“触摸模拟出来的鼠标事件”
+ * MppPlayer 改动（标了“MppPlayer”）：加上控制栏（ui/control_bar.h：进度条、时间、播放/暂停、退出），
+ * 触摸和鼠标左键先交给控制栏；鼠标处理忽略“触摸模拟出来的鼠标事件”
  */
 #include "ui/event_loop.h"
 #include "common/player_options.h"
@@ -11,7 +11,7 @@
 #include "player/player_control.h"
 #include "sync/av_sync.h"
 #include "ui/sdl_context.h"
-#include "ui/touch_control.h"
+#include "ui/control_bar.h"
 #include "video/video_refresh.h"
 
 static int64_t cursor_last_shown;
@@ -54,6 +54,7 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
         if (remaining_time > 0.0)
             av_usleep((int64_t)(remaining_time * 1000000.0));
         remaining_time = REFRESH_RATE;
+        updateControlBarVisibility(is); // MppPlayer：播放中 4 秒没操作自动隐藏控制栏（会设 force_refresh）
         if (is->show_mode != SHOW_MODE_NONE && (!is->paused || is->force_refresh))
             video_refresh(is, &remaining_time);
         SDL_PumpEvents();
@@ -69,6 +70,14 @@ void event_loop(VideoState *cur_stream)
     for (;;) {
         double x;
         refresh_loop_wait_event(cur_stream, &event);
+        // MppPlayer：触摸和鼠标左键先交给控制栏；它处理掉了，下面 ffplay 原来的处理就跳过
+        {
+            ControlBarEventResult controlBarResult = handleControlBarEvent(cur_stream, &event);
+            if (controlBarResult == CONTROL_BAR_EVENT_QUIT_REQUESTED)
+                do_exit(cur_stream);
+            if (controlBarResult == CONTROL_BAR_EVENT_HANDLED)
+                continue;
+        }
         switch (event.type) {
         case SDL_KEYDOWN:
             if (exit_on_keydown || event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q) {
@@ -182,15 +191,9 @@ void event_loop(VideoState *cur_stream)
                 break;
             }
             break;
-        case SDL_FINGERDOWN:
-        case SDL_FINGERUP:
-            // MppPlayer：触摸屏轻点 → 退出 / 跳转 / 暂停
-            if (handleTouchEvent(cur_stream, &event))
-                do_exit(cur_stream);
-            break;
         case SDL_MOUSEBUTTONDOWN:
             // MppPlayer：SDL 默认会把触摸再模拟成一份鼠标事件（which == SDL_TOUCH_MOUSEID）。
-            // 触摸已经在上面处理过了，这里不再处理，否则连点两下会被当成鼠标双击，切换全屏
+            // 触摸已经交给控制栏处理过了，这里不再处理，否则连点两下会被当成鼠标双击，切换全屏
             if (event.button.which == SDL_TOUCH_MOUSEID)
                 break;
             if (exit_on_mousedown) {

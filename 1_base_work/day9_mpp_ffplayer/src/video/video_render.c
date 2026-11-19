@@ -3,6 +3,7 @@
  * 遵循 GNU LGPL 2.1 或更高版本。函数体保持原样，仅调整 static 和 #include。
  */
 #include "video/video_render.h"
+#include "ui/control_bar.h" // MppPlayer：drawControlBar
 #include "common/player_options.h"
 #include "ui/sdl_context.h"
 #include "video/audio_visualizer.h"
@@ -272,6 +273,48 @@ int video_open(VideoState *is)
     return 0;
 }
 
+/**
+ * @brief MppPlayer 调试用：环境变量 MPPPLAYER_SCREENSHOT_PATH 设了路径时，第一次显示画面 3 秒后把整个画面存成 BMP
+ * @param[in] is  播放器状态（没用到，留着和其他显示函数的参数一致）
+ * @return 无
+ * @note 用来在 Mac 上看板子屏幕上画成什么样（weston 没开 --debug，系统截屏用不了，day8 实测）。
+ *       在 SDL_RenderPresent 之前读：读的是刚画好、还没上屏的这一帧（视频 + 控制栏）。
+ *       SDL_RenderReadPixels 把 GPU 里的像素读回内存，很慢（几十毫秒），所以只截一次
+ */
+static void saveScreenshotOnceIfRequested(VideoState *is) {
+    (void)is;
+    static int64_t firstDisplayUs = 0;
+    static int hasSavedScreenshot = 0;
+    const char *screenshotPath = getenv("MPPPLAYER_SCREENSHOT_PATH");
+    if (!screenshotPath || hasSavedScreenshot) {
+        return;
+    }
+    if (firstDisplayUs == 0) {
+        firstDisplayUs = av_gettime_relative();
+    }
+    if (av_gettime_relative() - firstDisplayUs < 3 * 1000000) {
+        return;
+    }
+    hasSavedScreenshot = 1;
+
+    int outputWidth = 0;
+    int outputHeight = 0;
+    SDL_GetRendererOutputSize(renderer, &outputWidth, &outputHeight);
+    // 建一块和画面一样大的 32 位内存图像，SDL_RenderReadPixels 把像素读进它的 pixels，SDL_SaveBMP 存成文件
+    SDL_Surface *screenshotSurface = SDL_CreateRGBSurfaceWithFormat(0, outputWidth, outputHeight, 32, SDL_PIXELFORMAT_ARGB8888);
+    if (!screenshotSurface) {
+        av_log(NULL, AV_LOG_ERROR, "截图：建 surface 失败 %s\n", SDL_GetError());
+        return;
+    }
+    if (SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, screenshotSurface->pixels, screenshotSurface->pitch) == 0
+        && SDL_SaveBMP(screenshotSurface, screenshotPath) == 0) {
+        av_log(NULL, AV_LOG_INFO, "截图已保存：%s（%dx%d）\n", screenshotPath, outputWidth, outputHeight);
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "截图失败：%s\n", SDL_GetError());
+    }
+    SDL_FreeSurface(screenshotSurface);
+}
+
 /* display the current picture, if any */
 void video_display(VideoState *is)
 {
@@ -284,5 +327,7 @@ void video_display(VideoState *is)
         video_audio_display(is);
     else if (is->video_st)
         video_image_display(is);
+    drawControlBar(is); // MppPlayer：控制栏画在视频上面，然后一起上屏
+    saveScreenshotOnceIfRequested(is); // MppPlayer：调试截图（只在设了 MPPPLAYER_SCREENSHOT_PATH 时）
     SDL_RenderPresent(renderer);
 }

@@ -109,8 +109,8 @@ set(SOURCE_FILES
         src/ui/sdl_context.c
         src/ui/event_loop.h
         src/ui/event_loop.c
-        src/ui/touch_control.h
-        src/ui/touch_control.c
+        src/ui/control_bar.h
+        src/ui/control_bar.c
 
         # 入口：命令行选项、main
         src/app/ffplay_options.h
@@ -133,7 +133,7 @@ target_include_directories(MppPlayer PRIVATE
 
 # 自己新写的文件打开项目规范要求的警告（-Wshadow：参数和成员同名）。
 # ffplay 原版代码保持原样，不对它开这些警告，免得满屏都是和移植无关的提示
-set_source_files_properties(src/video/mpp_video_decoder.c src/ui/touch_control.c PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Wshadow")
+set_source_files_properties(src/video/mpp_video_decoder.c src/ui/control_bar.c PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Wshadow")
 
 # rockchip_mpp → -lrockchip_mpp（sysroot 里有头文件和库，编译时用它；运行时用 rpath 指向的新版）
 target_link_libraries(MppPlayer PRIVATE
