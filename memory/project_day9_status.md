@@ -1,6 +1,6 @@
 ---
 name: project-day9-status
-description: Day 9 MppPlayer（SimpleFFPlay6.0 移植到板子 + MPP 硬解）进度断点；2026-11-19 上板播放（画面+声音+桌面图标）通过并提交，下一步加控制栏
+description: Day 9 MppPlayer（SimpleFFPlay6.0 移植到板子 + MPP 硬解）进度断点；2026-11-19 上板通过、加了控制栏，都已提交
 metadata:
   type: project
 ---
@@ -24,5 +24,8 @@ metadata:
 - 默认音量改 10%（用户定，startup_volume）。桌面图标用户试过 OK。
 - 以上已提交。
 
-## 下一步
-- 用户要求（2026-11-19）：加进度条、播放时间/总时间、播放/暂停按钮、退出按钮（SDL 里自己画）。
+## 控制栏（2026-11-19 晚，已提交）
+- src/ui/control_bar.*：进度条（拖动、松手 seek）、时间（内置 5×7 点阵字）、播放/暂停、退出；4 秒自动隐藏、暂停常显；替换掉 touch_control。
+- MPPPLAYER_SCREENSHOT_PATH 调试截图（SDL_RenderReadPixels → BMP）：截图确认布局和颜色都对。
+- 触摸交互：用户说“可以了”，但桌面日志里装新版后没有启动记录；seek 路径在旧版（底部触摸条）里跳转 7 次通过。
+- yequ_640x480.mp4 片长 3:53.97（之前估的 43 秒是错的）。
