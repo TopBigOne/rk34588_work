@@ -6,6 +6,7 @@
 # 编译产物
 cmake-build-*/
 build/
+build-*/
 out/
 *.o
 *.a
@@ -24,6 +25,3 @@ out/
 # day8 播放器的测试视频（make_test_media.sh 生成）和板子上导出的 PCM
 test_media/
 *.pcm
-
-# Claude 写的参考实现：只放在本机参考，不提交（2026-11-20 用户定）
-claude_reference/
