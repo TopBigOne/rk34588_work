@@ -1,6 +1,6 @@
 ---
 name: project-n0-status
-description: 2026-11-20：一年计划 N0（n0_nvr_mosaic）和 N1～N14 准备工作的进度断点：N0 参考代码 M1～M5 已交叉编译未上板，N1～N14 计划齐了，代码还没写
+description: 2026-11-20：一年计划 N0（n0_nvr_mosaic）和 N1～N14 准备工作的进度断点：N0 参考代码 M1～M5 已交叉编译未上板，m1～m5 文档都写了，N1～N14 计划齐了，代码还没写
 metadata:
   type: project
 ---
@@ -17,7 +17,7 @@ metadata:
 - 方案 B：Day 6 全部重写，Day 8 只读；新增 M5：4 路不同帧率（30/15/60/30+第 300 帧停 2 秒）按主时钟对齐拼图（每格：到点帧取最新、旧的丢弃，没到点重复）。
 - 参考代码：`claude_reference/第01周_N0_Day6的M3上板/`（M1～M3，从 Day 6 复制）、`第02周_N0_Day6的M4和Day8上板/`（+M4 FIFO+gst 上屏、`run_m4_on_board_with_mac.sh`；+M5 `sync/master_clock`、`FrameQueue::tryPopIfDue`、`setPtsFrameRate`、`setDecodeStall`、`composeAlignedMosaic`、`m5test` 自测、`make_m5_inputs.sh`）。两份都交叉编译 0 警告，**都没上板**（编译目录 `build`）。
 - M5 输入已生成在 `/Users/dev/Documents/AV/rk_test_data/`：n0_ch1_15fps.h264 902 帧、n0_ch2_60fps.h264 3606 帧（`-vf fps` 会因裸码流时间戳乱生成几百 MB，改用 setpts 按帧号）；还没 adb push。
-- 文档：`doc/m1流程.md`、`m2流程.md`（Day 6 底稿迁移，实测数字是 Day 6 的）、`m3流程.md`（247 行，未上板）。**m4、m5 文档还没写**。
+- 文档：`doc/m1流程.md`、`m2流程.md`（Day 6 底稿迁移，实测数字是 Day 6 的）、`m3流程.md`（247 行，未上板）、`m4流程.md`、`m5流程.md`（2026-11-20 写完，未上板，数字都标“推断”，第 6 节留了实测记录模板；m5 配图 `doc/img/m5/m5_clock_timeline.svg`，Chrome 渲染检查过）。用户还没看过 m4、m5 文档，也没提交。
 - 第 01、02 周计划已改成 n0 路径；第 02 周加了 M5，删了 Day 8 上板（11-19 已通过）。
 
 ## N1～N14
@@ -29,7 +29,7 @@ metadata:
 - 以后：一次只开一个子助手、说明压短、先报估算再做；主会话上下文太长时换新会话。实测：一个写文档的子助手约 9.4 万 token，周额度约涨 1 个百分点。
 
 ## 下一步
-1. 写 n0 的 m4、m5 文档（约 15 万 token），用户确认后再做。
+1. 用户看 m4、m5 文档；要提交时 md 一批、memory 一批。问题案例库文件还不存在，m4（上屏快放）、m5（实测和推断的差距）的候选条目上板后再写。
 2. N1～N14 代码：只写代码 + 交叉编译通过，一次一个阶段，按 N1 → N2 → N3 → N10 → N5 → N6 → N11 → N7 → N12 → N4 → N9 → N8 → N13 → N14；估计共 120 万～200 万 token。
 3. 板子回来后：按 `doc/1_计划.md` 的 Task 1、2、5～8 上板验证（m1～m5、m5test）。
 
