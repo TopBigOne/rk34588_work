@@ -27,3 +27,4 @@
 - [Day 9 进度断点](project_day9_status.md) — 2026-11-19：MppPlayer 上板通过（画面+声音+桌面图标+seek）并加了控制栏（进度条/时间/播放暂停/退出），都已提交
 - [N0 和一年计划进度断点](project_n0_status.md) — 2026-11-20：n0 参考代码 M1～M5 交叉编译未上板，m1～m5 文档都写了（m4/m5 待用户看）；N1～N14 计划齐、代码没写；目录和 claude_reference 约定
 - [token 预算](feedback_token_budget.md) — 2026-11-20：不并行开子助手，先估算再做，一次一个阶段，长会话换新会话
+- [RTSP 会用就行](feedback_rtsp_use_only.md) — 2026-11-20：跳过 N1、N2，从 N3 开始；RTSP 用 SRS 7 + libavformat 拉流，不研究协议

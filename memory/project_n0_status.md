@@ -30,7 +30,7 @@ metadata:
 
 ## 下一步
 1. 用户看 m4、m5 文档；要提交时 md 一批、memory 一批。问题案例库文件还不存在，m4（上屏快放）、m5（实测和推断的差距）的候选条目上板后再写。
-2. N1～N14 代码：只写代码 + 交叉编译通过，一次一个阶段，按 N1 → N2 → N3 → N10 → N5 → N6 → N11 → N7 → N12 → N4 → N9 → N8 → N13 → N14；估计共 120 万～200 万 token。
+2. N1～N14 代码：只写代码 + 交叉编译通过，一次一个阶段。**2026-11-20 用户定跳过 N1、N2**（见 [[feedback-rtsp-use-only]]），从 N3 开始：N3 → N10 → N5 → N6 → N11 → N7 → N12 → N4 → N9 → N8 → N13 → N14；估计共 120 万～200 万 token。
 3. 板子回来后：按 `doc/1_计划.md` 的 Task 1、2、5～8 上板验证（m1～m5、m5test）。
 
 相关：[[project-day6-status]]、[[feedback-architecture-first]]
