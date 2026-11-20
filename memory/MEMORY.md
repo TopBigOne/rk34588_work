@@ -25,3 +25,5 @@
 - [每个能力多种技术实现](feedback_multi_tech_per_capability.md) — 2026-11-18：一深多浅，一种手写其他用库，实测对比；主干够用线提到"追问三层"
 - [板子出声前先问](feedback_ask_before_sound.md) — 2026-11-19：喇叭放任何声音（测试滴滴声、带声音播放、解除静音）前先问用户；默认保持静音，用 PCM 比对代替听
 - [Day 9 进度断点](project_day9_status.md) — 2026-11-19：MppPlayer 上板通过（画面+声音+桌面图标+seek）并加了控制栏（进度条/时间/播放暂停/退出），都已提交
+- [N0 和一年计划进度断点](project_n0_status.md) — 2026-11-20：n0 参考代码 M1～M5 交叉编译未上板，m4/m5 文档没写；N1～N14 计划齐、代码没写；目录和 claude_reference 约定
+- [token 预算](feedback_token_budget.md) — 2026-11-20：不并行开子助手，先估算再做，一次一个阶段，长会话换新会话
