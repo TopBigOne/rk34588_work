@@ -31,6 +31,10 @@ metadata:
 ## N3 n3_recorder
 - 2026-11-20 第 10 周 M1 参考代码写完：交叉编译 0 警告、Mac 单测和 Mac 端到端通过（aaa.264 → 60 秒 MP4，1800 帧），未上板，RTSP 输入没跑（SRS 没编译）。第 11 周 M2 分段也写完（Mac 端到端：10 分钟 → 10 个 60.1 秒的文件，帧数合计 18000）。细节和接口在 `claude_reference/1_实现记录.md`。第 13 周 M3 SQLite 索引也写完（Mac：10 条记录、大小和首尾相接都对、查询走索引、Ctrl+C 补结束时间、kill -9 留 NULL）。第 14 周 M4 也写完，**N3 参考代码全部完成**（Mac：配额 200 MB 剩 3 段 166 MB；kill -9 只丢内存里那一个片段，靠 AVFMT_FLAG_FLUSH_PACKETS；启动修复后 NULL 为 0；故障注入测了目录被删、数据库损坏）。N3 全部没上板。下一个阶段按顺序是 N10。
 
+## N10 n10_ai_event
+- 2026-11-20 第 15 周 M0 参考代码写完：`RknnModel`（RAII）、`detection_types.h`、`m0` 单张图检测（CPU letterbox + SDK demo 原样复制的 postprocess）、`check_rknn_env_on_board.sh`、`tools/convert/convert_yolov5.sh`（rk-dev 上跑）。交叉编译 0 警告；未上板；转换脚本没跑（要在 rk-dev 装几 GB 依赖，等用户点头）。模型不进仓库，run 脚本从 SDK 直接 push。细节在 `N10_work/n10_ai_event/claude_reference/1_实现记录.md`。同日第 16 周 M1 也写完：RGA 前处理、自写 YOLOv5 后处理 + 按类别 NMS、DetectStage、`m1`（视频）和 `m1cmp`（和 demo 后处理对比）；交叉编译 0 警告，Mac 单测 33 项全过（和 demo 对比最大误差 2 像素；发现 demo 的 NMS 会跨类别抑制）；未上板，缺有人的测试视频。下一步第 17 周 M2（画框 + 事件录像，用 N3 的 Mp4FileWriter）。
+- 注意：2026-11-20 `adb devices` 里的 R5CWA1RSV3T 是三星手机 SM-A5460，不是板子。
+
 ## 下一步
 1. 用户看 m4、m5 文档；要提交时 md 一批、memory 一批。问题案例库文件还不存在，m4（上屏快放）、m5（实测和推断的差距）的候选条目上板后再写。
 2. N1～N14 代码：只写代码 + 交叉编译通过，一次一个阶段。**2026-11-20 用户定跳过 N1、N2**（见 [[feedback-rtsp-use-only]]），从 N3 开始：N3 → N10 → N5 → N6 → N11 → N7 → N12 → N4 → N9 → N8 → N13 → N14；估计共 120 万～200 万 token。
