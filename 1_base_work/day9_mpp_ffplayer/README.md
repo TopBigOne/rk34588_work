@@ -13,27 +13,27 @@ SimpleFFPlay6.0（FFmpeg 6.0 的 ffplay 拆分版）移植到 RK3588 板子，�
 
 ## 和 SimpleFFPlay6.0 的区别
 
-| | SimpleFFPlay6.0（Mac） | MppPlayer（RK3588） |
-|---|---|---|
-| FFmpeg | 本机编的 6.0 | 交叉编译的 6.0，见 [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md) |
-| 视频解码 | avcodec 软解 | **H.264 / H.265 用 MPP 硬解**，其他格式照旧软解；`-nomppdec` 强制软解 |
-| 显示格式 | YUV420P | NV12 直接上传 SDL 纹理（GPU 做颜色转换），不经过 swscale |
-| 操作 | 键盘、鼠标 | 另加底部控制栏：进度条（拖动跳转）、播放时间 / 总时间、播放 / 暂停按钮、退出按钮；触摸和鼠标左键都能用 |
-| 窗口标题 / 程序名 | ffplay | MppPlayer |
+|                   | SimpleFFPlay6.0（Mac） | MppPlayer（RK3588）                                                                                    |
+|-------------------|------------------------|--------------------------------------------------------------------------------------------------------|
+| FFmpeg            | 本机编的 6.0           | 交叉编译的 6.0，见 [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md)                                |
+| 视频解码          | avcodec 软解           | **H.264 / H.265 用 MPP 硬解**，其他格式照旧软解；`-nomppdec` 强制软解                                  |
+| 显示格式          | YUV420P                | NV12 直接上传 SDL 纹理（GPU 做颜色转换），不经过 swscale                                               |
+| 操作              | 键盘、鼠标             | 另加底部控制栏：进度条（拖动跳转）、播放时间 / 总时间、播放 / 暂停按钮、退出按钮；触摸和鼠标左键都能用 |
+| 窗口标题 / 程序名 | ffplay                 | MppPlayer                                                                                              |
 
 ffplay 原版的代码只改了下面这几处，每处都标了 `MppPlayer`（`grep -rn MppPlayer src` 能全部找出来）：
 
-| 文件 | 改了什么 |
-|---|---|
-| [src/video/mpp_video_decoder.h/.c](src/video/mpp_video_decoder.h) | **新增**：MPP 硬解，接口仿照 avcodec 的 send / receive / flush |
-| [src/pipeline/decoder.h/.c](src/pipeline/decoder.c) | `Decoder` 加 `mppDecoder`；视频的 receive / send / flush 换成 MPP 的 |
-| [src/demux/stream.c](src/demux/stream.c) | 打开视频流时创建 MPP 解码器，不再 `avcodec_open2` |
-| [src/video/sdl_texture_format.h](src/video/sdl_texture_format.h)、[video_render.c](src/video/video_render.c) | 支持 NV12 纹理，用 `SDL_UpdateNVTexture` 上传 |
+| 文件                                                                                                                             | 改了什么                                                                                                                                                            |
+|----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [src/video/mpp_video_decoder.h/.c](src/video/mpp_video_decoder.h)                                                                | **新增**：MPP 硬解，接口仿照 avcodec 的 send / receive / flush                                                                                                      |
+| [src/pipeline/decoder.h/.c](src/pipeline/decoder.c)                                                                              | `Decoder` 加 `mppDecoder`；视频的 receive / send / flush 换成 MPP 的                                                                                                |
+| [src/demux/stream.c](src/demux/stream.c)                                                                                         | 打开视频流时创建 MPP 解码器，不再 `avcodec_open2`                                                                                                                   |
+| [src/video/sdl_texture_format.h](src/video/sdl_texture_format.h)、[video_render.c](src/video/video_render.c)                     | 支持 NV12 纹理，用 `SDL_UpdateNVTexture` 上传                                                                                                                       |
 | [src/ui/control_bar.h/.c](src/ui/control_bar.h)、[event_loop.c](src/ui/event_loop.c)、[video_render.c](src/video/video_render.c) | **新增**控制栏（用 SDL 矩形 + 内置 5×7 点阵字画，不依赖字体文件）；触摸和鼠标左键先交给控制栏；`video_display` 上屏前画控制栏；`MPPPLAYER_SCREENSHOT_PATH` 调试截图 |
-| [src/common/player_options.*](src/common/player_options.h)、[src/app/ffplay_options.c](src/app/ffplay_options.c) | 新增 `-nomppdec` 选项；默认音量改成 10%（原版 100%，板载喇叭太响），`-volume N` 仍可改 |
-| [src/app/main.c](src/app/main.c) | `program_name` 改成 `MppPlayer` |
-| [src/filter/av_filters.c](src/filter/av_filters.c) | 像素格式列表去重：板子的 GLES2 渲染器把 IYUV、YV12、NV12、NV21 各报两次，原版会报 `Duplicated pixel format`，播放器直接退出 |
-| [src/fftools/config.h](src/fftools/config.h)、`config_components.h` | 换成 aarch64 交叉编译时生成的那份 |
+| [src/common/player_options.*](src/common/player_options.h)、[src/app/ffplay_options.c](src/app/ffplay_options.c)                 | 新增 `-nomppdec` 选项；默认音量改成 10%（原版 100%，板载喇叭太响），`-volume N` 仍可改                                                                              |
+| [src/app/main.c](src/app/main.c)                                                                                                 | `program_name` 改成 `MppPlayer`                                                                                                                                     |
+| [src/filter/av_filters.c](src/filter/av_filters.c)                                                                               | 像素格式列表去重：板子的 GLES2 渲染器把 IYUV、YV12、NV12、NV21 各报两次，原版会报 `Duplicated pixel format`，播放器直接退出                                         |
+| [src/fftools/config.h](src/fftools/config.h)、`config_components.h`                                                              | 换成 aarch64 交叉编译时生成的那份                                                                                                                                   |
 
 `origin/ffplay.c` 是 FFmpeg 6.0 原版，不参与编译，对照用。
 
@@ -82,9 +82,9 @@ read_thread ──AVPacket（avcC）──▶ videoq ──▶ video_thread
 板子用 OTG 线连 TypeC0 口，`adb devices` 能看到板子后：
 
 ```bash
-./run_on_board_with_mac.sh                                  # 编译 → 推 FFmpeg 库和程序 → 播 sync_test_1080p.mp4（有声音）
-./run_on_board_with_mac.sh -an /userdata/day8_media/sync_test_1080p.mp4   # 不出声
-./run_on_board_with_mac.sh -nomppdec -an /userdata/day8_media/sync_test_1080p.mp4   # 软解，对比用
+./run_on_board_with_mac.sh                                  # 编译 → 推 FFmpeg 库和程序 → 播 yequ_640x480.mp4
+./run_on_board_with_mac.sh -an /userdata/day8_media/yequ_640x480.mp4   # 不出声
+./run_on_board_with_mac.sh -nomppdec -an /userdata/day8_media/yequ_640x480.mp4   # 软解，对比用
 ./install_app_on_board_with_mac.sh                          # 装成桌面第 2 页的 MppPlayer 图标
 ```
 
@@ -96,15 +96,15 @@ read_thread ──AVPacket（avcC）──▶ videoq ──▶ video_thread
 
 ## 文件
 
-| 文件 | 作用 |
-|---|---|
-| [build_ffmpeg6_for_board.sh](build_ffmpeg6_for_board.sh) | 交叉编译 FFmpeg 6.0 |
-| [push_ffmpeg6_to_board.sh](push_ffmpeg6_to_board.sh) | 把 FFmpeg 6.0 的库推到板子 `/userdata/ffmpeg6/lib`（一样就跳过） |
-| [run_on_board_with_mac.sh](run_on_board_with_mac.sh) | 编译、推送、在板子上运行 |
-| [install_app_on_board_with_mac.sh](install_app_on_board_with_mac.sh) | 装成桌面图标 |
-| [board/start_mppplayer.sh](board/start_mppplayer.sh) | 板子上点图标时执行的启动脚本 |
-| [assets/mppplayer_icon.png](assets/mppplayer_icon.png) | 桌面图标 |
-| [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md) | 交叉编译 FFmpeg 6.0 的完整说明 |
+| 文件                                                                 | 作用                                                             |
+|----------------------------------------------------------------------|------------------------------------------------------------------|
+| [build_ffmpeg6_for_board.sh](build_ffmpeg6_for_board.sh)             | 交叉编译 FFmpeg 6.0                                              |
+| [push_ffmpeg6_to_board.sh](push_ffmpeg6_to_board.sh)                 | 把 FFmpeg 6.0 的库推到板子 `/userdata/ffmpeg6/lib`（一样就跳过） |
+| [run_on_board_with_mac.sh](run_on_board_with_mac.sh)                 | 编译、推送、在板子上运行                                         |
+| [install_app_on_board_with_mac.sh](install_app_on_board_with_mac.sh) | 装成桌面图标                                                     |
+| [board/start_mppplayer.sh](board/start_mppplayer.sh)                 | 板子上点图标时执行的启动脚本                                     |
+| [assets/mppplayer_icon.png](assets/mppplayer_icon.png)               | 桌面图标                                                         |
+| [doc/交叉编译FFmpeg6.0.md](doc/交叉编译FFmpeg6.0.md)                 | 交叉编译 FFmpeg 6.0 的完整说明                                   |
 
 ## 上板结果（2026-11-19，板子 adb 序列号 3a6aff9a20ba7de4）
 
