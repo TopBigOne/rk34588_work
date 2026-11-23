@@ -25,3 +25,4 @@
 - [每个能力多种技术实现](feedback_multi_tech_per_capability.md) — 2026-11-18：一深多浅，一种手写其他用库，实测对比；主干够用线提到"追问三层"
 - [板子出声前先问](feedback_ask_before_sound.md) — 2026-11-19：喇叭放任何声音（测试滴滴声、带声音播放、解除静音）前先问用户；默认保持静音，用 PCM 比对代替听
 - [Day 9 进度断点](project_day9_status.md) — 2026-11-19：MppPlayer 上板通过（画面+声音+桌面图标+seek）并加了控制栏（进度条/时间/播放暂停/退出），都已提交
+- [默认测试片源](feedback_default_test_media.md) — 2026-11-23：上板测试默认播 /userdata/day8_media/yequ_640x480.mp4；测音画同步才用 sync_test_1080p
