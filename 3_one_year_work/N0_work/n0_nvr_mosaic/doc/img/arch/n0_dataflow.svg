@@ -9,7 +9,7 @@
     </marker>
   </defs>
 
-  <text x="520" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">day6_nvr_mosaic：4 个解码线程 + 1 个主线程</text>
+  <text x="520" y="30" font-size="20" font-weight="bold" text-anchor="middle" fill="#222">n0_nvr_mosaic：4 个解码线程 + 1 个主线程</text>
   <text x="520" y="54" font-size="13" text-anchor="middle" fill="#555">每一路一个 MppCtx、一个线程、一个队列；主线程每轮从 4 个队列各取一帧，用 RGA 贴进大图里自己的格子</text>
 
   <!-- ===== 左边：4 路 DecodeChannel ===== -->
