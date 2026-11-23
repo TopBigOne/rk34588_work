@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="690" viewBox="0 0 1100 690" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#444"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#2a62c9"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1100" height="690" fill="#ffffff"/>
+
+  <!-- 三条泳道 -->
+  <rect x="10" y="40" width="1080" height="110" fill="#eef4ff" rx="6"/>
+  <rect x="10" y="160" width="1080" height="320" fill="#f1f8ee" rx="6"/>
+  <rect x="10" y="490" width="1080" height="135" fill="#fff6e8" rx="6"/>
+  <text x="550" y="26" font-size="17" font-weight="bold" text-anchor="middle" fill="#222">MppPlayer：一帧 H.264 画面从 mp4 文件到屏幕</text>
+
+  <text x="80" y="90" font-size="14" font-weight="bold" text-anchor="middle" fill="#2a4f8f">读包线程</text>
+  <text x="80" y="110" font-size="12" text-anchor="middle" fill="#2a4f8f">read_thread</text>
+  <text x="80" y="310" font-size="14" font-weight="bold" text-anchor="middle" fill="#2f6b2a">视频解码线程</text>
+  <text x="80" y="330" font-size="12" text-anchor="middle" fill="#2f6b2a">video_thread</text>
+  <text x="80" y="550" font-size="14" font-weight="bold" text-anchor="middle" fill="#8a5a12">主线程</text>
+  <text x="80" y="570" font-size="12" text-anchor="middle" fill="#8a5a12">（显示）</text>
+
+  <!-- 泳道 A：读包 -->
+  <rect x="170" y="70" width="200" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="270" y="93" font-size="13" text-anchor="middle">av_read_frame</text>
+  <text x="270" y="113" font-size="12" text-anchor="middle" fill="#555">从 mp4 读出一个包</text>
+
+  <rect x="420" y="70" width="250" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="545" y="93" font-size="13" text-anchor="middle">AVPacket（avcC 格式）</text>
+  <text x="545" y="113" font-size="12" text-anchor="middle" fill="#555">每个 NAL 前面是 4 字节长度</text>
+
+  <rect x="720" y="70" width="200" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="820" y="93" font-size="13" text-anchor="middle">videoq</text>
+  <text x="820" y="113" font-size="12" text-anchor="middle" fill="#555">视频包队列</text>
+
+  <line x1="370" y1="98" x2="418" y2="98" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="670" y1="98" x2="718" y2="98" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <polyline points="820,126 820,172 270,172 270,188" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="545" y="166" font-size="12" text-anchor="middle" fill="#555">decoder_decode_frame 取包 → mppVideoDecoderSendPacket</text>
+
+  <!-- 泳道 B 第 1 行：送包 -->
+  <rect x="170" y="190" width="200" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="270" y="213" font-size="13" text-anchor="middle">① h264_mp4toannexb</text>
+  <text x="270" y="233" font-size="12" text-anchor="middle" fill="#555">改成 00 00 00 01 起始码</text>
+
+  <rect x="420" y="190" width="210" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="525" y="213" font-size="13" text-anchor="middle">② mpp_packet_init</text>
+  <text x="525" y="233" font-size="12" text-anchor="middle" fill="#555">+ mpp_packet_set_pts</text>
+
+  <rect x="680" y="190" width="180" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="770" y="213" font-size="13" text-anchor="middle">③ decode_put_packet</text>
+  <text x="770" y="233" font-size="12" text-anchor="middle" fill="#555">送进 MPP 输入队列</text>
+
+  <rect x="900" y="190" width="170" height="150" fill="#ffe3e3" stroke="#c33" stroke-width="1.5" rx="5"/>
+  <text x="985" y="245" font-size="14" font-weight="bold" text-anchor="middle" fill="#a11">MPP 解码器</text>
+  <text x="985" y="266" font-size="12" text-anchor="middle" fill="#a11">RK3588 的硬件</text>
+  <text x="985" y="284" font-size="12" text-anchor="middle" fill="#a11">视频解码单元</text>
+  <text x="985" y="302" font-size="12" text-anchor="middle" fill="#a11">（CPU 不参与解码）</text>
+  <text x="985" y="326" font-size="12" text-anchor="middle" fill="#a11">← 把像素写进池里</text>
+
+  <line x1="370" y1="218" x2="418" y2="218" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="630" y1="218" x2="678" y2="218" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="860" y1="218" x2="898" y2="218" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 泳道 B 第 2 行：取帧 -->
+  <rect x="680" y="300" width="180" height="56" fill="#fff3c4" stroke="#b08a00" stroke-width="1.5" rx="5"/>
+  <text x="770" y="323" font-size="13" text-anchor="middle">内存池 frameGroup</text>
+  <text x="770" y="343" font-size="12" text-anchor="middle" fill="#555">DRM 内存，最多 24 块</text>
+
+  <rect x="420" y="300" width="210" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="525" y="323" font-size="13" text-anchor="middle">④ decode_get_frame</text>
+  <text x="525" y="343" font-size="12" text-anchor="middle" fill="#555">取出一个 MppFrame</text>
+
+  <rect x="170" y="300" width="200" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="270" y="323" font-size="13" text-anchor="middle">⑤ 看帧上的标志</text>
+  <text x="270" y="343" font-size="12" text-anchor="middle" fill="#555">info change / EOS / 出错</text>
+
+  <line x1="900" y1="328" x2="862" y2="328" stroke="#c33" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="680" y1="328" x2="632" y2="328" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="420" y1="328" x2="372" y2="328" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- info change：建池（虚线） -->
+  <polyline points="230,300 230,275 740,275 740,298" fill="none" stroke="#2a62c9" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arrowBlue)"/>
+  <text x="485" y="268" font-size="12" text-anchor="middle" fill="#2a62c9">info change 帧：建池 → SET_EXT_BUF_GROUP → SET_INFO_CHANGE_READY（只在开头来一次）</text>
+
+  <!-- 泳道 B 第 3 行：包成 AVFrame -->
+  <rect x="170" y="400" width="200" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="270" y="423" font-size="13" text-anchor="middle">⑥ wrapMppFrameAsAvFrame</text>
+  <text x="270" y="443" font-size="12" text-anchor="middle" fill="#555">包成 NV12 AVFrame，不复制</text>
+
+  <rect x="420" y="400" width="210" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="525" y="423" font-size="13" text-anchor="middle">pictq</text>
+  <text x="525" y="443" font-size="12" text-anchor="middle" fill="#555">待显示画面队列（最多 3 帧）</text>
+
+  <line x1="300" y1="356" x2="300" y2="398" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="308" y="383" font-size="12" fill="#555">普通画面帧</text>
+  <line x1="370" y1="428" x2="418" y2="428" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 泳道 C：显示 -->
+  <rect x="420" y="510" width="210" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="525" y="533" font-size="13" text-anchor="middle">video_refresh</text>
+  <text x="525" y="553" font-size="12" text-anchor="middle" fill="#555">按 pts 等到时间再显示</text>
+
+  <rect x="680" y="510" width="180" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="770" y="533" font-size="13" text-anchor="middle">SDL_UpdateNVTexture</text>
+  <text x="770" y="553" font-size="12" text-anchor="middle" fill="#555">Y、UV 两个平面上传</text>
+
+  <rect x="900" y="510" width="170" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="985" y="533" font-size="13" text-anchor="middle">GPU 把 NV12 转成 RGB</text>
+  <text x="985" y="553" font-size="12" text-anchor="middle" fill="#555">→ 画到屏幕上</text>
+
+  <rect x="170" y="510" width="200" height="56" fill="#fff" stroke="#555" rx="5"/>
+  <text x="270" y="533" font-size="13" text-anchor="middle">av_frame_unref</text>
+  <text x="270" y="553" font-size="12" text-anchor="middle" fill="#555">→ releaseMppFrame</text>
+
+  <line x1="525" y1="456" x2="525" y2="508" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="630" y1="538" x2="678" y2="538" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="860" y1="538" x2="898" y2="538" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="420" y1="538" x2="372" y2="538" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="396" y="530" font-size="12" text-anchor="middle" fill="#555">显示完</text>
+
+  <!-- 归还 buffer（虚线） -->
+  <polyline points="270,566 270,596 880,596 880,372 800,372 800,358" fill="none" stroke="#2a62c9" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arrowBlue)"/>
+  <text x="575" y="589" font-size="12" text-anchor="middle" fill="#2a62c9">mpp_frame_deinit：buffer 回到内存池，解码器可以再往里写</text>
+
+  <!-- 图例 -->
+  <line x1="180" y1="655" x2="230" y2="655" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="240" y="659" font-size="12" fill="#333">数据往前走</text>
+  <line x1="340" y1="655" x2="390" y2="655" stroke="#2a62c9" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arrowBlue)"/>
+  <text x="400" y="659" font-size="12" fill="#333">内存池的建立和归还</text>
+  <text x="560" y="659" font-size="12" fill="#333">①～⑥ 对应正文第 3 节；从硬件写完到进 pictq 不复制像素，上传纹理时 SDL 才复制一次</text>
+</svg>
