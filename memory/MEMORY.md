@@ -28,3 +28,4 @@
 - [N0 和一年计划进度断点](project_n0_status.md) — 2026-11-20：N0 M1～M5 未上板；N3 参考代码全部完成；N10 第 15～17 周（M0～M2）代码写完（未上板、转换脚本没跑），下一步第 18 周 M3
 - [token 预算](feedback_token_budget.md) — 2026-11-20：不并行开子助手，先估算再做，一次一个阶段，长会话换新会话
 - [RTSP 会用就行](feedback_rtsp_use_only.md) — 2026-11-20：跳过 N1、N2，从 N3 开始；RTSP 用 SRS 7 + libavformat 拉流，不研究协议
+- [默认测试片源](feedback_default_test_media.md) — 2026-11-23：上板测试默认播 /userdata/day8_media/yequ_640x480.mp4；测音画同步才用 sync_test_1080p
