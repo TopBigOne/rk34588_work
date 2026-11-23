@@ -3,10 +3,10 @@
 # 用法：
 #   ./run_on_board_with_mac.sh [ffplay 参数...] [视频路径]
 # 例：
-#   ./run_on_board_with_mac.sh                                                  默认：-autoexit 播 sync_test_1080p.mp4
-#   ./run_on_board_with_mac.sh -an /userdata/day8_media/sync_test_1080p.mp4      不出声（-an = 不打开音频）
+#   ./run_on_board_with_mac.sh                                                  默认：-autoexit 播 yequ_640x480.mp4
+#   ./run_on_board_with_mac.sh -an /userdata/day8_media/yequ_640x480.mp4      不出声（-an = 不打开音频）
 #   ./run_on_board_with_mac.sh -fs /userdata/day8_media/yequ_640x480.mp4         全屏
-#   ./run_on_board_with_mac.sh -nomppdec -an /userdata/day8_media/sync_test_1080p.mp4   软解（对比用）
+#   ./run_on_board_with_mac.sh -nomppdec -an /userdata/day8_media/yequ_640x480.mp4   软解（对比用）
 # 参数和 ffplay 一样（-x/-y 窗口大小、-fs 全屏、-an/-vn、-ss 起始时间、-autoexit、-loop ...），另加 -nomppdec。
 # 测试视频用 day8 推到板子上的 /userdata/day8_media/（不在时到 day8_qt_player 目录运行 make_test_media.sh 再推）。
 # 可选环境变量：
@@ -15,7 +15,7 @@
 BIN_NAME=MppPlayer
 BUILD_DIR=cmake-build-rk3588-debug
 REMOTE_DIR=/tmp/CLion/run
-DEFAULT_MEDIA_PATH=/userdata/day8_media/sync_test_1080p.mp4
+DEFAULT_MEDIA_PATH=/userdata/day8_media/yequ_640x480.mp4
 
 # 板子上运行要的环境变量：
 #   XDG_RUNTIME_DIR、WAYLAND_DISPLAY  连 weston（板子桌面）的 socket：/var/run/wayland-0（2026-11-17 day7 实测）
