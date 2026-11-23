@@ -15,7 +15,7 @@ metadata:
 ## N0 n0_nvr_mosaic
 - 设计 `doc/0_设计.md`（用户已批准）、计划 `doc/1_计划.md`、执行记录 `.superpowers/sdd/1_计划/progress.md`（含 Ruling）。
 - 方案 B：Day 6 全部重写，Day 8 只读；新增 M5：4 路不同帧率（30/15/60/30+第 300 帧停 2 秒）按主时钟对齐拼图（每格：到点帧取最新、旧的丢弃，没到点重复）。
-- 参考代码：`claude_reference/第01周_N0_Day6的M3上板/`（M1～M3，从 Day 6 复制）、`第02周_N0_Day6的M4和Day8上板/`（+M4 FIFO+gst 上屏、`run_m4_on_board_with_mac.sh`；+M5 `sync/master_clock`、`FrameQueue::tryPopIfDue`、`setPtsFrameRate`、`setDecodeStall`、`composeAlignedMosaic`、`m5test` 自测、`make_m5_inputs.sh`）。两份都交叉编译 0 警告，**都没上板**（编译目录 `build`）。
+- 参考代码：`claude_reference/第01周_N0_M1到M3上板/`（M1～M3，从 Day 6 复制）、`第02周_N0_M4和M5上板/`（+M4 FIFO+gst 上屏、`run_m4_on_board_with_mac.sh`；+M5 `sync/master_clock`、`FrameQueue::tryPopIfDue`、`setPtsFrameRate`、`setDecodeStall`、`composeAlignedMosaic`、`m5test` 自测、`make_m5_inputs.sh`）。两份都交叉编译 0 警告，**都没上板**（编译目录 `build`）。
 - M5 输入已生成在 `/Users/dev/Documents/AV/rk_test_data/`：n0_ch1_15fps.h264 902 帧、n0_ch2_60fps.h264 3606 帧（`-vf fps` 会因裸码流时间戳乱生成几百 MB，改用 setpts 按帧号）；还没 adb push。
 - 文档：`doc/m1流程.md`、`m2流程.md`（Day 6 底稿迁移，实测数字是 Day 6 的）、`m3流程.md`（247 行，未上板）、`m4流程.md`、`m5流程.md`（2026-11-20 写完，未上板，数字都标“推断”，第 6 节留了实测记录模板；m5 配图 `doc/img/m5/m5_clock_timeline.svg`，Chrome 渲染检查过）。用户还没看过 m4、m5 文档，也没提交。
 - 第 01、02 周计划已改成 n0 路径；第 02 周加了 M5，删了 Day 8 上板（11-19 已通过）。
