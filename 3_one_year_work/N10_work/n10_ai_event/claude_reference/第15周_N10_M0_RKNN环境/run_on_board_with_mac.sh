@@ -1,5 +1,5 @@
 #!/bin/sh
-# 来源：3_one_year_work/N0_work/n0_nvr_mosaic/claude_reference/第02周_N0_Day6的M4和Day8上板/run_on_board_with_mac.sh
+# 来源：3_one_year_work/N0_work/n0_nvr_mosaic/claude_reference/第02周_N0_M4和M5上板/run_on_board_with_mac.sh
 # 编译 → adb push 程序和模型 → adb shell 运行。只走 USB。
 # 用法：./run_on_board_with_mac.sh [m0 [模型.rknn] [图片.jpg]]
 # 环境变量：

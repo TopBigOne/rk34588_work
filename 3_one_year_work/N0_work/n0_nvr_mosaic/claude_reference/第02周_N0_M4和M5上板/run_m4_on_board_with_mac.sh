@@ -46,7 +46,7 @@ $ADB shell "chmod +x $REMOTE_DIR/$BIN_NAME" < /dev/null || exit 1
 # 板子上执行的脚本（一次 adb shell 跑完，两个进程都在同一个 shell 里，结束时一起收拾）：
 #   第 1 步 重新建 FIFO（mkfifo：建一个命名管道文件，一头写、一头读，数据不落盘）
 #   第 2 步 后台起 gst：filesrc 读 FIFO → h265parse 切出一帧帧 → mppvideodec 用 MPP 硬解 → 显示元素画到屏幕
-#           XDG_RUNTIME_DIR、WAYLAND_DISPLAY：weston 的 socket 在 /var/run/wayland-0（Day 7 实测）
+#           XDG_RUNTIME_DIR、WAYLAND_DISPLAY：weston 的 socket 在 /var/run/wayland-0（实测）
 #   第 3 步 后台起程序往 FIFO 里写；程序打开 FIFO 写端时，要等 gst 那边把读端打开才会往下走
 #   第 4 步 盯着两个进程：gst 先退出而程序还在（比如 gst 起不来，程序会一直卡在打开 FIFO 那一步），就把程序杀掉
 #   第 5 步 等两个进程都结束，删掉 FIFO，用程序的返回码作为整个脚本的返回码
