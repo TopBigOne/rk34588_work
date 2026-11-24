@@ -1,5 +1,5 @@
 /*
- * Day 6 的所有常量：每一路的输入、大图尺寸、编码参数、输出路径。不做命令行参数解析，都写死在这里
+ * n0_nvr_mosaic 的所有常量：每一路的输入、大图尺寸、编码参数、输出路径。不做命令行参数解析，都写死在这里
  */
 #pragma once
 
@@ -13,10 +13,10 @@ struct ChannelInput {
 };
 
 // 4 路输入（2026-11-17 在板子上用 ffprobe 数过帧数）：
-//   ch0 aaa.264          H.264 1920×1080  1803 帧（Day 2 的输入）
-//   ch1 out_720p.h265    H.265 1280×720   1803 帧（Day 5 M1 的输出）
-//   ch2 main_1080p.h264  H.264 1920×1080    60 帧（Day 4 M2 的主码流）
-//   ch3 out.h265         H.265 1920×1080    60 帧（Day 1 的输出）
+//   ch0 aaa.264          H.264 1920×1080  1803 帧
+//   ch1 out_720p.h265    H.265 1280×720   1803 帧
+//   ch2 main_1080p.h264  H.264 1920×1080    60 帧
+//   ch3 out.h265         H.265 1920×1080    60 帧
 inline constexpr int kChannelCount = 4;
 inline constexpr ChannelInput kChannelInputs[kChannelCount] = {
     {"/userdata/av/aaa.264", MPP_VIDEO_CodingAVC},

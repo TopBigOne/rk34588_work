@@ -1,4 +1,4 @@
-// 来源：3_one_year_work/N0_work/n0_nvr_mosaic/claude_reference/第02周_N0_Day6的M4和Day8上板/src/common/nv12_picture.cpp
+// 来源：3_one_year_work/N0_work/n0_nvr_mosaic/claude_reference/第02周_N0_M4和M5上板/src/common/nv12_picture.cpp
 #include "common/nv12_picture.h"
 
 #include <cstdint> // uint8_t
