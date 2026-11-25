@@ -36,7 +36,7 @@ int mppVideoDecoderIsSupported(enum AVCodecID codecId);
  * @return 成功返回解码器；失败返回 NULL（已打印原因）
  * @note 用完调用 mppVideoDecoderRelease
  */
-MppVideoDecoder *mppVideoDecoderCreate(const AVCodecParameters *codecParameters, AVRational streamTimeBase);
+MppVideoDecoder* mppVideoDecoderCreate(const AVCodecParameters* codecParameters, AVRational streamTimeBase);
 
 /**
  * @brief 送一个压缩包
@@ -45,7 +45,7 @@ MppVideoDecoder *mppVideoDecoderCreate(const AVCodecParameters *codecParameters,
  * @return 0 = 收下了；AVERROR(EAGAIN) = 上一个包还没送进 MPP，先 receive 再送这个包；其他负数 = 出错
  * @note 包里的数据会被复制，返回后调用方可以马上 av_packet_unref
  */
-int mppVideoDecoderSendPacket(MppVideoDecoder *decoder, const AVPacket *packet);
+int mppVideoDecoderSendPacket(MppVideoDecoder* decoder, const AVPacket* packet);
 
 /**
  * @brief 取一帧解好的画面
@@ -56,7 +56,7 @@ int mppVideoDecoderSendPacket(MppVideoDecoder *decoder, const AVPacket *packet);
  *         AVERROR_EOF = 码流结束后的帧都取完了；其他负数 = 出错
  * @note 不阻塞。返回 EAGAIN 时用 mppVideoDecoderIsWaitingForOutput 判断是“要送包”还是“稍等再取”
  */
-int mppVideoDecoderReceiveFrame(MppVideoDecoder *decoder, AVFrame *frame);
+int mppVideoDecoderReceiveFrame(MppVideoDecoder* decoder, AVFrame* frame);
 
 /**
  * @brief 判断解码器是不是“手里还有活、只是还没出帧”
@@ -66,7 +66,7 @@ int mppVideoDecoderReceiveFrame(MppVideoDecoder *decoder, AVFrame *frame);
  *         0 = 解码器在等新的包
  * @note 对应 avcodec 的规则：receive 返回 EAGAIN 时一定能 send。MPP 的输入队列满了时做不到这一点，所以要单独问
  */
-int mppVideoDecoderIsWaitingForOutput(const MppVideoDecoder *decoder);
+int mppVideoDecoderIsWaitingForOutput(const MppVideoDecoder* decoder);
 
 /**
  * @brief 清空解码器（seek 或播完以后）：丢掉还没解的码流和还没取走的帧，回到“等关键帧”的状态
@@ -74,7 +74,7 @@ int mppVideoDecoderIsWaitingForOutput(const MppVideoDecoder *decoder);
  * @return 无
  * @note 相当于 avcodec_flush_buffers。已经交出去的 AVFrame 不受影响，照常显示和释放
  */
-void mppVideoDecoderFlush(MppVideoDecoder *decoder);
+void mppVideoDecoderFlush(MppVideoDecoder* decoder);
 
 /**
  * @brief 放弃调用方手里的这份解码器引用，并把指针置为 NULL
@@ -82,4 +82,4 @@ void mppVideoDecoderFlush(MppVideoDecoder *decoder);
  * @return 无
  * @note 调用前解码线程必须已经退出。还有 AVFrame 没释放时，真正的销毁推迟到最后一帧释放的时候
  */
-void mppVideoDecoderRelease(MppVideoDecoder **decoderPointer);
+void mppVideoDecoderRelease(MppVideoDecoder** decoderPointer);
