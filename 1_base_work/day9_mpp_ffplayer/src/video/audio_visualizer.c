@@ -1,6 +1,7 @@
 /*
  * 本文件拆自 FFmpeg 6.0 fftools/ffplay.c（Copyright (c) 2003 Fabrice Bellard），
  * 遵循 GNU LGPL 2.1 或更高版本。函数体保持原样，仅调整 static 和 #include。
+ * 例外：video_audio_display 开头算 rdft_bits 的空循环体 for 改成了 while，并加了注释（逻辑不变）。
  */
 #include "video/audio_visualizer.h"
 
@@ -30,9 +31,18 @@ void video_audio_display(VideoState* s) {
     int64_t time_diff;
     int rdft_bits, nb_freq;
 
-    for (rdft_bits = 1; (1 << rdft_bits) < 2 * s->height; rdft_bits++)
-        ;
-    nb_freq = 1 << (rdft_bits - 1);
+    // 第 1 步 算频谱模式要用的 RDFT 点数
+    // rdft_bits：RDFT（实数离散傅里叶变换）点数是 2 的几次方，点数 = 2^rdft_bits。
+    //   av_rdft_init 只接受 2 的幂，所以用次方数来表示点数。
+    // 为什么点数要 >= 2 * 窗口高度：对 N 个实数采样做 RDFT，得到 N/2 个频率；
+    //   下面画频谱时窗口的每一行像素画一个频率（y 从 0 到 s->height - 1），所以频率个数要 >= 窗口高度。
+    // 做法：从 2^1 = 2 个点开始，每次翻倍，直到点数 >= 2 * 窗口高度，得到满足要求的最小的 2 的幂。
+    // 例（推算）：窗口高 480 → 要求点数 >= 960 → 2^10 = 1024 → rdft_bits = 10，nb_freq = 512
+    rdft_bits = 1;
+    while ((1 << rdft_bits) < 2 * s->height) { // 1 << rdft_bits 就是 2^rdft_bits
+        rdft_bits++;
+    }
+    nb_freq = 1 << (rdft_bits - 1); // 频率个数 = 点数的一半 = 2^(rdft_bits - 1)
 
     /* compute display index : center on currently output samples */
     channels            = s->audio_tgt.ch_layout.nb_channels;
