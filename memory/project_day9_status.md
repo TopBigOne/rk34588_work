@@ -29,3 +29,10 @@ metadata:
 - MPPPLAYER_SCREENSHOT_PATH 调试截图（SDL_RenderReadPixels → BMP）：截图确认布局和颜色都对。
 - 触摸交互：用户说“可以了”，但桌面日志里装新版后没有启动记录；seek 路径在旧版（底部触摸条）里跳转 7 次通过。
 - yequ_640x480.mp4 片长 3:53.97（之前估的 43 秒是错的）。
+
+## 文档和格式化（2026-11-25，已提交并 push）
+- doc/3_播放器怎么管理AVPacket和AVFrame.md + doc/img/player_pipeline/player_pipeline.svg：PacketQueue / MyAVPacketList、FrameQueue 环形数组、引用怎么转手、谁等谁、释放帧 = buffer 还给 MPP、seek 的 serial。
+- doc/我不理解的代码.md：第 1 条不透明指针（为什么 struct MppVideoDecoder 定义放 .c）、第 2 条 AVBSFContext（avcC → Annex B）。
+- 用户换了新 .clang-format（InsertBraces、AlignConsecutiveAssignments 等），7 个源文件按它重排，单独一个提交 d951f24。
+- audio_visualizer.c 算 rdft_bits 的空循环 for 改成 while + 注释（8e2144a），文件头注明了这个例外。
+- 用户问过能不能播 flv：板子 FFmpeg 6.0 有 flv demuxer 和 h264_mp4toannexb，H.264 的 flv 推断能走 MPP；FLV 里的 H.265 推断不行（6.0 不支持 Enhanced FLV）。**没上板实测**：当时 adb 只连着三星手机 R5CWA1RSV3T，板子没插。
